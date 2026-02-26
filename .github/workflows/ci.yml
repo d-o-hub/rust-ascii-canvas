@@ -36,7 +36,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Build WASM
-        uses: jetli/wasm-pack-action@v0.5.0
+        uses: jetli/wasm-pack-action@v0.4.0
         with:
           args: --release --target web --out-dir web/pkg
 
@@ -65,7 +65,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Build WASM
-        uses: jetli/wasm-pack-action@v0.5.0
+        uses: jetli/wasm-pack-action@v0.4.0
         with:
           args: --release --target web --out-dir web/pkg
 
