@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Canvas Editor</title>
+    <link rel="stylesheet" href="./style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app" class="app">
+        <!-- Header Toolbar -->
+        <header class="toolbar">
+            <div class="toolbar-left">
+                <div class="logo">
+                    <span class="logo-icon">▣</span>
+                    <span class="logo-text">ASCII Canvas</span>
+                </div>
+            </div>
+
+            <div class="toolbar-center">
+                <!-- Tools -->
+                <div class="tool-group" role="group" aria-label="Drawing Tools">
+                    <button class="tool-btn" data-tool="select" title="Select (V)" aria-label="Select tool">
+                        <span class="tool-icon">⬚</span>
+                        <span class="tool-label">Select</span>
+                    </button>
+                    <button class="tool-btn" data-tool="rectangle" title="Rectangle (R)" aria-label="Rectangle tool">
+                        <span class="tool-icon">▢</span>
+                        <span class="tool-label">Rect</span>
+                    </button>
+                    <button class="tool-btn" data-tool="line" title="Line (L)" aria-label="Line tool">
+                        <span class="tool-icon">─</span>
+                        <span class="tool-label">Line</span>
+                    </button>
+                    <button class="tool-btn" data-tool="arrow" title="Arrow (A)" aria-label="Arrow tool">
+                        <span class="tool-icon">→</span>
+                        <span class="tool-label">Arrow</span>
+                    </button>
+                    <button class="tool-btn" data-tool="diamond" title="Diamond (D)" aria-label="Diamond tool">
+                        <span class="tool-icon">◇</span>
+                        <span class="tool-label">Diamond</span>
+                    </button>
+                    <div class="tool-separator"></div>
+                    <button class="tool-btn" data-tool="text" title="Text (T)" aria-label="Text tool">
+                        <span class="tool-icon">T</span>
+                        <span class="tool-label">Text</span>
+                    </button>
+                    <button class="tool-btn" data-tool="freehand" title="Freehand (F)" aria-label="Freehand tool">
+                        <span class="tool-icon">✎</span>
+                        <span class="tool-label">Free</span>
+                    </button>
+                    <button class="tool-btn" data-tool="eraser" title="Eraser (E)" aria-label="Eraser tool">
+                        <span class="tool-icon">⌫</span>
+                        <span class="tool-label">Erase</span>
+                    </button>
+                </div>
+
+                <div class="tool-separator"></div>
+
+                <!-- Border Style -->
+                <div class="tool-group" role="group" aria-label="Border Style">
+                    <select id="border-style" class="select-input" title="Border Style">
+                        <option value="single">Single (─)</option>
+                        <option value="double">Double (═)</option>
+                        <option value="heavy">Heavy (━)</option>
+                        <option value="rounded">Rounded (╭)</option>
+                        <option value="ascii">ASCII (-)</option>
+                        <option value="dotted">Dotted (*)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="toolbar-right">
+                <!-- Actions -->
+                <button id="undo-btn" class="action-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
+                    <span class="action-icon">↶</span>
+                </button>
+                <button id="redo-btn" class="action-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled>
+                    <span class="action-icon">↷</span>
+                </button>
+                <div class="tool-separator"></div>
+                <button id="copy-btn" class="action-btn primary" title="Copy ASCII (Ctrl+C)" aria-label="Copy ASCII">
+                    <span class="action-icon">⎘</span>
+                    <span class="action-label">Copy</span>
+                </button>
+                <button id="clear-btn" class="action-btn" title="Clear Canvas" aria-label="Clear canvas">
+                    <span class="action-icon">⌫</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Canvas Container -->
+            <div class="canvas-container" id="canvas-container">
+                <canvas id="canvas" tabindex="0" aria-label="ASCII Canvas Editor"></canvas>
+                <!-- Cursor indicator -->
+                <div id="cursor-indicator" class="cursor-indicator hidden"></div>
+            </div>
+
+            <!-- Side Panel -->
+            <aside class="side-panel">
+                <!-- Info -->
+                <section class="panel-section">
+                    <h3 class="section-title">Info</h3>
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Grid</span>
+                            <span class="info-value" id="grid-size">80 × 40</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cursor</span>
+                            <span class="info-value" id="cursor-pos">0, 0</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Zoom</span>
+                            <span class="info-value" id="zoom-level">100%</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Keyboard Shortcuts -->
+                <section class="panel-section">
+                    <h3 class="section-title">Shortcuts</h3>
+                    <div class="shortcuts-list">
+                        <div class="shortcut-item">
+                            <kbd>R</kbd> <span>Rectangle</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>L</kbd> <span>Line</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>A</kbd> <span>Arrow</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>D</kbd> <span>Diamond</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>T</kbd> <span>Text</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>F</kbd> <span>Freehand</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>V</kbd> <span>Select</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>E</kbd> <span>Eraser</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Z</kbd> <span>Undo</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+Shift+Z</kbd> <span>Redo</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Ctrl+C</kbd> <span>Copy</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Space+Drag</kbd> <span>Pan</span>
+                        </div>
+                        <div class="shortcut-item">
+                            <kbd>Scroll</kbd> <span>Zoom</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span id="status-tool" class="status-item">Tool: Rectangle</span>
+            </div>
+            <div class="status-center">
+                <span id="status-message" class="status-message"></span>
+            </div>
+            <div class="status-right">
+                <span id="status-toast" class="status-toast hidden"></span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading ASCII Canvas...</p>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "ascii-canvas",
+  "version": "0.1.0",
+  "description": "A fast ASCII diagram editor built with Rust and WebAssembly",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --config vite.config.ts",
+    "build": "vite build --config vite.config.ts",
+    "preview": "vite preview --config vite.config.ts",
+    "wasm:dev": "cd .. && wasm-pack build --dev --target web",
+    "wasm:release": "cd .. && wasm-pack build --release --target web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "cd .. && npx playwright test --config playwright.config.ts",
+    "e2e:ui": "cd .. && npx playwright test --config playwright.config.ts --ui"
+  },
+  "keywords": [
+    "ascii",
+    "diagram",
+    "editor",
+    "wasm",
+    "rust",
+    "webassembly"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0",
+    "vitest": "^1.5.0"
+  }
+}

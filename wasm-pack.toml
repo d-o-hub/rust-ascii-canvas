@@ -1,0 +1,8 @@
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-mutable-globals"]
+
+# Output directory for generated JS bindings
+out-dir = "web/pkg"
