@@ -4,7 +4,13 @@ version = "0.1.0"
 edition = "2021"
 description = "A fast ASCII diagram editor compiled to WebAssembly"
 license = "MIT"
-repository = "https://github.com/user/ascii-canvas"
+repository = "https://github.com/anomalyco/ascii-canvas"
+readme = "README.md"
+keywords = ["wasm", "webassembly", "ascii", "diagram", "editor", "rust"]
+categories = ["wasm", "web-programming", "graphics"]
+authors = ["Anomaly"]
+documentation = "https://docs.rs/ascii-canvas"
+homepage = "https://github.com/anomalyco/ascii-canvas"
 
 [lib]
 crate-type = ["cdylib", "rlib"]

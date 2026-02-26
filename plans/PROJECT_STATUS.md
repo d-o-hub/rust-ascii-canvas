@@ -171,7 +171,47 @@ npx playwright test --project=chromium
 
 See `plans/ADRs/001-disable-shortcuts-when-tools-active.md` for details.
 
+## Agent Skills Installed
+
+The following skills are available for development:
+
+| Skill | Purpose | Source |
+|-------|---------|--------|
+| rust-engineer | Rust/WASM development | Custom |
+| rust-best-practices | Idiomatic Rust patterns | Custom |
+| typescript-expert | TypeScript development | sickn33/antigravity-awesome-skills |
+| vite | Vite build tooling | antfu/skills |
+| playwright-e2e-testing | E2E testing patterns | bobmatnyc/claude-mpm-skills |
+| rust-wasm | Rust/WASM integration | pluginagentmarketplace |
+| ln-732-cicd-generator | CI/CD workflow generation | levnikolaevich/claude-code-skills |
+| goap-adr-planner | Planning with ADRs | Custom |
+| dogfood | QA/testing | Custom |
+| agent-browser | Browser automation | Custom |
+| agents-md | Documentation | Custom |
+
+## GitHub Best Practices Analysis
+
+See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package-metadata-consistency.md`, and `plans/ADRs/006-github-infrastructure-metadata.md` for implementation details.
+
+### Completed (2026-02-26)
+- ✅ LICENSE file (MIT)
+- ✅ `.github/ISSUE_TEMPLATE/` - Structured bug reports
+- ✅ `.github/PULL_REQUEST_TEMPLATE.md` - PR checklist
+- ✅ `.github/SECURITY.md` - Security policy
+- ✅ `.github/CODEOWNERS` - Code ownership
+- ✅ CONTRIBUTING.md - Contributor guidelines
+- ✅ `.github/workflows/ci.yml` - GitHub Actions CI
+- ✅ rustfmt.toml - Code formatting
+- ✅ clippy.toml - Linter config
+- ✅ Package metadata synced (version 0.1.0, MIT license)
+- ✅ Repository URLs updated
+
 ## Next Steps
+
+### Completed
+1. ✅ All GitHub Configuration - DONE
+2. ✅ Package Metadata Sync - DONE
+3. ✅ GitHub Actions CI - DONE
 
 ### Potential Improvements
 1. Add documentation for all public API items

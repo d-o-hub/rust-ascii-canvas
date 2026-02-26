@@ -1,18 +1,28 @@
 {
   "name": "ascii-canvas",
-  "version": "1.0.0",
-  "description": "A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Features a polished dark UI inspired by Figma, running at 60 FPS with zero browser text-selection artifacts.",
-  "main": "index.js",
-  "directories": {
-    "test": "tests"
+  "version": "0.1.0",
+  "description": "A production-grade ASCII diagram editor built with Rust and WebAssembly",
+  "license": "MIT",
+  "keywords": ["wasm", "webassembly", "ascii", "diagram", "editor", "rust"],
+  "author": "Anomaly",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anomalyco/ascii-canvas.git"
   },
+  "bugs": {
+    "url": "https://github.com/anomalyco/ascii-canvas/issues"
+  },
+  "homepage": "https://github.com/anomalyco/ascii-canvas#readme",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:wasm": "wasm-pack build --release --target web --out-dir web/pkg",
+    "build": "npm run build:wasm && cd web && npm run build",
+    "dev": "cd web && npm run dev",
+    "test": "cargo test && npx playwright test --project=chromium",
+    "test:unit": "cargo test",
+    "test:e2e": "npx playwright test",
+    "lint": "cargo clippy -- -D warnings && cargo fmt --check",
+    "fmt": "cargo fmt"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "playwright": "^1.58.2"

@@ -1,0 +1,34 @@
+name: Bug Report
+description: Create a report to help us improve
+title: '[Bug]: '
+labels: ['bug']
+assignees: ''
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Description
+        Describe the bug clearly and concisely.
+
+        ## Steps to Reproduce
+        1.
+        2.
+        3.
+
+        ## Expected Behavior
+        What should happen?
+
+        ## Actual Behavior
+        What actually happens?
+
+        ## Environment
+        - OS: [e.g., macOS, Windows, Linux]
+        - Browser: [e.g., Chrome, Firefox, Safari]
+        - Version: [e.g., 0.1.0]
+
+        ## Screenshots
+        If applicable, add screenshots to help explain the problem.
+
+        ## Additional Context
+        Add any other context about the problem here.
