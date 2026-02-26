@@ -72,13 +72,5 @@ jobs:
         with:
           args: --release --target web --out-dir web/pkg
 
-      - name: Start dev server
-        working-directory: web
-        run: npm run dev &
-        shell: bash
-
-      - name: Wait for server
-        run: sleep 10
-
       - name: Run E2E tests
         run: npx playwright test --project=chromium
