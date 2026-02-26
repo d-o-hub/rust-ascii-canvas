@@ -56,9 +56,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        working-directory: web
         run: npm ci
 
       - name: Install Playwright browsers
@@ -70,7 +73,8 @@ jobs:
           args: --release --target web --out-dir web/pkg
 
       - name: Start dev server
-        run: cd web && npm run dev &
+        working-directory: web
+        run: npm run dev &
         shell: bash
 
       - name: Wait for server
