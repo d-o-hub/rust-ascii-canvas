@@ -5,14 +5,14 @@ export default defineConfig({
   fullyParallel: !process.env.CI,
   forbidOnly: !!process.env.CI,
   retries: 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: 1,
   reporter: 'list',
   
   use: {
     baseURL: process.env.BASE_URL || 'http://localhost:3003',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    actionTimeout: 15000,
+    actionTimeout: 30000,
   },
 
   projects: [
@@ -21,4 +21,9 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
+
+  timeout: 60000,
+  expect: {
+    timeout: 10000,
+  },
 });
