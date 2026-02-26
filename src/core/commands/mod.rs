@@ -1,13 +1,13 @@
 //! Commands module - Command pattern for undo/redo operations.
 
-mod draw;
 mod composite;
+mod draw;
 
-pub use draw::DrawCommand;
 pub use composite::CompositeCommand;
+pub use draw::DrawCommand;
 
-use crate::core::grid::Grid;
 use crate::core::cell::Cell;
+use crate::core::grid::Grid;
 
 /// Trait for undoable commands.
 pub trait Command {

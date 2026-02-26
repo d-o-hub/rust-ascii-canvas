@@ -8,22 +8,22 @@
 //! - History management
 //! - ASCII export
 
+pub mod ascii_export;
 pub mod cell;
-pub mod grid;
-pub mod tools;
 pub mod commands;
+pub mod grid;
 pub mod history;
 pub mod selection;
-pub mod ascii_export;
+pub mod tools;
 
 // Re-exports
+pub use ascii_export::{export_grid, ExportOptions};
 pub use cell::{Cell, CellStyle};
-pub use grid::Grid;
-pub use tools::{Tool, ToolId, ToolResult, BorderStyle, DrawOp};
 pub use commands::Command;
+pub use grid::Grid;
 pub use history::History;
 pub use selection::Selection;
-pub use ascii_export::{export_grid, ExportOptions};
+pub use tools::{BorderStyle, DrawOp, Tool, ToolId, ToolResult};
 
 use serde::{Deserialize, Serialize};
 

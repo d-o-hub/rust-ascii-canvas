@@ -159,16 +159,14 @@ impl Theme {
 
     /// Get all available themes.
     pub fn all() -> Vec<Self> {
-        vec![
-            Self::figma_dark(),
-            Self::light(),
-            Self::high_contrast(),
-        ]
+        vec![Self::figma_dark(), Self::light(), Self::high_contrast()]
     }
 
     /// Find a theme by name.
     pub fn find(name: &str) -> Option<Self> {
-        Self::all().into_iter().find(|t| t.name.eq_ignore_ascii_case(name))
+        Self::all()
+            .into_iter()
+            .find(|t| t.name.eq_ignore_ascii_case(name))
     }
 }
 

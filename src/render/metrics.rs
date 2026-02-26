@@ -37,7 +37,7 @@ impl Default for FontMetrics {
         Self {
             family: "JetBrains Mono, Fira Code, Consolas, monospace".to_string(),
             size: 14.0,
-            char_width: 8.4,  // Approximate for 14px JetBrains Mono
+            char_width: 8.4, // Approximate for 14px JetBrains Mono
             line_height: 20.0,
             baseline: 12.0,
             measured_width: None,

@@ -40,19 +40,18 @@
 
 pub mod core;
 pub mod render;
-pub mod wasm;
 pub mod ui;
 pub mod utils;
+pub mod wasm;
 
 // Re-exports for convenience
 pub use core::{
-    Cell, CellStyle, Grid, EditorState, Tool, ToolId, ToolResult,
-    BorderStyle, DrawOp, Command, History, Selection,
-    export_grid, ExportOptions,
+    export_grid, BorderStyle, Cell, CellStyle, Command, DrawOp, EditorState, ExportOptions, Grid,
+    History, Selection, Tool, ToolId, ToolResult,
 };
-pub use render::{CanvasRenderer, FontMetrics, DirtyRect};
+pub use render::{CanvasRenderer, DirtyRect, FontMetrics};
+pub use ui::{ShortcutManager, Theme, ToolbarConfig};
 pub use wasm::AsciiEditor;
-pub use ui::{Theme, ToolbarConfig, ShortcutManager};
 
 /// Current version of the library.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -98,22 +97,30 @@ mod console {
 }
 
 #[cfg(target_arch = "wasm32")]
-pub use console::{debug, info, warn, error};
+pub use console::{debug, error, info, warn};
 
 #[cfg(not(target_arch = "wasm32"))]
 mod console {
     /// Log a debug message.
-    pub fn debug(s: &str) { println!("[DEBUG] {}", s); }
+    pub fn debug(s: &str) {
+        println!("[DEBUG] {}", s);
+    }
     /// Log an info message.
-    pub fn info(s: &str) { println!("[INFO] {}", s); }
+    pub fn info(s: &str) {
+        println!("[INFO] {}", s);
+    }
     /// Log a warning message.
-    pub fn warn(s: &str) { println!("[WARN] {}", s); }
+    pub fn warn(s: &str) {
+        println!("[WARN] {}", s);
+    }
     /// Log an error message.
-    pub fn error(s: &str) { eprintln!("[ERROR] {}", s); }
+    pub fn error(s: &str) {
+        eprintln!("[ERROR] {}", s);
+    }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-pub use console::{debug, info, warn, error};
+pub use console::{debug, error, info, warn};
 
 #[cfg(test)]
 mod tests {

@@ -4,8 +4,8 @@ use crate::core::ascii_export::{export_grid, ExportOptions};
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
 use crate::core::tools::{
-    ArrowTool, BorderStyle, DiamondTool, DrawOp, EraserTool, FreehandTool, LineTool,
-    RectangleTool, SelectTool, TextTool, Tool, ToolContext, ToolId,
+    ArrowTool, BorderStyle, DiamondTool, DrawOp, EraserTool, FreehandTool, LineTool, RectangleTool,
+    SelectTool, TextTool, Tool, ToolContext, ToolId,
 };
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
@@ -215,7 +215,8 @@ impl AsciiEditor {
                 self.dirty_tracker.request_full_redraw();
             }
             self.last_pan_pos = Some((screen_x, screen_y));
-            return serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL);
+            return serde_wasm_bindgen::to_value(&self.create_event_result())
+                .unwrap_or(JsValue::NULL);
         }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
@@ -234,7 +235,8 @@ impl AsciiEditor {
         if self.is_panning {
             self.is_panning = false;
             self.last_pan_pos = None;
-            return serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL);
+            return serde_wasm_bindgen::to_value(&self.create_event_result())
+                .unwrap_or(JsValue::NULL);
         }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
@@ -259,18 +261,21 @@ impl AsciiEditor {
         // Handle space for panning
         if key_char == ' ' && !ctrl && !shift {
             self.space_held = true;
-            return serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL);
+            return serde_wasm_bindgen::to_value(&self.create_event_result())
+                .unwrap_or(JsValue::NULL);
         }
 
         // Handle undo/redo
         if ctrl && !shift && key.to_lowercase() == "z" {
             self.undo();
-            return serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL);
+            return serde_wasm_bindgen::to_value(&self.create_event_result())
+                .unwrap_or(JsValue::NULL);
         }
 
         if ctrl && shift && key.to_lowercase() == "z" {
             self.redo();
-            return serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL);
+            return serde_wasm_bindgen::to_value(&self.create_event_result())
+                .unwrap_or(JsValue::NULL);
         }
 
         // Handle copy
@@ -283,7 +288,8 @@ impl AsciiEditor {
         if !ctrl && !shift {
             if let Some(tool_id) = ToolId::from_shortcut(key_char) {
                 self.set_tool_by_id(tool_id);
-                return serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL);
+                return serde_wasm_bindgen::to_value(&self.create_event_result())
+                    .unwrap_or(JsValue::NULL);
             }
         }
 
@@ -391,10 +397,12 @@ impl AsciiEditor {
             return self.get_render_commands();
         }
 
-        let dirty = self.dirty_tracker.dirty_rect().clone();
+        let dirty = *self.dirty_tracker.dirty_rect();
         self.dirty_tracker.clear();
 
-        let commands = self.renderer.build_render_commands(&self.state.grid, &dirty);
+        let commands = self
+            .renderer
+            .build_render_commands(&self.state.grid, &dirty);
         serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
     }
 

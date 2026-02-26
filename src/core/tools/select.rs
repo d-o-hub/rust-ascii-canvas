@@ -81,13 +81,8 @@ impl Tool for SelectTool {
 
     fn on_pointer_down(&mut self, x: i32, y: i32, _ctx: &ToolContext) -> ToolResult {
         if self.should_start_move(x, y) {
-            // Start moving the selection
             self.moving = true;
-            self.move_offset = if let Some(ref sel) = self.selection {
-                Some((x - sel.x1, y - sel.y1))
-            } else {
-                None
-            };
+            self.move_offset = self.selection.as_ref().map(|sel| (x - sel.x1, y - sel.y1));
         } else {
             // Start new selection
             self.selecting = true;

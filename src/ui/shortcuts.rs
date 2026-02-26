@@ -23,7 +23,11 @@ pub struct Shortcut {
 
 impl Shortcut {
     /// Create a simple key shortcut.
-    pub fn key(key: impl Into<String>, action: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn key(
+        key: impl Into<String>,
+        action: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             key: key.into().to_uppercase(),
             ctrl: false,
@@ -35,7 +39,11 @@ impl Shortcut {
     }
 
     /// Create a Ctrl+key shortcut.
-    pub fn ctrl(key: impl Into<String>, action: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn ctrl(
+        key: impl Into<String>,
+        action: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             key: key.into().to_uppercase(),
             ctrl: true,
@@ -47,7 +55,11 @@ impl Shortcut {
     }
 
     /// Create a Ctrl+Shift+key shortcut.
-    pub fn ctrl_shift(key: impl Into<String>, action: impl Into<String>, description: impl Into<String>) -> Self {
+    pub fn ctrl_shift(
+        key: impl Into<String>,
+        action: impl Into<String>,
+        description: impl Into<String>,
+    ) -> Self {
         Self {
             key: key.into().to_uppercase(),
             ctrl: true,
@@ -134,9 +146,7 @@ impl ShortcutManager {
 
     /// Get shortcut by action name.
     pub fn get_by_action(&self, action: &str) -> Option<&Shortcut> {
-        self.by_action
-            .get(action)
-            .map(|&idx| &self.shortcuts[idx])
+        self.by_action.get(action).map(|&idx| &self.shortcuts[idx])
     }
 
     /// Get all shortcuts.

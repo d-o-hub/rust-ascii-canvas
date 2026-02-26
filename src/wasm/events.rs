@@ -64,7 +64,12 @@ pub struct KeyModifiers {
 
 impl KeyModifiers {
     pub fn new(ctrl: bool, shift: bool, alt: bool, meta: bool) -> Self {
-        Self { ctrl, shift, alt, meta }
+        Self {
+            ctrl,
+            shift,
+            alt,
+            meta,
+        }
     }
 }
 

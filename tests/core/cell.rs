@@ -29,7 +29,7 @@ fn test_cell_clear() {
 #[test]
 fn test_cell_style_flags() {
     let style = CellStyle::BOLD | CellStyle::UNDERLINE;
-    
+
     assert!(style.contains(CellStyle::BOLD));
     assert!(style.contains(CellStyle::UNDERLINE));
     assert!(!style.contains(CellStyle::ITALIC));
@@ -39,7 +39,7 @@ fn test_cell_style_flags() {
 fn test_cell_with_style() {
     let style = CellStyle::BOLD;
     let cell = Cell::with_style('A', style);
-    
+
     assert_eq!(cell.ch, 'A');
     assert!(cell.style.contains(CellStyle::BOLD));
 }

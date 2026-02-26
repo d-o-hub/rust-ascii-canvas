@@ -153,9 +153,9 @@ impl CanvasRenderer {
 
     /// Build full render commands (for initial render).
     pub fn build_full_render(&self, grid: &Grid) -> Vec<RenderCommand> {
-        let mut commands = vec![
-            RenderCommand::Clear { color: self.bg_color.clone() },
-        ];
+        let mut commands = vec![RenderCommand::Clear {
+            color: self.bg_color.clone(),
+        }];
 
         // Draw grid lines if enabled
         if self.show_grid {
@@ -193,13 +193,7 @@ impl CanvasRenderer {
     }
 
     /// Build selection highlight render commands.
-    pub fn build_selection_render(
-        &self,
-        x1: i32,
-        y1: i32,
-        x2: i32,
-        y2: i32,
-    ) -> Vec<RenderCommand> {
+    pub fn build_selection_render(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> Vec<RenderCommand> {
         let min_x = x1.min(x2);
         let min_y = y1.min(y2);
         let max_x = x1.max(x2);
@@ -227,9 +221,20 @@ pub enum RenderCommand {
     /// Set the current font
     SetFont { font: String, scale: f64 },
     /// Draw a character at position
-    DrawChar { x: f64, y: f64, char: char, scale: f64 },
+    DrawChar {
+        x: f64,
+        y: f64,
+        char: char,
+        scale: f64,
+    },
     /// Draw a rectangle (for selection)
-    DrawRect { x: f64, y: f64, width: f64, height: f64, color: String },
+    DrawRect {
+        x: f64,
+        y: f64,
+        width: f64,
+        height: f64,
+        color: String,
+    },
     /// Draw grid lines
     DrawGrid {
         width: f64,

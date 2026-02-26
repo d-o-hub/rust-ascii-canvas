@@ -37,7 +37,12 @@ impl ToolbarItem {
     }
 
     /// Create an action item (non-tool).
-    pub fn action(id: impl Into<String>, label: impl Into<String>, icon: impl Into<String>, shortcut: impl Into<String>) -> Self {
+    pub fn action(
+        id: impl Into<String>,
+        label: impl Into<String>,
+        icon: impl Into<String>,
+        shortcut: impl Into<String>,
+    ) -> Self {
         Self {
             id: id.into(),
             label: label.into(),

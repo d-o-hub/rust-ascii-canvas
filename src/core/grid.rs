@@ -203,8 +203,14 @@ impl Grid {
 
     /// Get a copy of a rectangular region.
     pub fn get_region(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> SmallVec<[Cell; 256]> {
-        let (min_x, max_x) = (x1.min(x2).max(0) as usize, x1.max(x2).min(self.width as i32 - 1) as usize);
-        let (min_y, max_y) = (y1.min(y2).max(0) as usize, y1.max(y2).min(self.height as i32 - 1) as usize);
+        let (min_x, max_x) = (
+            x1.min(x2).max(0) as usize,
+            x1.max(x2).min(self.width as i32 - 1) as usize,
+        );
+        let (min_y, max_y) = (
+            y1.min(y2).max(0) as usize,
+            y1.max(y2).min(self.height as i32 - 1) as usize,
+        );
 
         let mut region = SmallVec::with_capacity((max_x - min_x + 1) * (max_y - min_y + 1));
 
