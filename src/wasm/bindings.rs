@@ -258,6 +258,14 @@ impl AsciiEditor {
     pub fn on_key_down(&mut self, key: String, ctrl: bool, shift: bool) -> JsValue {
         let key_char = key.chars().next().unwrap_or('\0');
 
+        // Handle escape to cancel active operations
+        if key == "Escape" {
+            self.active_tool.reset();
+            self.preview_ops.clear();
+            return serde_wasm_bindgen::to_value(&self.create_event_result())
+                .unwrap_or(JsValue::NULL);
+        }
+
         // Handle space for panning
         if key_char == ' ' && !ctrl && !shift {
             self.space_held = true;
@@ -284,8 +292,9 @@ impl AsciiEditor {
                 .unwrap_or(JsValue::NULL);
         }
 
-        // Handle tool shortcuts
-        if !ctrl && !shift {
+        // Handle tool shortcuts only when tool is not active
+        // This prevents shortcuts from interrupting text input, selection, etc.
+        if !ctrl && !shift && !self.active_tool.is_active() {
             if let Some(tool_id) = ToolId::from_shortcut(key_char) {
                 self.set_tool_by_id(tool_id);
                 return serde_wasm_bindgen::to_value(&self.create_event_result())

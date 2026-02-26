@@ -290,7 +290,7 @@ function handleKeyDown(e: KeyboardEvent) {
     const shift = e.shiftKey;
 
     // Prevent default for our shortcuts
-    if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', ' '].includes(key.toLowerCase()) && !ctrl) {
+    if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', ' ', 'escape'].includes(key.toLowerCase()) && !ctrl) {
         e.preventDefault();
     }
     if (ctrl && ['z', 'y', 'c'].includes(key.toLowerCase())) {
