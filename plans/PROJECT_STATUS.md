@@ -161,6 +161,16 @@ npx playwright test --project=chromium
 | Rendering | 60 FPS | 60 FPS ✅ |
 | Tool Switch | < 16ms | < 5ms ✅ |
 
+## Recent Fixes
+
+### Text Tool Shortcut Fix (2026-02-26)
+- Fixed issue where tool shortcuts (R, T, V, etc.) would interrupt text input
+- Added `!self.active_tool.is_active()` check before processing tool shortcuts
+- Added Escape key handling to cancel active operations (text input, selection, drawing)
+- All 124 tests pass (79 unit + 44 integration + 12 E2E)
+
+See `plans/ADRs/001-disable-shortcuts-when-tools-active.md` for details.
+
 ## Next Steps
 
 ### Potential Improvements
