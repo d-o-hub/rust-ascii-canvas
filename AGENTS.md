@@ -2,28 +2,13 @@
 
 ## Agent System Overview
 
-This project uses specialized agents for different tasks. All agents should document their work in the plans/ folder.
-
-## Available Agents
-
-### goap-adr-analyzer
-- **Purpose**: Analyze GOAP implementations and manage ADRs
-- **Location**: `.opencode/agent/goap-adr-analyzer.md`
-- **Trigger**: Multi-step tasks requiring architectural decisions
-
-### Skill-Based Agents
-Located in `.agents/skills/`:
-- `rust-engineer`: Rust/WASM development
-- `rust-best-practices`: Code quality and idiomatic patterns
-- `agent-browser`: Browser automation and testing
-- `dogfood`: Exploratory QA testing
-- `skill-creator`: Creating new agent skills
+This project uses specialized agents with skills for different tasks. All agents should document their work in the plans/ folder.
 
 ## Best Practices
 
 ### Task Execution
 1. **Analyze** - Understand requirements before acting
-2. **Plan** - Create steps in plans/ before execution
+2. **Plan** - Create steps in plans/ with goap with adr before execution
 3. **Execute** - Run commands and tests
 4. **Document** - Update plans/ with results
 
@@ -48,11 +33,7 @@ plans/
     └── *.md
 
 .agents/skills/
-├── rust-engineer/
-├── rust-best-practices/
-├── agent-browser/
-├── dogfood/
-└── skill-creator/
+
 ```
 
 ### Code Quality

@@ -183,3 +183,57 @@ The ASCII Canvas Editor is production-ready with:
 - No critical issues identified
 
 The only improvement needed is adding documentation comments to eliminate the 52 doc warnings.
+
+## Recent Changes (2026-02-26)
+
+### Focus Management Fix
+
+**Problem**: Text input and keyboard shortcuts stopped working after clicking any toolbar button.
+
+**Root Cause**: Canvas lost keyboard focus when toolbar buttons were clicked (browser default behavior). Canvas had `tabindex="0"` making it focusable, but button clicks shifted focus away.
+
+**Research**: 2026 UI/UX best practices from Yale, BBC, and WCAG guidelines recommend:
+1. Prevent focus stealing via `mousedown` + `preventDefault()`
+2. Restore focus on pointer events for canvas elements
+
+**Solution Implemented**:
+1. Added `mousedown` event handler with `e.preventDefault()` to all toolbar buttons (tool buttons, undo, redo, copy, clear, border style select)
+2. Added `canvas.focus()` call in `handlePointerDown()` to restore focus when user interacts with canvas
+
+**Files Modified**:
+- `web/main.ts`: Added focus management handlers
+
+**Test Results**: All 12 E2E tests pass, all 79 Rust unit tests pass
+
+### Border Style Cycling (B Key)
+
+**Feature**: Cycle through 6 border styles with B key
+
+**Implementation**:
+- `BORDER_STYLES` array: `['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted']`
+- `cycleBorderStyle()` function cycles through array
+- Syncs with border style dropdown
+
+### Keyboard Shortcuts Modal (? Key)
+
+**Feature**: Modal dialog showing all keyboard shortcuts
+
+**Implementation**:
+- Press `?` or `Shift+/` to show modal
+- Press `Escape` or click outside to close
+- Modal HTML/CSS added to index.html and style.css
+
+### Zoom Control Buttons
+
+**Feature**: Mouse-based zoom controls in side panel
+
+**Implementation**:
+- Fit, Reset (1:1), Zoom Out (-), Zoom In (+) buttons
+- Zoom range: 0.3x to 4x
+- `setZoom()` and `fitZoom()` functions
+
+### Blue-Tinted Preview (Deferred)
+
+**Status**: Not implemented - requires renderer changes
+
+**Current State**: `preview_ops` are stored during drag but not rendered with blue tint. The selection color (`#264f78`) exists in renderer but is only used for selection rectangles.

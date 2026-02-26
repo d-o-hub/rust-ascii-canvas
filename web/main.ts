@@ -28,6 +28,14 @@ let ctx: CanvasRenderingContext2D;
 let animationFrameId: number | null = null;
 let isInitialized = false;
 
+// Expose editor for testing
+declare global {
+    interface Window {
+        editor: AsciiEditor | null;
+    }
+}
+window.editor = null;
+
 // Font metrics
 const FONT_SIZE = 14;
 let charWidth = 8.4;
@@ -49,10 +57,18 @@ const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
 const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
 const borderStyleSelect = document.getElementById('border-style') as HTMLSelectElement;
 const toolButtons = document.querySelectorAll('.tool-btn');
+const zoomFitBtn = document.getElementById('zoom-fit') as HTMLButtonElement;
+const zoomResetBtn = document.getElementById('zoom-reset') as HTMLButtonElement;
+const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement;
+const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement;
 
 // Grid dimensions
 const GRID_WIDTH = 80;
 const GRID_HEIGHT = 40;
+
+// Border styles for cycling
+const BORDER_STYLES = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
+let currentBorderStyleIndex = 0;
 
 /**
  * Initialize the editor
@@ -71,6 +87,7 @@ async function initialize() {
 
         // Create editor
         editor = new AsciiEditor(GRID_WIDTH, GRID_HEIGHT);
+        window.editor = editor;
 
         // Measure font metrics
         measureFont();
@@ -160,8 +177,23 @@ function setupEventListeners() {
     canvas.addEventListener('keydown', handleKeyDown);
     canvas.addEventListener('keyup', handleKeyUp);
 
+    // Keyboard shortcuts modal
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    if (shortcutsModal) {
+        const closeBtn = shortcutsModal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', hideShortcutsModal);
+        }
+        shortcutsModal.addEventListener('click', (e) => {
+            if (e.target === shortcutsModal) {
+                hideShortcutsModal();
+            }
+        });
+    }
+
     // Tool buttons
     toolButtons.forEach(btn => {
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
         btn.addEventListener('click', () => {
             const tool = btn.getAttribute('data-tool');
             if (tool) {
@@ -171,13 +203,16 @@ function setupEventListeners() {
     });
 
     // Border style
+    borderStyleSelect.addEventListener('mousedown', (e) => e.preventDefault());
     borderStyleSelect.addEventListener('change', () => {
         if (editor) {
             editor.setBorderStyle(borderStyleSelect.value);
+            currentBorderStyleIndex = BORDER_STYLES.indexOf(borderStyleSelect.value);
         }
     });
 
     // Action buttons
+    undoBtn.addEventListener('mousedown', (e) => e.preventDefault());
     undoBtn.addEventListener('click', () => {
         if (!editor) return;
         editor.undo();
@@ -185,6 +220,7 @@ function setupEventListeners() {
         updateUI();
     });
 
+    redoBtn.addEventListener('mousedown', (e) => e.preventDefault());
     redoBtn.addEventListener('click', () => {
         if (!editor) return;
         editor.redo();
@@ -192,8 +228,10 @@ function setupEventListeners() {
         updateUI();
     });
 
+    copyBtn.addEventListener('mousedown', (e) => e.preventDefault());
     copyBtn.addEventListener('click', copyToClipboard);
 
+    clearBtn.addEventListener('mousedown', (e) => e.preventDefault());
     clearBtn.addEventListener('click', () => {
         if (!editor) return;
         if (confirm('Clear the canvas? This cannot be undone.')) {
@@ -203,6 +241,27 @@ function setupEventListeners() {
             showToast('Canvas cleared');
         }
     });
+
+    // Zoom buttons
+    zoomFitBtn.addEventListener('click', () => {
+        if (!editor) return;
+        fitZoom();
+    });
+
+    zoomResetBtn.addEventListener('click', () => {
+        if (!editor) return;
+        setZoom(1.0);
+    });
+
+    zoomOutBtn.addEventListener('click', () => {
+        if (!editor) return;
+        setZoom(editor.zoom * 0.8);
+    });
+
+    zoomInBtn.addEventListener('click', () => {
+        if (!editor) return;
+        setZoom(editor.zoom * 1.25);
+    });
 }
 
 /**
@@ -211,6 +270,7 @@ function setupEventListeners() {
 function handlePointerDown(e: PointerEvent) {
     if (!editor) return;
     e.preventDefault();
+    canvas.focus();
     canvas.setPointerCapture(e.pointerId);
 
     const rect = canvas.getBoundingClientRect();
@@ -290,7 +350,7 @@ function handleKeyDown(e: KeyboardEvent) {
     const shift = e.shiftKey;
 
     // Prevent default for our shortcuts
-    if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', ' ', 'escape'].includes(key.toLowerCase()) && !ctrl) {
+    if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', 'b', ' ', 'escape', '?'].includes(key.toLowerCase()) && !ctrl) {
         e.preventDefault();
     }
     if (ctrl && ['z', 'y', 'c'].includes(key.toLowerCase())) {
@@ -299,6 +359,16 @@ function handleKeyDown(e: KeyboardEvent) {
 
     const result = editor.onKeyDown(key, ctrl, shift);
     handleEventResult(result);
+
+    // Handle B key - cycle border styles
+    if (key.toLowerCase() === 'b' && !ctrl && !shift) {
+        cycleBorderStyle();
+    }
+
+    // Handle ? key - show keyboard shortcuts modal
+    if (key === '?' || (key === '/' && shift)) {
+        showShortcutsModal();
+    }
 
     // Update active tool button
     if (result && result.tool) {
@@ -502,6 +572,72 @@ function showToast(message: string, isError = false) {
     setTimeout(() => {
         statusToast.classList.add('hidden');
     }, 2000);
+}
+
+/**
+ * Set zoom level with bounds (0.3x - 4x)
+ */
+function setZoom(zoom: number) {
+    if (!editor) return;
+    const clampedZoom = Math.max(0.3, Math.min(4.0, zoom));
+    editor.setZoom(clampedZoom);
+    editor.requestRedraw();
+    requestRender();
+    zoomLevelEl.textContent = `${Math.round(clampedZoom * 100)}%`;
+}
+
+/**
+ * Fit zoom to show entire canvas
+ */
+function fitZoom() {
+    if (!editor) return;
+    const canvasContainer = document.getElementById('canvas-container');
+    if (!canvasContainer) return;
+    
+    const containerRect = canvasContainer.getBoundingClientRect();
+    const gridWidth = editor.width * charWidth;
+    const gridHeight = editor.height * lineHeight;
+    
+    const zoomX = containerRect.width / (gridWidth + 40);
+    const zoomY = containerRect.height / (gridHeight + 40);
+    const fitZoom = Math.min(zoomX, zoomY, 1.0);
+    
+    setZoom(fitZoom);
+    editor.setPan(0, 0);
+    editor.requestRedraw();
+    requestRender();
+}
+
+/**
+ * Cycle to the next border style
+ */
+function cycleBorderStyle() {
+    if (!editor) return;
+    currentBorderStyleIndex = (currentBorderStyleIndex + 1) % BORDER_STYLES.length;
+    const style = BORDER_STYLES[currentBorderStyleIndex];
+    editor.setBorderStyle(style);
+    borderStyleSelect.value = style;
+    showToast(`Border: ${style}`);
+}
+
+/**
+ * Show keyboard shortcuts modal
+ */
+function showShortcutsModal() {
+    const modal = document.getElementById('shortcuts-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
+}
+
+/**
+ * Hide keyboard shortcuts modal
+ */
+function hideShortcutsModal() {
+    const modal = document.getElementById('shortcuts-modal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 /**

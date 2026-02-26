@@ -29,6 +29,11 @@ This folder contains reference documentation for all agent skills available in t
 - **Purpose**: Guide for creating effective skills that extend agent capabilities
 - **Use when**: Creating new skills or updating existing ones
 
+### goap-adr-planner
+- **Location**: `.agents/skills/goap-adr-planner/SKILL.md`
+- **Purpose**: Goal-Oriented Action Planning with Architectural Decision Records
+- **Use when**: Planning multi-step tasks, creating plans in plans/ folder, documenting decisions with ADRs
+
 ## Agent Configuration
 
 ### goap-adr-analyzer

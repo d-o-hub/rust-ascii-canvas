@@ -341,6 +341,35 @@ body {
     font-weight: 500;
 }
 
+/* Zoom Controls */
+.zoom-controls {
+    display: flex;
+    gap: var(--spacing-xs);
+    margin-top: var(--spacing-sm);
+}
+
+.zoom-btn {
+    flex: 1;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font-size: 11px;
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.zoom-btn:hover {
+    background-color: var(--hover);
+    border-color: var(--muted);
+}
+
+.zoom-btn:active {
+    background-color: var(--active);
+}
+
 /* Shortcuts List */
 .shortcuts-list {
     display: grid;
@@ -453,6 +482,111 @@ body {
 .loading-text {
     margin-top: var(--spacing-md);
     color: var(--muted);
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 90%;
+    max-width: 480px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--border);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: var(--fg);
+}
+
+.modal-body {
+    padding: var(--spacing-lg);
+}
+
+.shortcuts-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.shortcuts-section:last-child {
+    margin-bottom: 0;
+}
+
+.shortcuts-section h3 {
+    font-size: 12px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 var(--spacing-sm) 0;
+    letter-spacing: 0.5px;
+}
+
+.shortcut-grid {
+    display: grid;
+    gap: var(--spacing-xs);
+}
+
+.shortcut-row {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-xs) 0;
+}
+
+.shortcut-row kbd {
+    background-color: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 2px 8px;
+    font-family: var(--font-family);
+    font-size: 12px;
+    min-width: 80px;
+    text-align: center;
+}
+
+.shortcut-row span {
+    color: var(--fg);
+    font-size: 13px;
 }
 
 /* Scrollbar Styling */
