@@ -2,8 +2,6 @@
 
 A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Features a polished dark UI inspired by Figma, running at 60 FPS with zero browser text-selection artifacts.
 
-![ASCII Canvas Editor](https://via.placeholder.com/800x400/1e1e1e/d4d4d4?text=ASCII+Canvas+Editor)
-
 ## Features
 
 - 🎨 **8 Drawing Tools**: Rectangle, Line, Arrow, Diamond, Text, Freehand, Select, Eraser

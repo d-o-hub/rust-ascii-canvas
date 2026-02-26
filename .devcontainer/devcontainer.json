@@ -1,0 +1,30 @@
+{
+  "name": "Rust WASM Project",
+  // Use a standard Ubuntu base image
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  // Install Rust, Node.js, and common tools
+  "features": {
+    "ghcr.io/devcontainers/features/rust:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts"
+    }
+  },
+
+  // Configure tool-specific settings (optional but recommended)
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "rust-lang.rust-analyzer"
+      ]
+    }
+  },
+
+  // Commands to run after the container is created
+  "postCreateCommand": "cargo install wasm-pack && rustup target add wasm32-unknown-unknown",
+
+  // Ports to forward (optional, useful for web targets)
+  "forwardPorts": [8080]
+}
