@@ -74,6 +74,6 @@ jobs:
         run: |
           cd web && npm run dev &
           sleep 20
-          cd .. && npx playwright test --project=chromium --timeout=60000
+          npx playwright test --project=chromium --timeout=60000
         env:
           CI: true
