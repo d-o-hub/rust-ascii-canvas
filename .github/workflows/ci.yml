@@ -14,6 +14,7 @@ jobs:
   rust:
     name: Rust (wasm-pack + Tests)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -47,6 +48,7 @@ jobs:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
     needs: rust
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
@@ -57,15 +59,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install root dependencies
-        run: npm ci
+      - name: Install dependencies
+        run: npm ci && cd web && npm ci
 
-      - name: Install web dependencies
-        working-directory: web
-        run: npm ci
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright
+        run: npx playwright install chromium
 
       - name: Build WASM
         uses: jetli/wasm-pack-action@v0.4.0
@@ -73,13 +71,9 @@ jobs:
           version: latest
 
       - name: Run E2E tests
-        working-directory: web
         run: |
-          npm run dev &
-          sleep 15
-          cd ..
-          npx playwright test --project=chromium
-        shell: bash
+          cd web && npm run dev &
+          sleep 20
+          cd .. && npx playwright test --project=chromium --timeout=60000
         env:
           CI: true
-          BASE_URL: http://localhost:3003
