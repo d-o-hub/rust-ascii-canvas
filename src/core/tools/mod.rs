@@ -3,31 +3,32 @@
 //! Each tool implements the Tool trait for handling input events
 //! and generating draw operations.
 
-mod rectangle;
-mod line;
 mod arrow;
 mod diamond;
-mod text;
-mod freehand;
-mod select;
 mod eraser;
+mod freehand;
+mod line;
+mod rectangle;
+mod select;
+mod text;
 
-pub use rectangle::RectangleTool;
-pub use line::LineTool;
 pub use arrow::ArrowTool;
 pub use diamond::DiamondTool;
-pub use text::TextTool;
-pub use freehand::FreehandTool;
-pub use select::SelectTool;
 pub use eraser::EraserTool;
+pub use freehand::FreehandTool;
+pub use line::LineTool;
+pub use rectangle::RectangleTool;
+pub use select::SelectTool;
+pub use text::TextTool;
 
 use crate::core::cell::Cell;
 use serde::{Deserialize, Serialize};
 
 /// Unique identifier for a tool.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ToolId {
     /// Rectangle tool for drawing boxes (shortcut: R).
+    #[default]
     Rectangle,
     /// Line tool for drawing straight lines (shortcut: L).
     Line,
@@ -43,12 +44,6 @@ pub enum ToolId {
     Select,
     /// Eraser tool for clearing cells (shortcut: E).
     Eraser,
-}
-
-impl Default for ToolId {
-    fn default() -> Self {
-        Self::Rectangle
-    }
 }
 
 impl ToolId {

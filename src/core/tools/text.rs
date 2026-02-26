@@ -1,6 +1,6 @@
 //! Text tool - places and edits text on the canvas.
 
-use super::{DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
 
 /// Text tool for typing characters on the canvas.

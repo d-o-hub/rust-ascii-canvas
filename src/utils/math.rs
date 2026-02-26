@@ -68,9 +68,9 @@ pub fn floor_to_multiple(value: f64, multiple: f64) -> f64 {
 
 /// Sign of a number (-1, 0, or 1).
 #[inline]
-pub fn signum<T: PartialOrd + Default>(value: T) -> i32
+pub fn signum<T>(value: T) -> i32
 where
-    T: std::ops::Neg<Output = T>,
+    T: PartialOrd + Default + std::ops::Neg<Output = T>,
 {
     if value > T::default() {
         1
@@ -123,7 +123,12 @@ pub struct Rect {
 impl Rect {
     /// Create a new rectangle with the given position and dimensions.
     pub fn new(x: i32, y: i32, width: i32, height: i32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     /// Create a rectangle from two corner points.

@@ -1,8 +1,9 @@
 //! Rectangle tool - draws rectangular ASCII boxes with various border styles.
 
-use super::{BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 
 /// Rectangle drawing tool.
+#[derive(Default)]
 pub struct RectangleTool {
     /// Start point of drag
     start: Option<(i32, i32)>,
@@ -10,16 +11,6 @@ pub struct RectangleTool {
     end: Option<(i32, i32)>,
     /// Border style for the rectangle
     border_style: BorderStyle,
-}
-
-impl Default for RectangleTool {
-    fn default() -> Self {
-        Self {
-            start: None,
-            end: None,
-            border_style: BorderStyle::default(),
-        }
-    }
 }
 
 impl RectangleTool {
@@ -157,10 +148,22 @@ mod tests {
         let ops = tool.draw_rectangle(0, 0, 4, 2);
 
         // Check corners
-        assert_eq!(ops.iter().find(|o| o.x == 0 && o.y == 0).unwrap().cell.ch, '┌');
-        assert_eq!(ops.iter().find(|o| o.x == 4 && o.y == 0).unwrap().cell.ch, '┐');
-        assert_eq!(ops.iter().find(|o| o.x == 0 && o.y == 2).unwrap().cell.ch, '└');
-        assert_eq!(ops.iter().find(|o| o.x == 4 && o.y == 2).unwrap().cell.ch, '┘');
+        assert_eq!(
+            ops.iter().find(|o| o.x == 0 && o.y == 0).unwrap().cell.ch,
+            '┌'
+        );
+        assert_eq!(
+            ops.iter().find(|o| o.x == 4 && o.y == 0).unwrap().cell.ch,
+            '┐'
+        );
+        assert_eq!(
+            ops.iter().find(|o| o.x == 0 && o.y == 2).unwrap().cell.ch,
+            '└'
+        );
+        assert_eq!(
+            ops.iter().find(|o| o.x == 4 && o.y == 2).unwrap().cell.ch,
+            '┘'
+        );
     }
 
     #[test]

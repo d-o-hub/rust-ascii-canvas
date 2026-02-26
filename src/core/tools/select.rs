@@ -1,6 +1,6 @@
 //! Select tool - selects and moves regions of the canvas.
 
-use super::{Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, Tool, ToolContext, ToolId, ToolResult};
 use crate::core::cell::Cell;
 use crate::core::selection::Selection;
 use smallvec::SmallVec;

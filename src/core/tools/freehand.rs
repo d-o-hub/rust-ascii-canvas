@@ -1,6 +1,6 @@
 //! Freehand tool - draws free-form ASCII characters.
 
-use super::{DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
 
 /// Freehand drawing tool.

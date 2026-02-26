@@ -1,17 +1,12 @@
 //! Arrow tool - draws lines with arrowheads.
 
-use super::{DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 
 /// Arrow drawing tool.
+#[derive(Default)]
 pub struct ArrowTool {
     /// Start point of drag
     start: Option<(i32, i32)>,
-}
-
-impl Default for ArrowTool {
-    fn default() -> Self {
-        Self { start: None }
-    }
 }
 
 impl ArrowTool {
@@ -33,10 +28,18 @@ impl ArrowTool {
         // Determine based on angle
         if abs_dx == 0 {
             // Pure vertical
-            if dy > 0 { '▼' } else { '▲' }
+            if dy > 0 {
+                '▼'
+            } else {
+                '▲'
+            }
         } else if abs_dy == 0 {
             // Pure horizontal
-            if dx > 0 { '►' } else { '◄' }
+            if dx > 0 {
+                '►'
+            } else {
+                '◄'
+            }
         } else {
             // Diagonal - use angle to determine
             let ratio = abs_dx * 10 / abs_dy.max(1);
@@ -44,16 +47,30 @@ impl ArrowTool {
             if ratio < 3 {
                 // More vertical
                 if dx > 0 {
-                    if dy > 0 { '╲' } else { '╱' }
+                    if dy > 0 {
+                        '╲'
+                    } else {
+                        '╱'
+                    }
+                } else if dy > 0 {
+                    '╱'
                 } else {
-                    if dy > 0 { '╱' } else { '╲' }
+                    '╲'
                 }
             } else if ratio > 7 {
                 // More horizontal
-                if dx > 0 { '►' } else { '◄' }
+                if dx > 0 {
+                    '►'
+                } else {
+                    '◄'
+                }
             } else {
                 // True diagonal - use '>' and '<' for compatibility
-                if dx > 0 { '>' } else { '<' }
+                if dx > 0 {
+                    '>'
+                } else {
+                    '<'
+                }
             }
         }
     }
@@ -113,12 +130,10 @@ impl ArrowTool {
                 '│'
             } else if ratio > 7 {
                 '─'
+            } else if (dx > 0 && dy < 0) || (dx < 0 && dy > 0) {
+                '/'
             } else {
-                if (dx > 0 && dy < 0) || (dx < 0 && dy > 0) {
-                    '/'
-                } else {
-                    '\\'
-                }
+                '\\'
             }
         }
     }
@@ -188,9 +203,9 @@ mod tests {
 
     #[test]
     fn test_arrowhead_directions() {
-        assert_eq!(ArrowTool::get_arrowhead(0, -1), '▲');  // up
-        assert_eq!(ArrowTool::get_arrowhead(0, 1), '▼');   // down
-        assert_eq!(ArrowTool::get_arrowhead(1, 0), '►');   // right
-        assert_eq!(ArrowTool::get_arrowhead(-1, 0), '◄');  // left
+        assert_eq!(ArrowTool::get_arrowhead(0, -1), '▲'); // up
+        assert_eq!(ArrowTool::get_arrowhead(0, 1), '▼'); // down
+        assert_eq!(ArrowTool::get_arrowhead(1, 0), '►'); // right
+        assert_eq!(ArrowTool::get_arrowhead(-1, 0), '◄'); // left
     }
 }

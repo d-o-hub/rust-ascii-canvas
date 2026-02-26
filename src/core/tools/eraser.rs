@@ -1,6 +1,6 @@
 //! Eraser tool - clears cells on the canvas.
 
-use super::{DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
 
 /// Eraser tool for clearing cells.

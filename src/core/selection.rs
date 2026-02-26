@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 /// A rectangular selection region.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Selection {
     /// Top-left X coordinate
     pub x1: i32,
@@ -72,17 +72,6 @@ impl Selection {
             y1: self.y1 + dy,
             x2: self.x2 + dx,
             y2: self.y2 + dy,
-        }
-    }
-}
-
-impl Default for Selection {
-    fn default() -> Self {
-        Self {
-            x1: 0,
-            y1: 0,
-            x2: 0,
-            y2: 0,
         }
     }
 }

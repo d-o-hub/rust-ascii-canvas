@@ -1,17 +1,12 @@
 //! Line tool - draws ASCII lines using Bresenham's algorithm.
 
-use super::{DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 
 /// Line drawing tool using Bresenham's algorithm with ASCII characters.
+#[derive(Default)]
 pub struct LineTool {
     /// Start point of drag
     start: Option<(i32, i32)>,
-}
-
-impl Default for LineTool {
-    fn default() -> Self {
-        Self { start: None }
-    }
 }
 
 impl LineTool {
@@ -36,14 +31,12 @@ impl LineTool {
                 if sy > 0 {
                     '\\' // moving down-right
                 } else {
-                    '/'  // moving up-right
+                    '/' // moving up-right
                 }
+            } else if sy > 0 {
+                '/' // moving down-left
             } else {
-                if sy > 0 {
-                    '/'  // moving down-left
-                } else {
-                    '\\' // moving up-left
-                }
+                '\\' // moving up-left
             }
         }
     }

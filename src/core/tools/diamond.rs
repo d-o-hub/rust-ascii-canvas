@@ -1,17 +1,12 @@
 //! Diamond tool - draws diamond/rhombus shapes.
 
-use super::{DrawOp, Tool, ToolContext, ToolId, ToolResult, clamp_to_grid};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 
 /// Diamond drawing tool.
+#[derive(Default)]
 pub struct DiamondTool {
     /// Start point of drag
     start: Option<(i32, i32)>,
-}
-
-impl Default for DiamondTool {
-    fn default() -> Self {
-        Self { start: None }
-    }
 }
 
 impl DiamondTool {
@@ -37,22 +32,42 @@ impl DiamondTool {
         // Draw four diagonal lines from center to corners
         // Top corner
         ops.append(&mut Self::draw_diagonal_line(
-            cx, cy, cx, cy - half_height, '/', '\\',
+            cx,
+            cy,
+            cx,
+            cy - half_height,
+            '/',
+            '\\',
         ));
 
         // Right corner
         ops.append(&mut Self::draw_diagonal_line(
-            cx, cy, cx + half_width, cy, '/', '\\',
+            cx,
+            cy,
+            cx + half_width,
+            cy,
+            '/',
+            '\\',
         ));
 
         // Bottom corner
         ops.append(&mut Self::draw_diagonal_line(
-            cx, cy, cx, cy + half_height, '\\', '/',
+            cx,
+            cy,
+            cx,
+            cy + half_height,
+            '\\',
+            '/',
         ));
 
         // Left corner
         ops.append(&mut Self::draw_diagonal_line(
-            cx, cy, cx - half_width, cy, '\\', '/',
+            cx,
+            cy,
+            cx - half_width,
+            cy,
+            '\\',
+            '/',
         ));
 
         // Remove duplicates and reorganize
@@ -73,7 +88,11 @@ impl DiamondTool {
         let mut y = y1;
 
         // Use the appropriate character based on direction
-        let ch = if (sx > 0 && sy < 0) || (sx < 0 && sy > 0) { ch1 } else { ch2 };
+        let ch = if (sx > 0 && sy < 0) || (sx < 0 && sy > 0) {
+            ch1
+        } else {
+            ch2
+        };
 
         loop {
             ops.push(DrawOp::new(x, y, ch));
