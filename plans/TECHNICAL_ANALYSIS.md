@@ -330,3 +330,49 @@ Also added `focus-visible` styles for select input elements in CSS for accessibi
 2. **Accessibility matters**
    - Add `:focus-visible` styles for keyboard navigation
    - Don't break keyboard operability for mouse users
+
+### Dependabot Best Practices
+
+**Feature**: Automated dependency updates via GitHub Dependabot
+
+**Implementation**:
+- `.github/dependabot.yml` with version: 2 configuration
+- Separate configs for each package ecosystem:
+  - `cargo` (Rust) - Weekly on Monday 6am UTC
+  - `npm` (root) - Weekly on Monday 6am UTC
+  - `npm` (/web) - Weekly on Monday 6am UTC
+
+**Configuration Highlights**:
+```yaml
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 10
+    groups:
+      minor-updates:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+      major-updates:
+        patterns: ["*"]
+        update-types: ["major"]
+    versioning-strategy: "increase"
+```
+
+**Best Practices Applied**:
+1. **Version strategy**: `increase` for Rust (semver-friendly)
+2. **Grouping**: Separate minor/patch from major updates to avoid breaking changes
+3. **PR limits**: 10 open PRs max to avoid flooding
+4. **Labels**: `dependencies`, `rust`, `npm`, `web` for filtering
+5. **Reviewers**: Assign to team for review
+6. **Commit prefixes**: `chore:` convention for conventional commits
+
+**Files Modified**:
+- `.github/dependabot.yml`: New file created
+
+**Test Results**: Configuration validated (YAML syntax correct)

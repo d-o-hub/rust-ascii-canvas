@@ -216,6 +216,7 @@ See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package
 - ✅ clippy.toml - Linter config
 - ✅ Package metadata synced (version 0.1.0, MIT license)
 - ✅ Repository URLs updated
+- ✅ `.github/dependabot.yml` - Automated dependency updates
 
 ## Next Steps
 
