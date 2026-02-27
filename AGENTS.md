@@ -17,6 +17,7 @@ This project uses specialized agents with skills for different tasks. All agents
 - Use ADR format: title, status, date, context, decision, consequences
 - Update PROJECT_STATUS.md with test results
 - Add technical findings to TECHNICAL_ANALYSIS.md
+- **Always document learnings** - Any new tool, workflow, fix, or best practice discovered during development must be added to plans/ (e.g., TECHNICAL_ANALYSIS.md for technical findings, new ADRs for decisions)
 
 ### Testing Workflow
 1. Build dependencies (WASM, npm packages)
