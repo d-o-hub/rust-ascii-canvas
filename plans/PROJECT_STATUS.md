@@ -171,6 +171,17 @@ npx playwright test --project=chromium
 
 See `plans/ADRs/001-disable-shortcuts-when-tools-active.md` for details.
 
+### Canvas Focus Management Fix (2026-02-27)
+- Added mousedown preventDefault to all zoom buttons (fit, reset, in, out)
+- Added focus-visible styles for select-input elements
+- Prevents focus stealing when clicking toolbar buttons
+- All 124 tests pass (79 unit + 44 integration + 40 E2E)
+
+### CI Workflow Fix (2026-02-27)
+- Fixed CI by using direct wasm-pack command instead of action
+- Uses artifact sharing between jobs to avoid rebuilding WASM twice
+- All 124 tests pass in CI
+
 ## Agent Skills Installed
 
 The following skills are available for development:
