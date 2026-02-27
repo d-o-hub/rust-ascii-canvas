@@ -43,9 +43,9 @@ impl SelectTool {
         Self::default()
     }
 
-    /// Get current selection bounds.
-    pub fn get_selection(&self) -> Option<&Selection> {
-        self.selection.as_ref()
+    /// Get current selection bounds ( clones the selection).
+    pub fn get_selection(&self) -> Option<Selection> {
+        self.selection.clone()
     }
 
     /// Clear the current selection.
@@ -77,6 +77,10 @@ impl SelectTool {
 impl Tool for SelectTool {
     fn id(&self) -> ToolId {
         ToolId::Select
+    }
+
+    fn get_selection(&self) -> Option<Selection> {
+        self.selection.clone()
     }
 
     fn on_pointer_down(&mut self, x: i32, y: i32, _ctx: &ToolContext) -> ToolResult {

@@ -43,6 +43,23 @@ impl TextTool {
         None
     }
 
+    /// Handle delete - remove character at cursor position.
+    pub fn delete(&mut self) -> Option<DrawOp> {
+        // Delete removes the character AFTER the cursor (if any)
+        // For simplicity, we'll treat it similar to backspace but at current position
+        if let Some((x, y)) = self.cursor {
+            if x < self.start_pos.unwrap_or((0, 0)).0 + self.buffer.len() as i32 - 1 {
+                // There's a character to delete in the buffer
+                let idx = (x - self.start_pos.unwrap().0) as usize;
+                if idx < self.buffer.len() {
+                    self.buffer.remove(idx);
+                    return Some(DrawOp::new(x, y, ' '));
+                }
+            }
+        }
+        None
+    }
+
     /// Get all operations to render current text buffer.
     fn get_text_ops(&self) -> Vec<DrawOp> {
         let mut ops = Vec::new();
@@ -102,6 +119,14 @@ impl Tool for TextTool {
             if ch == '\x08' {
                 // Backspace
                 if let Some(op) = self.backspace() {
+                    return ToolResult::new().with_op(op);
+                }
+                return ToolResult::new();
+            }
+
+            if ch == '\0' {
+                // Delete key
+                if let Some(op) = self.delete() {
                     return ToolResult::new().with_op(op);
                 }
                 return ToolResult::new();
