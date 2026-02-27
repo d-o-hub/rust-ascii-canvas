@@ -70,6 +70,12 @@ const GRID_HEIGHT = 40;
 const BORDER_STYLES = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
 let currentBorderStyleIndex = 0;
 
+// Line direction options
+const LINE_DIRECTIONS = ['auto', 'horizontal', 'vertical'];
+let currentLineDirection = 'auto';
+const lineDirectionGroup = document.getElementById('line-direction-group') as HTMLDivElement;
+const directionBtns = document.querySelectorAll('.direction-btn');
+
 /**
  * Initialize the editor
  */
@@ -202,13 +208,33 @@ function setupEventListeners() {
         });
     });
 
-    // Border style
-    borderStyleSelect.addEventListener('mousedown', (e) => e.preventDefault());
+    // Border style - use click instead of mousedown to allow dropdown to open
+    borderStyleSelect.addEventListener('click', () => {
+        // No action needed here, just allow click through
+    });
     borderStyleSelect.addEventListener('change', () => {
         if (editor) {
             editor.setBorderStyle(borderStyleSelect.value);
             currentBorderStyleIndex = BORDER_STYLES.indexOf(borderStyleSelect.value);
         }
+    });
+
+    // Line direction buttons
+    directionBtns.forEach(btn => {
+        btn.addEventListener('mousedown', (e) => e.preventDefault());
+        btn.addEventListener('click', () => {
+            const direction = btn.getAttribute('data-direction') as string;
+            currentLineDirection = direction;
+            
+            // Update active state
+            directionBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Call WASM to set line direction (if supported)
+            if (editor && (editor as any).setLineDirection) {
+                (editor as any).setLineDirection(direction);
+            }
+        });
     });
 
     // Action buttons
@@ -516,6 +542,14 @@ function setTool(toolName: string) {
     try {
         editor.setTool(toolName);
         updateToolButtons(toolName);
+        
+        // Show/hide line direction options
+        if (toolName.toLowerCase() === 'line') {
+            lineDirectionGroup.style.display = 'flex';
+        } else {
+            lineDirectionGroup.style.display = 'none';
+        }
+        
         statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
     } catch (error) {
         console.error('Failed to set tool:', error);

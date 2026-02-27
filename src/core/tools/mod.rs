@@ -16,7 +16,7 @@ pub use arrow::ArrowTool;
 pub use diamond::DiamondTool;
 pub use eraser::EraserTool;
 pub use freehand::FreehandTool;
-pub use line::LineTool;
+pub use line::{LineDirection, LineTool};
 pub use rectangle::RectangleTool;
 pub use select::SelectTool;
 pub use text::TextTool;
