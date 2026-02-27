@@ -22,6 +22,7 @@ pub use select::SelectTool;
 pub use text::TextTool;
 
 use crate::core::cell::Cell;
+use crate::core::selection::Selection;
 use serde::{Deserialize, Serialize};
 
 /// Unique identifier for a tool.
@@ -236,6 +237,11 @@ pub trait Tool {
     /// Handle keyboard input (for text tool).
     fn on_key(&mut self, _ch: char, _ctx: &ToolContext) -> ToolResult {
         ToolResult::default()
+    }
+
+    /// Get selection (for select tool).
+    fn get_selection(&self) -> Option<Selection> {
+        None
     }
 
     /// Reset tool state.

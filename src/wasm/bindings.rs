@@ -3,6 +3,7 @@
 use crate::core::ascii_export::{export_grid, ExportOptions};
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
+use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{
     ArrowTool, BorderStyle, DiamondTool, DrawOp, EraserTool, FreehandTool, LineTool, RectangleTool,
     SelectTool, TextTool, Tool, ToolContext, ToolId,
@@ -10,6 +11,8 @@ use crate::core::tools::{
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
 use serde::{Deserialize, Serialize};
+use std::cell::RefCell;
+use std::rc::Rc;
 use wasm_bindgen::prelude::*;
 
 /// Main ASCII editor class exposed to JavaScript.
@@ -25,10 +28,16 @@ pub struct AsciiEditor {
     dirty_tracker: DirtyTracker,
     /// Active tool
     active_tool: Box<dyn Tool>,
+    /// Select tool shared reference for copy/paste operations
+    select_tool: Option<Rc<RefCell<SelectTool>>>,
     /// Currently active tool ID
     tool_id: ToolId,
     /// Preview operations (shown during drag but not committed)
     preview_ops: Vec<DrawOp>,
+    /// Current selection (for copy/paste)
+    current_selection: Option<Selection>,
+    /// Internal clipboard for copy/paste
+    clipboard: SelectionClipboard,
     /// Space key held for panning
     space_held: bool,
     /// Currently panning
@@ -51,8 +60,11 @@ impl AsciiEditor {
             renderer,
             dirty_tracker: DirtyTracker::new(),
             active_tool: Box::new(RectangleTool::new()),
+            select_tool: None,
             tool_id: ToolId::Rectangle,
             preview_ops: Vec::new(),
+            current_selection: None,
+            clipboard: SelectionClipboard::new(),
             space_held: false,
             is_panning: false,
             last_pan_pos: None,
@@ -116,16 +128,39 @@ impl AsciiEditor {
         self.tool_id = id;
         self.state.tool = id;
 
-        self.active_tool = match id {
-            ToolId::Rectangle => Box::new(RectangleTool::new()),
-            ToolId::Line => Box::new(LineTool::new()),
-            ToolId::Arrow => Box::new(ArrowTool::new()),
-            ToolId::Diamond => Box::new(DiamondTool::new()),
-            ToolId::Text => Box::new(TextTool::new()),
-            ToolId::Freehand => Box::new(FreehandTool::new()),
-            ToolId::Select => Box::new(SelectTool::new()),
-            ToolId::Eraser => Box::new(EraserTool::new()),
-        };
+        if id != ToolId::Select {
+            self.current_selection = None;
+            self.select_tool = None;
+        }
+
+        match id {
+            ToolId::Rectangle => {
+                self.active_tool = Box::new(RectangleTool::new());
+            }
+            ToolId::Line => {
+                self.active_tool = Box::new(LineTool::new());
+            }
+            ToolId::Arrow => {
+                self.active_tool = Box::new(ArrowTool::new());
+            }
+            ToolId::Diamond => {
+                self.active_tool = Box::new(DiamondTool::new());
+            }
+            ToolId::Text => {
+                self.active_tool = Box::new(TextTool::new());
+            }
+            ToolId::Freehand => {
+                self.active_tool = Box::new(FreehandTool::new());
+            }
+            ToolId::Select => {
+                let tool = Rc::new(RefCell::new(SelectTool::new()));
+                self.select_tool = Some(Rc::clone(&tool));
+                self.active_tool = Box::new(SelectTool::new());
+            }
+            ToolId::Eraser => {
+                self.active_tool = Box::new(EraserTool::new());
+            }
+        }
     }
 
     /// Set border style for shapes.
@@ -246,11 +281,20 @@ impl AsciiEditor {
 
         self.preview_ops.clear();
 
+        // Update current selection for Select tool after operation
+        if self.tool_id == ToolId::Select {
+            self.update_select_tool_selection();
+        }
+
         if result.modified {
             self.commit_ops(&result.ops);
         }
 
         serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL)
+    }
+
+    fn update_select_tool_selection(&mut self) {
+        self.current_selection = self.active_tool.get_selection();
     }
 
     /// Handle keyboard input.
@@ -286,10 +330,48 @@ impl AsciiEditor {
                 .unwrap_or(JsValue::NULL);
         }
 
-        // Handle copy
+        // Handle copy (Ctrl+C) - copy to system clipboard
         if ctrl && key.to_lowercase() == "c" {
             return serde_wasm_bindgen::to_value(&self.create_event_result_with_copy(true))
                 .unwrap_or(JsValue::NULL);
+        }
+
+        // Handle cut (Ctrl+X) - copy selection to clipboard and clear
+        if ctrl && key.to_lowercase() == "x" {
+            if self.cut_selection() {
+                return serde_wasm_bindgen::to_value(&self.create_event_result())
+                    .unwrap_or(JsValue::NULL);
+            }
+        }
+
+        // Handle paste (Ctrl+V) - paste from internal clipboard
+        if ctrl && key.to_lowercase() == "v" {
+            if self.paste() {
+                return serde_wasm_bindgen::to_value(&self.create_event_result())
+                    .unwrap_or(JsValue::NULL);
+            }
+        }
+
+        // Handle delete (Delete/Backspace) - delete selection or character
+        if !ctrl && (key == "Delete" || key == "Backspace") {
+            // For Select tool with active selection, delete the selection
+            if self.tool_id == ToolId::Select && self.active_tool.is_active() {
+                if self.delete_selection() {
+                    return serde_wasm_bindgen::to_value(&self.create_event_result())
+                        .unwrap_or(JsValue::NULL);
+                }
+            }
+            // For Text tool, handle backspace/delete in the tool
+            if self.tool_id == ToolId::Text && self.active_tool.is_active() {
+                let ctx = self.create_tool_context();
+                let delete_char = if key == "Delete" { '\0' } else { '\x08' };
+                let result = self.active_tool.on_key(delete_char, &ctx);
+                if result.modified {
+                    self.commit_ops(&result.ops);
+                }
+                return serde_wasm_bindgen::to_value(&self.create_event_result())
+                    .unwrap_or(JsValue::NULL);
+            }
         }
 
         // Handle tool shortcuts only when tool is not active
@@ -381,7 +463,143 @@ impl AsciiEditor {
     pub fn clear(&mut self) {
         self.state.grid.clear();
         self.history.clear();
+        self.clipboard.clear();
         self.dirty_tracker.request_full_redraw();
+    }
+
+    /// Copy selection to internal clipboard.
+    #[wasm_bindgen(js_name = copySelection)]
+    pub fn copy_selection(&mut self) -> bool {
+        if self.tool_id != ToolId::Select {
+            return false;
+        }
+
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let width = max_x - min_x + 1;
+            let height = max_y - min_y + 1;
+
+            let mut cells = Vec::new();
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    if let Some(cell) = self.state.grid.get(x, y) {
+                        cells.push((x - min_x, y - min_y, *cell));
+                    }
+                }
+            }
+
+            self.clipboard = SelectionClipboard {
+                cells,
+                width,
+                height,
+            };
+            return true;
+        }
+        false
+    }
+
+    /// Cut selection to internal clipboard.
+    #[wasm_bindgen(js_name = cutSelection)]
+    pub fn cut_selection(&mut self) -> bool {
+        if !self.copy_selection() {
+            return false;
+        }
+
+        if self.tool_id == ToolId::Select {
+            if let Some(ref sel) = self.current_selection {
+                let (min_x, min_y, max_x, max_y) = sel.bounds();
+                let mut ops = Vec::new();
+
+                for y in min_y..=max_y {
+                    for x in min_x..=max_x {
+                        ops.push(DrawOp::new(x, y, ' '));
+                    }
+                }
+
+                if !ops.is_empty() {
+                    let mut cmd = DrawCommand::new(ops);
+                    cmd.apply(&mut self.state.grid);
+                    self.history.push(Box::new(cmd));
+                    self.dirty_tracker.request_full_redraw();
+                }
+
+                self.current_selection = None;
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Paste from internal clipboard.
+    #[wasm_bindgen]
+    pub fn paste(&mut self) -> bool {
+        if self.clipboard.is_empty() {
+            return false;
+        }
+
+        let grid_width = self.state.grid.width() as i32;
+        let grid_height = self.state.grid.height() as i32;
+        let mut ops = Vec::new();
+
+        for (rel_x, rel_y, cell) in &self.clipboard.cells {
+            let x = *rel_x;
+            let y = *rel_y;
+
+            if x >= 0 && x < grid_width && y >= 0 && y < grid_height {
+                ops.push(DrawOp::new(x, y, cell.ch));
+            }
+        }
+
+        if !ops.is_empty() {
+            let mut cmd = DrawCommand::new(ops);
+            cmd.apply(&mut self.state.grid);
+            self.history.push(Box::new(cmd));
+            self.dirty_tracker.request_full_redraw();
+            return true;
+        }
+        false
+    }
+
+    /// Delete current selection.
+    #[wasm_bindgen(js_name = deleteSelection)]
+    pub fn delete_selection(&mut self) -> bool {
+        if self.tool_id != ToolId::Select {
+            return false;
+        }
+
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let mut ops = Vec::new();
+
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    ops.push(DrawOp::new(x, y, ' '));
+                }
+            }
+
+            if !ops.is_empty() {
+                let mut cmd = DrawCommand::new(ops);
+                cmd.apply(&mut self.state.grid);
+                self.history.push(Box::new(cmd));
+                self.dirty_tracker.request_full_redraw();
+            }
+
+            self.current_selection = None;
+            return true;
+        }
+        false
+    }
+
+    /// Check if clipboard has content.
+    #[wasm_bindgen(getter)]
+    pub fn has_clipboard(&self) -> bool {
+        !self.clipboard.is_empty()
+    }
+
+    /// Check if there is an active selection.
+    #[wasm_bindgen(getter)]
+    pub fn has_selection(&self) -> bool {
+        self.current_selection.is_some()
     }
 
     /// Export ASCII to string.
