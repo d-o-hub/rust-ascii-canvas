@@ -208,6 +208,90 @@ test.describe('Drawing Tools Interaction', () => {
         await page.waitForTimeout(300);
     });
 
+    test('should insert multiple characters at cursor position', async ({ page }) => {
+        await page.click('[data-tool="text"]');
+        
+        const canvas = page.locator('#canvas');
+        const box = await canvas.boundingBox();
+        if (!box) return;
+        
+        // Click at a position and type "Test"
+        await page.mouse.click(box.x + 50, box.y + 50);
+        await page.waitForTimeout(100);
+        
+        await page.keyboard.type('Test');
+        await page.waitForTimeout(200);
+        
+        // Verify text was inserted by checking export
+        const ascii = await page.evaluate(() => {
+            // @ts-ignore
+            return window.editor.exportAscii();
+        });
+        
+        // The grid should contain "Test" near the click position
+        expect(ascii).toContain('Test');
+    });
+
+    test('should type at different cursor positions', async ({ page }) => {
+        await page.click('[data-tool="text"]');
+        
+        const canvas = page.locator('#canvas');
+        const box = await canvas.boundingBox();
+        if (!box) return;
+        
+        // First click at (50, 50) and type "A"
+        await page.mouse.click(box.x + 50, box.y + 50);
+        await page.waitForTimeout(100);
+        await page.keyboard.type('A');
+        await page.waitForTimeout(100);
+        
+        // Click at (100, 50) and type "B"  
+        await page.mouse.click(box.x + 100, box.y + 50);
+        await page.waitForTimeout(100);
+        await page.keyboard.type('B');
+        await page.waitForTimeout(200);
+        
+        // Verify both characters are present
+        const ascii = await page.evaluate(() => {
+            // @ts-ignore
+            return window.editor.exportAscii();
+        });
+        
+        expect(ascii).toContain('A');
+        expect(ascii).toContain('B');
+    });
+
+    test('should handle backspace correctly', async ({ page }) => {
+        await page.click('[data-tool="text"]');
+        
+        const canvas = page.locator('#canvas');
+        const box = await canvas.boundingBox();
+        if (!box) return;
+        
+        // Click and type "Hello"
+        await page.mouse.click(box.x + 50, box.y + 50);
+        await page.waitForTimeout(100);
+        await page.keyboard.type('Hello');
+        await page.waitForTimeout(100);
+        
+        // Backspace 3 times
+        await page.keyboard.press('Backspace');
+        await page.waitForTimeout(50);
+        await page.keyboard.press('Backspace');
+        await page.waitForTimeout(50);
+        await page.keyboard.press('Backspace');
+        await page.waitForTimeout(200);
+        
+        // Should have "He" remaining
+        const ascii = await page.evaluate(() => {
+            // @ts-ignore
+            return window.editor.exportAscii();
+        });
+        
+        expect(ascii).toContain('He');
+        expect(ascii).not.toContain('Hello');
+    });
+
     test('should select freehand tool and draw', async ({ page }) => {
         await page.click('[data-tool="freehand"]');
         
