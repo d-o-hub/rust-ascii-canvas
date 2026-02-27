@@ -237,3 +237,96 @@ The only improvement needed is adding documentation comments to eliminate the 52
 **Status**: Not implemented - requires renderer changes
 
 **Current State**: `preview_ops` are stored during drag but not rendered with blue tint. The selection color (`#264f78`) exists in renderer but is only used for selection rectangles.
+
+## Recent Changes (2026-02-27)
+
+### CI Workflow Fix
+
+**Problem**: Multiple CI failures when trying to build WASM and run E2E tests.
+
+**Root Causes**:
+1. `jetli/wasm-pack-action@v0.4.0` doesn't support custom arguments (like `--out-dir web/pkg`)
+2. Using `version: latest` caused network errors fetching version info
+3. Artifact sharing between jobs failed due to output directory issues
+
+**Solution Implemented**:
+1. Use direct `cargo install wasm-pack --version 0.12.1` command instead of GitHub Action
+2. Build WASM in Rust job, upload as artifact, download in E2E job
+3. Proper path specification in workflow
+
+**Workflow Configuration**:
+```yaml
+- name: Build WASM
+  run: |
+    cargo install wasm-pack --version 0.12.1
+    wasm-pack build --release --target web --out-dir web/pkg
+
+- name: Upload WASM
+  uses: actions/upload-artifact@v4
+  with:
+    name: wasm pkg
+    path: web/pkg
+```
+
+**E2E Job**:
+```yaml
+- name: Download WASM
+  uses: actions/download-artifact@v4
+  with:
+    name: wasm pkg
+    path: web/pkg
+```
+
+**Files Modified**:
+- `.github/workflows/ci.yml`: Complete rewrite of build process
+
+**Test Results**: All 84 tests pass (44 Rust + 40 E2E)
+
+### Canvas Focus Management Enhancement
+
+**Problem**: Zoom buttons (Fit, Reset, In, Out) were still causing focus loss after initial focus fix.
+
+**Root Cause**: The original focus management didn't include zoom buttons.
+
+**Solution Implemented**:
+Added `mousedown` event handler with `preventDefault()` to all zoom buttons:
+```typescript
+zoomFitBtn.addEventListener('mousedown', (e) => e.preventDefault());
+zoomResetBtn.addEventListener('mousedown', (e) => e.preventDefault());
+zoomOutBtn.addEventListener('mousedown', (e) => e.preventDefault());
+zoomInBtn.addEventListener('mousedown', (e) => e.preventDefault());
+```
+
+Also added `focus-visible` styles for select input elements in CSS for accessibility.
+
+**Files Modified**:
+- `web/main.ts`: Added zoom button handlers
+- `web/style.css`: Added `.select-input:focus-visible` styles
+
+**Test Results**: All 84 tests pass
+
+## Lessons Learned
+
+### GitHub Actions Best Practices
+
+1. **Prefer direct commands over actions when action doesn't support needed options**
+   - The `jetli/wasm-pack-action` doesn't support `--out-dir` argument
+   - Using `cargo install` directly gives full control
+
+2. **Artifact sharing requires matching paths**
+   - Upload and download must use identical `path` values
+   - Jobs run in different containers, so artifact is the only shared state
+
+3. **Version pinning avoids network issues**
+   - Using `latest` can cause network timeouts
+   - Pin to specific versions: `wasm-pack --version 0.12.1` (not `v0.12.1`)
+
+### Focus Management Best Practices
+
+1. **Prevent focus stealing on all interactive elements**
+   - Buttons, selects, and any clickable element can steal focus
+   - Use `mousedown` + `preventDefault()` pattern
+
+2. **Accessibility matters**
+   - Add `:focus-visible` styles for keyboard navigation
+   - Don't break keyboard operability for mouse users
