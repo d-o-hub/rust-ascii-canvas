@@ -38,7 +38,7 @@ jobs:
 
       - name: Build WASM
         run: |
-          cargo install wasm-pack --version v0.12.1
+          cargo install wasm-pack --version 0.12.1
           wasm-pack build --release --target web --out-dir web/pkg
 
       - name: Run tests
