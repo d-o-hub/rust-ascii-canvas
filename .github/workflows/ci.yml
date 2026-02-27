@@ -72,8 +72,17 @@ jobs:
 
       - name: Run E2E tests
         run: |
-          cd web && npm run dev &
-          sleep 30
+          cd web
+          nohup npm run dev > /tmp/vite.log 2>&1 &
+          echo "Waiting for dev server..."
+          for i in {1..60}; do
+            if curl -s http://localhost:3003 > /dev/null 2>&1; then
+              echo "Dev server is ready"
+              break
+            fi
+            sleep 1
+          done
+          cd ..
           npx playwright test --project=chromium --timeout=90000
         env:
           CI: true

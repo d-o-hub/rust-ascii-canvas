@@ -243,21 +243,25 @@ function setupEventListeners() {
     });
 
     // Zoom buttons
+    zoomFitBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomFitBtn.addEventListener('click', () => {
         if (!editor) return;
         fitZoom();
     });
 
+    zoomResetBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomResetBtn.addEventListener('click', () => {
         if (!editor) return;
         setZoom(1.0);
     });
 
+    zoomOutBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomOutBtn.addEventListener('click', () => {
         if (!editor) return;
         setZoom(editor.zoom * 0.8);
     });
 
+    zoomInBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomInBtn.addEventListener('click', () => {
         if (!editor) return;
         setZoom(editor.zoom * 1.25);
