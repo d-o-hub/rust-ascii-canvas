@@ -225,13 +225,26 @@ See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package
 2. ✅ Package Metadata Sync - DONE
 3. ✅ GitHub Actions CI - DONE
 
-### Potential Improvements
-1. Add documentation for all public API items
-2. Add touch/stylus support for mobile
-3. Implement selection copy/paste
-4. Add text input mode with cursor
-5. Export to PNG/SVG
-6. Add grid snapping toggle
-7. Implement shape resize handles
-8. Add color support (foreground/background)
-9. Cloud save functionality
+### Gap Analysis Complete (2026-02-27)
+See `plans/gap-analysis-enhancement-roadmap.md` for full analysis.
+
+### Critical Features (P0)
+1. Selection Copy/Paste - ADR-009 proposed
+2. Enhanced Text Tool - ADR-010 proposed
+3. Selection Move Fix - Implementation incomplete
+
+### Important Features (P1)
+4. Preview Rendering - ADR-011 proposed
+5. Eraser Size Options - Not started
+6. Grid Size Customization - ADR-012 proposed
+
+### Enhancements (P2)
+7. PNG/SVG Export - ADR-013 proposed
+8. Touch/Mobile Support - Not started
+9. Theme Customization - Not started
+
+### Future Improvements (P3)
+10. Cloud save functionality
+11. Color support (foreground/background)
+12. Shape resize handles
+13. Grid snapping toggle
