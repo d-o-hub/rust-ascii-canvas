@@ -55,7 +55,7 @@ impl TextTool {
             let start_x = start.0;
             let relative_pos = x - start_x;
             let buffer_len = self.buffer.len() as i32;
-            
+
             // Check there's a character after cursor to delete
             if relative_pos >= 0 && relative_pos < buffer_len {
                 let idx = relative_pos as usize;
