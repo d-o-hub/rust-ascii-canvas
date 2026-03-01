@@ -31,12 +31,35 @@ impl TextTool {
 
     /// Handle backspace - remove last character.
     pub fn backspace(&mut self) -> Option<DrawOp> {
-        if self.buffer.pop().is_some() {
+        if let Some(start_x) = self.start_pos.map(|(x, _)| x) {
             if let Some((x, y)) = self.cursor {
-                // Move cursor back
-                if x > 0 {
-                    self.cursor = Some((x - 1, y));
-                    return Some(DrawOp::new(x - 1, y, ' '));
+                // Calculate position relative to start
+                let relative_pos = x - start_x;
+                if relative_pos > 0 {
+                    // We have characters to delete
+                    self.buffer.pop();
+                    let new_x = x - 1;
+                    self.cursor = Some((new_x, y));
+                    return Some(DrawOp::new(new_x, y, ' '));
+                }
+            }
+        }
+        None
+    }
+
+    /// Handle delete - remove character at cursor position.
+    pub fn delete(&mut self) -> Option<DrawOp> {
+        if let Some(start_x) = self.start_pos {
+            if let Some((x, y)) = self.cursor {
+                // Calculate position relative to start
+                let relative_pos = x - start_x.0;
+                if relative_pos < self.buffer.len() as i32 - 1 && relative_pos >= 0 {
+                    // There's a character after cursor to delete
+                    let idx = relative_pos as usize;
+                    if idx < self.buffer.len() {
+                        self.buffer.remove(idx);
+                        return Some(DrawOp::new(x, y, ' '));
+                    }
                 }
             }
         }
@@ -108,11 +131,13 @@ impl Tool for TextTool {
     }
 
     fn on_key(&mut self, ch: char, ctx: &ToolContext) -> ToolResult {
-        if let Some((mut x, y)) = self.cursor {
+        if let Some((x, y)) = self.cursor {
+            let start_x = self.start_pos.unwrap_or((0, 0)).0;
+
             // Handle special characters
             if ch == '\n' || ch == '\r' {
                 // Move to next line
-                self.cursor = Some((self.start_pos.unwrap().0, y + 1));
+                self.cursor = Some((start_x, y + 1));
                 return ToolResult::new();
             }
 
@@ -137,8 +162,9 @@ impl Tool for TextTool {
                 return ToolResult::new();
             }
 
-            // Check if we're at the right edge
-            if x >= ctx.grid_width as i32 - 1 {
+            // Check if we're at the right edge (relative to start position)
+            let grid_width = ctx.grid_width as i32;
+            if start_x >= grid_width - 1 || x >= grid_width - 1 {
                 return ToolResult::new();
             }
 
@@ -146,10 +172,10 @@ impl Tool for TextTool {
             self.buffer.push(ch);
 
             // Update cursor
-            x += 1;
-            self.cursor = Some((x, y));
+            let new_x = x + 1;
+            self.cursor = Some((new_x, y));
 
-            return ToolResult::new().with_op(DrawOp::new(x - 1, y, ch));
+            return ToolResult::new().with_op(DrawOp::new(x, y, ch));
         }
 
         ToolResult::new()

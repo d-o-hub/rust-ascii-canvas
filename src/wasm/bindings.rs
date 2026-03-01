@@ -5,8 +5,8 @@ use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{
-    ArrowTool, BorderStyle, DiamondTool, DrawOp, EraserTool, FreehandTool, LineTool, RectangleTool,
-    SelectTool, TextTool, Tool, ToolContext, ToolId,
+    ArrowTool, BorderStyle, DiamondTool, DrawOp, EraserTool, FreehandTool, LineDirection, LineTool,
+    RectangleTool, SelectTool, TextTool, Tool, ToolContext, ToolId,
 };
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
@@ -176,6 +176,20 @@ impl AsciiEditor {
             _ => BorderStyle::Single,
         };
         self.state.border_style = style;
+    }
+
+    /// Set line direction for Line tool.
+    #[wasm_bindgen(js_name = setLineDirection)]
+    pub fn set_line_direction(&mut self, direction: String) {
+        if self.tool_id == ToolId::Line {
+            let dir = LineDirection::from_str(&direction);
+            // Get the line tool and set direction
+            let tool_ptr = &mut *self.active_tool as *mut dyn Tool;
+            unsafe {
+                let line_tool = &mut *(tool_ptr as *mut LineTool);
+                line_tool.set_direction(dir);
+            }
+        }
     }
 
     /// Set zoom level.

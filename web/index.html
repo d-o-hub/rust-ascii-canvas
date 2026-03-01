@@ -32,9 +32,21 @@
                         <span class="tool-label">Rect</span>
                     </button>
                     <button class="tool-btn" data-tool="line" title="Line (L)" aria-label="Line tool">
-                        <span class="tool-icon">─</span>
+                        <span class="tool-icon">╱</span>
                         <span class="tool-label">Line</span>
                     </button>
+                    <!-- Line Direction Options (hidden by default) -->
+                    <div id="line-direction-group" class="tool-group line-options" role="group" aria-label="Line Direction" style="display: none;">
+                        <button class="direction-btn active" data-direction="auto" title="Auto direction" aria-label="Auto">
+                            <span class="tool-icon">◐</span>
+                        </button>
+                        <button class="direction-btn" data-direction="horizontal" title="Horizontal (━)" aria-label="Horizontal">
+                            <span class="tool-icon">━</span>
+                        </button>
+                        <button class="direction-btn" data-direction="vertical" title="Vertical (│)" aria-label="Vertical">
+                            <span class="tool-icon">│</span>
+                        </button>
+                    </div>
                     <button class="tool-btn" data-tool="arrow" title="Arrow (A)" aria-label="Arrow tool">
                         <span class="tool-icon">→</span>
                         <span class="tool-label">Arrow</span>
