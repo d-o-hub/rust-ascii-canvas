@@ -2,6 +2,7 @@
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
+use std::any::Any;
 
 /// Freehand drawing tool.
 pub struct FreehandTool {
@@ -142,6 +143,10 @@ impl Tool for FreehandTool {
 
     fn is_active(&self) -> bool {
         self.drawing
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

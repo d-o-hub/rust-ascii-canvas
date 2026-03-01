@@ -2,6 +2,7 @@
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
+use std::any::Any;
 
 /// Eraser tool for clearing cells.
 pub struct EraserTool {
@@ -159,6 +160,10 @@ impl Tool for EraserTool {
 
     fn is_active(&self) -> bool {
         self.erasing
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

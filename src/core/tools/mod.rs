@@ -24,6 +24,7 @@ pub use text::TextTool;
 use crate::core::cell::Cell;
 use crate::core::selection::Selection;
 use serde::{Deserialize, Serialize};
+use std::any::Any;
 
 /// Unique identifier for a tool.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -64,15 +65,15 @@ impl ToolId {
 
     /// Get tool from keyboard shortcut.
     pub fn from_shortcut(ch: char) -> Option<Self> {
-        match ch.to_uppercase().next().unwrap() {
-            'R' => Some(Self::Rectangle),
-            'L' => Some(Self::Line),
-            'A' => Some(Self::Arrow),
-            'D' => Some(Self::Diamond),
-            'T' => Some(Self::Text),
-            'F' => Some(Self::Freehand),
-            'V' => Some(Self::Select),
-            'E' => Some(Self::Eraser),
+        match ch.to_uppercase().next() {
+            Some('R') => Some(Self::Rectangle),
+            Some('L') => Some(Self::Line),
+            Some('A') => Some(Self::Arrow),
+            Some('D') => Some(Self::Diamond),
+            Some('T') => Some(Self::Text),
+            Some('F') => Some(Self::Freehand),
+            Some('V') => Some(Self::Select),
+            Some('E') => Some(Self::Eraser),
             _ => None,
         }
     }
@@ -249,6 +250,10 @@ pub trait Tool {
 
     /// Check if tool is currently active (dragging/typing).
     fn is_active(&self) -> bool;
+
+    /// Get mutable reference as Any for downcasting.
+    /// Used for tool-specific operations like setting LineTool direction.
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 /// Helper to clamp coordinates to grid bounds.
