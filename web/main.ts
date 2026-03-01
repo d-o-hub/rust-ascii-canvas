@@ -21,17 +21,46 @@ interface RenderCommand {
     [key: string]: unknown;
 }
 
+// WASM AsciiEditor interface
+interface AsciiEditorInterface {
+    width: number;
+    height: number;
+    tool: string;
+    zoom: number;
+    pan: number[];
+    can_undo: boolean;
+    can_redo: boolean;
+    setTool(toolId: string): void;
+    setBorderStyle(style: string): void;
+    setLineDirection(direction: string): void;
+    setZoom(zoom: number): void;
+    setPan(x: number, y: number): void;
+    setFontMetrics(charWidth: number, lineHeight: number, fontSize: number): void;
+    onPointerDown(x: number, y: number): EventResult;
+    onPointerMove(x: number, y: number): EventResult;
+    onPointerUp(x: number, y: number): EventResult;
+    onKeyDown(key: string, ctrl: boolean, shift: boolean): EventResult;
+    onKeyUp(key: string): void;
+    onWheel(delta: number, x: number, y: number): EventResult;
+    undo(): boolean;
+    redo(): boolean;
+    clear(): void;
+    export_ascii(): string;
+    getRenderCommands(): RenderCommand[];
+    requestRedraw(): void;
+}
+
 // Global state
-let editor: AsciiEditor | null = null;
-let canvas: HTMLCanvasElement;
-let ctx: CanvasRenderingContext2D;
+let editor: AsciiEditorInterface | null = null;
+let canvas: HTMLCanvasElement | null = null;
+let ctx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number | null = null;
 let isInitialized = false;
 
 // Expose editor for testing
 declare global {
     interface Window {
-        editor: AsciiEditor | null;
+        editor: AsciiEditorInterface | null;
     }
 }
 window.editor = null;
@@ -41,26 +70,28 @@ const FONT_SIZE = 14;
 let charWidth = 8.4;
 let lineHeight = 20;
 
-// DOM Elements
-const loadingOverlay = document.getElementById('loading')!;
-const canvasContainer = document.getElementById('canvas-container')!;
-const cursorIndicator = document.getElementById('cursor-indicator')!;
-const gridSizeEl = document.getElementById('grid-size')!;
-const cursorPosEl = document.getElementById('cursor-pos')!;
-const zoomLevelEl = document.getElementById('zoom-level')!;
-const statusToolEl = document.getElementById('status-tool')!;
-const statusMessageEl = document.getElementById('status-message')!;
-const statusToast = document.getElementById('status-toast')!;
-const undoBtn = document.getElementById('undo-btn') as HTMLButtonElement;
-const redoBtn = document.getElementById('redo-btn') as HTMLButtonElement;
-const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
-const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
-const borderStyleSelect = document.getElementById('border-style') as HTMLSelectElement;
-const toolButtons = document.querySelectorAll('.tool-btn');
-const zoomFitBtn = document.getElementById('zoom-fit') as HTMLButtonElement;
-const zoomResetBtn = document.getElementById('zoom-reset') as HTMLButtonElement;
-const zoomOutBtn = document.getElementById('zoom-out') as HTMLButtonElement;
-const zoomInBtn = document.getElementById('zoom-in') as HTMLButtonElement;
+// DOM Elements - will be initialized in initialize()
+let loadingOverlay: HTMLElement;
+let canvasContainer: HTMLElement;
+let cursorIndicator: HTMLElement;
+let gridSizeEl: HTMLElement;
+let cursorPosEl: HTMLElement;
+let zoomLevelEl: HTMLElement;
+let statusToolEl: HTMLElement;
+let statusMessageEl: HTMLElement;
+let statusToast: HTMLElement;
+let undoBtn: HTMLButtonElement;
+let redoBtn: HTMLButtonElement;
+let copyBtn: HTMLButtonElement;
+let clearBtn: HTMLButtonElement;
+let borderStyleSelect: HTMLSelectElement;
+let toolButtons: NodeListOf<Element>;
+let zoomFitBtn: HTMLButtonElement;
+let zoomResetBtn: HTMLButtonElement;
+let zoomOutBtn: HTMLButtonElement;
+let zoomInBtn: HTMLButtonElement;
+let lineDirectionGroup: HTMLDivElement;
+let directionBtns: NodeListOf<Element>;
 
 // Grid dimensions
 const GRID_WIDTH = 80;
@@ -73,8 +104,17 @@ let currentBorderStyleIndex = 0;
 // Line direction options
 const LINE_DIRECTIONS = ['auto', 'horizontal', 'vertical'];
 let currentLineDirection = 'auto';
-const lineDirectionGroup = document.getElementById('line-direction-group') as HTMLDivElement;
-const directionBtns = document.querySelectorAll('.direction-btn');
+
+/**
+ * Get DOM element with null check
+ */
+function getElement<T extends HTMLElement>(id: string): T {
+    const el = document.getElementById(id);
+    if (!el) {
+        throw new Error(`Required element not found: ${id}`);
+    }
+    return el as T;
+}
 
 /**
  * Initialize the editor
@@ -84,9 +124,36 @@ async function initialize() {
         // Initialize WASM
         await init();
 
+        // Initialize DOM elements
+        loadingOverlay = getElement('loading');
+        canvasContainer = getElement('canvas-container');
+        cursorIndicator = getElement('cursor-indicator');
+        gridSizeEl = getElement('grid-size');
+        cursorPosEl = getElement('cursor-pos');
+        zoomLevelEl = getElement('zoom-level');
+        statusToolEl = getElement('status-tool');
+        statusMessageEl = getElement('status-message');
+        statusToast = getElement('status-toast');
+        undoBtn = getElement<HTMLButtonElement>('undo-btn');
+        redoBtn = getElement<HTMLButtonElement>('redo-btn');
+        copyBtn = getElement<HTMLButtonElement>('copy-btn');
+        clearBtn = getElement<HTMLButtonElement>('clear-btn');
+        borderStyleSelect = getElement<HTMLSelectElement>('border-style');
+        toolButtons = document.querySelectorAll('.tool-btn');
+        zoomFitBtn = getElement<HTMLButtonElement>('zoom-fit');
+        zoomResetBtn = getElement<HTMLButtonElement>('zoom-reset');
+        zoomOutBtn = getElement<HTMLButtonElement>('zoom-out');
+        zoomInBtn = getElement<HTMLButtonElement>('zoom-in');
+        lineDirectionGroup = getElement<HTMLDivElement>('line-direction-group');
+        directionBtns = document.querySelectorAll('.direction-btn');
+
         // Get canvas and context
-        canvas = document.getElementById('canvas') as HTMLCanvasElement;
-        ctx = canvas.getContext('2d', { alpha: false })!;
+        canvas = getElement<HTMLCanvasElement>('canvas');
+        const ctxResult = canvas.getContext('2d', { alpha: false });
+        if (!ctxResult) {
+            throw new Error('Failed to get 2D context');
+        }
+        ctx = ctxResult;
 
         // Set up canvas size
         resizeCanvas();
@@ -121,8 +188,12 @@ async function initialize() {
         console.log('ASCII Canvas Editor initialized');
     } catch (error) {
         console.error('Failed to initialize:', error);
-        statusMessageEl.textContent = `Failed to initialize: ${error}`;
-        loadingOverlay.classList.add('hidden');
+        if (statusMessageEl) {
+            statusMessageEl.textContent = `Failed to initialize: ${error}`;
+        }
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
     }
 }
 
@@ -130,6 +201,7 @@ async function initialize() {
  * Measure font metrics for precise grid alignment
  */
 function measureFont() {
+    if (!ctx || !editor) return;
     ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
     const metrics = ctx.measureText('M');
     charWidth = metrics.width;
@@ -143,6 +215,8 @@ function measureFont() {
  * Resize canvas to match container
  */
 function resizeCanvas() {
+    if (!canvas || !ctx || !canvasContainer) return;
+    
     const dpr = window.devicePixelRatio || 1;
     const rect = canvasContainer.getBoundingClientRect();
 
@@ -298,7 +372,7 @@ function setupEventListeners() {
  * Handle pointer down event
  */
 function handlePointerDown(e: PointerEvent) {
-    if (!editor) return;
+    if (!editor || !canvas) return;
     e.preventDefault();
     canvas.focus();
     canvas.setPointerCapture(e.pointerId);
@@ -315,7 +389,7 @@ function handlePointerDown(e: PointerEvent) {
  * Handle pointer move event
  */
 function handlePointerMove(e: PointerEvent) {
-    if (!editor) return;
+    if (!editor || !canvas) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -336,7 +410,7 @@ function handlePointerMove(e: PointerEvent) {
  * Handle pointer up event
  */
 function handlePointerUp(e: PointerEvent) {
-    if (!editor) return;
+    if (!editor || !canvas) return;
     e.preventDefault();
     canvas.releasePointerCapture(e.pointerId);
 
@@ -359,7 +433,7 @@ function handlePointerLeave() {
  * Handle wheel event for zoom
  */
 function handleWheel(e: WheelEvent) {
-    if (!editor) return;
+    if (!editor || !canvas) return;
     e.preventDefault();
 
     const rect = canvas.getBoundingClientRect();
@@ -446,7 +520,7 @@ function requestRender() {
  * Render the canvas
  */
 function render() {
-    if (!editor) return;
+    if (!editor || !canvas || !ctx) return;
     animationFrameId = null;
 
     // Get render commands
@@ -465,6 +539,8 @@ function render() {
  * Execute a single render command
  */
 function executeRenderCommand(cmd: RenderCommand) {
+    if (!ctx || !canvas) return;
+    
     switch (cmd.type || Object.keys(cmd)[0]) {
         case 'Clear':
             ctx.fillStyle = cmd.color as string || '#1e1e1e';
@@ -517,7 +593,7 @@ function executeRenderCommand(cmd: RenderCommand) {
  * Update cursor indicator position
  */
 function updateCursorIndicator(gridX: number, gridY: number) {
-    if (!editor) return;
+    if (!editor || !cursorIndicator) return;
     const zoom = editor.zoom;
     const pan = editor.pan;
 
@@ -628,9 +704,7 @@ function setZoom(zoom: number) {
  * Fit zoom to show entire canvas
  */
 function fitZoom() {
-    if (!editor) return;
-    const canvasContainer = document.getElementById('canvas-container');
-    if (!canvasContainer) return;
+    if (!editor || !canvasContainer) return;
     
     const containerRect = canvasContainer.getBoundingClientRect();
     const gridWidth = editor.width * charWidth;
