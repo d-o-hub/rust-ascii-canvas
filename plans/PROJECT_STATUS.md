@@ -224,6 +224,34 @@ See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package
 1. ✅ All GitHub Configuration - DONE
 2. ✅ Package Metadata Sync - DONE
 3. ✅ GitHub Actions CI - DONE
+4. ✅ Production Readiness Analysis - DONE (2026-03-01)
+
+### Production Readiness Analysis (2026-03-01)
+
+Comprehensive codebase analysis completed with 2026 best practices. See `plans/PRODUCTION_READINESS_PLAN.md` for details.
+
+#### Critical Issues Found
+
+| Domain | Critical | Medium | Low |
+|--------|----------|--------|-----|
+| Rust Code | 4 | 5 | 4 |
+| TypeScript | 4 | 6 | 6 |
+| E2E Tests | 3 | 4 | 3 |
+| Skill Docs | 3 | 3 | 2 |
+
+#### New ADRs Proposed
+
+- **ADR-017**: Rust Critical Fixes
+- **ADR-018**: TypeScript Production Standards
+- **ADR-019**: E2E Test Enhancement Strategy
+- **ADR-020**: Skill Documentation Cleanup
+
+#### Cleanup Completed
+
+- ✅ Deleted `.agents/skills/vite/GENERATION.md` (useless artifact)
+- ✅ Deleted `.agents/skills/ln-732-cicd-generator/diagram.html` (broken CSS)
+- ✅ Fixed `typescript-expert/SKILL.md` (removed vague placeholder)
+- ✅ Fixed `ln-732-cicd-generator/SKILL.md` (removed broken path references)
 
 ### Gap Analysis Complete (2026-02-27)
 See `plans/gap-analysis-enhancement-roadmap.md` for full analysis.
