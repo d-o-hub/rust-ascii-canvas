@@ -13,6 +13,7 @@ use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
 use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
 /// Main ASCII editor class exposed to JavaScript.
@@ -182,11 +183,10 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = setLineDirection)]
     pub fn set_line_direction(&mut self, direction: String) {
         if self.tool_id == ToolId::Line {
-            let dir = LineDirection::from_str(&direction);
-            // Get the line tool and set direction
-            let tool_ptr = &mut *self.active_tool as *mut dyn Tool;
-            unsafe {
-                let line_tool = &mut *(tool_ptr as *mut LineTool);
+            // Use FromStr trait implementation - Infallible so unwrap is safe
+            let dir = LineDirection::from_str(&direction).unwrap_or_default();
+            // Safe downcast using as_any_mut
+            if let Some(line_tool) = self.active_tool.as_any_mut().downcast_mut::<LineTool>() {
                 line_tool.set_direction(dir);
             }
         }
