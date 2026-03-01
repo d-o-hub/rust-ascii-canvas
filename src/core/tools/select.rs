@@ -4,6 +4,7 @@ use super::{clamp_to_grid, Tool, ToolContext, ToolId, ToolResult};
 use crate::core::cell::Cell;
 use crate::core::selection::Selection;
 use smallvec::SmallVec;
+use std::any::Any;
 
 /// Select and move tool.
 pub struct SelectTool {
@@ -136,6 +137,10 @@ impl Tool for SelectTool {
 
     fn is_active(&self) -> bool {
         self.selecting || self.moving
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

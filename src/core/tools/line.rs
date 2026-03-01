@@ -1,6 +1,8 @@
 //! Line tool - draws ASCII lines using Bresenham's algorithm.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use std::any::Any;
+use std::str::FromStr;
 
 /// Line direction mode
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -14,13 +16,24 @@ pub enum LineDirection {
     Vertical,
 }
 
-impl LineDirection {
-    /// Parse from string.
-    pub fn from_str(s: &str) -> Self {
+impl FromStr for LineDirection {
+    type Err = std::convert::Infallible;
+
+    /// Parse line direction from string.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::str::FromStr;
+    /// use ascii_canvas::core::tools::LineDirection;
+    ///
+    /// let dir = LineDirection::from_str("horizontal").unwrap();
+    /// assert_eq!(dir, LineDirection::Horizontal);
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "horizontal" => LineDirection::Horizontal,
-            "vertical" => LineDirection::Vertical,
-            _ => LineDirection::Auto,
+            "horizontal" => Ok(LineDirection::Horizontal),
+            "vertical" => Ok(LineDirection::Vertical),
+            _ => Ok(LineDirection::Auto),
         }
     }
 }
@@ -157,6 +170,10 @@ impl Tool for LineTool {
 
     fn is_active(&self) -> bool {
         self.start.is_some()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

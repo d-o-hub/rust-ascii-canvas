@@ -1,6 +1,7 @@
 //! Rectangle tool - draws rectangular ASCII boxes with various border styles.
 
 use super::{clamp_to_grid, BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use std::any::Any;
 
 /// Rectangle drawing tool.
 #[derive(Default)]
@@ -128,6 +129,10 @@ impl Tool for RectangleTool {
 
     fn is_active(&self) -> bool {
         self.start.is_some()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

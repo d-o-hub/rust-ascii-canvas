@@ -2,6 +2,7 @@
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
+use std::any::Any;
 
 /// Text tool for typing characters on the canvas.
 pub struct TextTool {
@@ -48,49 +49,16 @@ impl TextTool {
     }
 
     /// Handle delete - remove character at cursor position.
+    /// Delete removes the character AFTER the cursor (if any).
     pub fn delete(&mut self) -> Option<DrawOp> {
-        if let Some(start_x) = self.start_pos {
-            if let Some((x, y)) = self.cursor {
-                // Calculate position relative to start
-                let relative_pos = x - start_x.0;
-                if relative_pos < self.buffer.len() as i32 - 1 && relative_pos >= 0 {
-                    // There's a character after cursor to delete
-                    let idx = relative_pos as usize;
-                    if idx < self.buffer.len() {
-                        self.buffer.remove(idx);
-                        return Some(DrawOp::new(x, y, ' '));
-                    }
-                }
-            }
-        }
-        None
-    }
+        if let (Some((x, y)), Some(start)) = (self.cursor, self.start_pos) {
+            let start_x = start.0;
+            let relative_pos = x - start_x;
+            let buffer_len = self.buffer.len() as i32;
 
-    /// Handle delete - remove character at cursor position.
-    pub fn delete(&mut self) -> Option<DrawOp> {
-        // Delete removes the character AFTER the cursor (if any)
-        // For simplicity, we'll treat it similar to backspace but at current position
-        if let Some((x, y)) = self.cursor {
-            if x < self.start_pos.unwrap_or((0, 0)).0 + self.buffer.len() as i32 - 1 {
-                // There's a character to delete in the buffer
-                let idx = (x - self.start_pos.unwrap().0) as usize;
-                if idx < self.buffer.len() {
-                    self.buffer.remove(idx);
-                    return Some(DrawOp::new(x, y, ' '));
-                }
-            }
-        }
-        None
-    }
-
-    /// Handle delete - remove character at cursor position.
-    pub fn delete(&mut self) -> Option<DrawOp> {
-        // Delete removes the character AFTER the cursor (if any)
-        // For simplicity, we'll treat it similar to backspace but at current position
-        if let Some((x, y)) = self.cursor {
-            if x < self.start_pos.unwrap_or((0, 0)).0 + self.buffer.len() as i32 - 1 {
-                // There's a character to delete in the buffer
-                let idx = (x - self.start_pos.unwrap().0) as usize;
+            // Check there's a character after cursor to delete
+            if relative_pos >= 0 && relative_pos < buffer_len {
+                let idx = relative_pos as usize;
                 if idx < self.buffer.len() {
                     self.buffer.remove(idx);
                     return Some(DrawOp::new(x, y, ' '));
@@ -206,6 +174,10 @@ impl Tool for TextTool {
 
     fn is_active(&self) -> bool {
         self.cursor.is_some()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

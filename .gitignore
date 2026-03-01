@@ -39,6 +39,10 @@ npm-debug.log*
 coverage/
 .nyc_output/
 
-
+# Playwright
 playwright-report/
 test-results/
+
+# Blackbox
+.blackbox/
+.blackboxcli/
