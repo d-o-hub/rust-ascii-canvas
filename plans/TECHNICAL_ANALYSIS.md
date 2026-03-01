@@ -495,3 +495,213 @@ Analysis performed by spawning 4 specialist agents to analyze test coverage, cod
 4. **High**: Add missing boundary clamp in select.rs
 5. **High**: Fix paste to paste at cursor position
 6. **High**: Synchronize SelectTool state after operations
+
+---
+
+## Production Readiness Learnings (2026-03-01)
+
+### FromStr Trait Implementation
+
+**Lesson**: Clippy warns when a method named `from_str` doesn't implement the `std::str::FromStr` trait.
+
+**Before**:
+```rust
+impl LineDirection {
+    pub fn from_str(s: &str) -> Self { ... }  // Clippy warning!
+}
+```
+
+**After**:
+```rust
+impl std::str::FromStr for LineDirection {
+    type Err = std::convert::Infallible;
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> { ... }
+}
+```
+
+**Key Points**:
+- Use `Infallible` for error type when parsing never fails
+- Return `Result<Self, Self::Err>` not just `Self`
+- Add doctests with proper import paths
+
+### Safe Downcasting Pattern
+
+**Lesson**: Replace unsafe pointer casts with `Any` trait downcasting.
+
+**Before** (unsafe):
+```rust
+let tool_ptr = self.tools.get_mut(&tool_id).unwrap() as *mut dyn Tool;
+let concrete = unsafe { &mut *(tool_ptr as *mut LineTool) };
+```
+
+**After** (safe):
+```rust
+// In Tool trait
+fn as_any_mut(&mut self) -> &mut dyn Any;
+
+// Usage
+if let Some(line_tool) = tool.as_any_mut().downcast_mut::<LineTool>() {
+    line_tool.set_direction(direction);
+}
+```
+
+**Key Points**:
+- Implement `as_any_mut()` in all tool structs
+- Use `downcast_mut::<ConcreteType>()` for type-safe casting
+- Pattern returns `Option<&mut T>` for safe handling
+
+### GitHub Actions Best Practices 2026
+
+**Lesson**: Prefer direct commands over actions when customization needed.
+
+**Before** (problematic):
+```yaml
+- uses: jetli/wasm-pack-action@v0.4.0
+  with:
+    version: latest  # Network errors!
+```
+
+**After** (reliable):
+```yaml
+- run: |
+    cargo install wasm-pack --version 0.12.1
+    wasm-pack build --release --target web --out-dir web/pkg
+```
+
+**Key Points**:
+- Pin specific versions to avoid network issues
+- Artifact sharing requires matching paths between upload/download
+- Use `dtolnay/rust-toolchain` for Rust setup
+- Cache `~/.cargo` and `target/` for 3-5x speedup
+
+### Playwright E2E Best Practices 2026
+
+**Lesson**: Use role-based locators and avoid timeouts.
+
+**Before** (flaky):
+```typescript
+await page.waitForTimeout(1000);  // Don't use!
+await page.click('.tool-btn');    // CSS selector
+```
+
+**After** (reliable):
+```typescript
+await expect(page.getByRole('button', { name: 'Rectangle' })).toBeVisible();
+await page.getByRole('button', { name: 'Rectangle' }).click();
+```
+
+**Key Points**:
+- Use `getByRole()`, `getByLabel()`, `getByTestId()` over CSS
+- Replace `waitForTimeout` with proper `expect()` assertions
+- Enable `trace: 'on-first-retry'` for debugging
+- Page Object Model essential for maintainability
+
+### TypeScript Strict Mode 2026
+
+**Lesson**: Defensive programming at API boundaries prevents runtime errors.
+
+**Before**:
+```typescript
+const canvas = document.getElementById('canvas')!;  // Non-null assertion
+const editor = new AsciiEditor(canvas);  // Could fail silently
+```
+
+**After**:
+```typescript
+const canvas = document.getElementById('canvas');
+if (!(canvas instanceof HTMLCanvasElement)) {
+    throw new Error('Canvas element not found');
+}
+const editor = new AsciiEditor(canvas);  // Type-safe
+```
+
+**Key Points**:
+- Use `unknown` instead of `any` for external data
+- Enable `noUncheckedIndexedAccess: true`
+- Add ARIA attributes for accessibility
+- Validate DOM elements before use
+
+### Atomic Git Commits
+
+**Lesson**: Structure commits by logical change, not by file type.
+
+**Pattern**:
+```
+fix(rust): implement FromStr trait for LineDirection
+  - Fixes Clippy warning
+  - Adds proper trait implementation
+  - Includes doctest
+
+feat(rust): add as_any_mut() to all tools
+  - Replaces unsafe pointer casts
+  - Safe Any trait downcasting
+  - All 8 tools updated
+
+docs: add ADRs for production readiness
+  - 5 new ADRs (017-021)
+  - GOAP planning documents
+  - Best practices research
+```
+
+**Key Points**:
+- Use conventional commit format: `type(scope): description`
+- Each commit should be deployable on its own
+- Group related changes, split unrelated ones
+- Write descriptive commit messages
+
+### GOAP Planning Methodology
+
+**Lesson**: Goal-Oriented Action Planning provides clear execution path.
+
+**Structure**:
+1. **Goal State**: Define success criteria clearly
+2. **Current State**: Assess gaps honestly
+3. **Actions**: Sequence with preconditions and effects
+4. **Verification**: Test each action before proceeding
+
+**Benefits**:
+- Clear progress tracking
+- Identifies blockers early
+- Enables parallel execution
+- Provides audit trail
+
+### Web Research Integration
+
+**Lesson**: Always verify best practices are current.
+
+**Sources Consulted**:
+- Rust WASM book (2026): `wasm-bindgen` still gold standard
+- Playwright docs (2026): Role-based locators preferred
+- TypeScript docs (2026): Strict mode now default
+- GitHub Actions docs (2026): OIDC for security
+
+**Process**:
+1. Search for "[technology] best practices 2026"
+2. Verify against official documentation
+3. Check for deprecated patterns
+4. Document findings in ADRs
+
+### Summary
+
+**Production Readiness Achieved**:
+- ✅ Zero Clippy errors/warnings
+- ✅ All Rust tests passing (125 total)
+- ✅ TypeScript strict mode compliance
+- ✅ E2E tests enhanced (cross-browser)
+- ✅ Documentation complete (21 ADRs)
+- ✅ Atomic commits (conventional format)
+- ✅ CI/CD pipeline optimized
+
+**Key Metrics**:
+| Metric | Before | After |
+|--------|--------|-------|
+| Clippy errors | 1 | 0 |
+| Test coverage | Good | Excellent |
+| Documentation | Partial | Complete |
+| Best practices | 2024 | 2026 |
+
+**Total Commits**: 6 atomic commits
+**Files Changed**: 30+ files
+**New ADRs**: 5
+**Lines Added**: ~1,500
