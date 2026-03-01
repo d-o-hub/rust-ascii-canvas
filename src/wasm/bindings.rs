@@ -351,26 +351,29 @@ impl AsciiEditor {
         }
 
         // Handle cut (Ctrl+X) - copy selection to clipboard and clear
-        if ctrl && key.to_lowercase() == "x" && self.cut_selection() {
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+        if ctrl && key.to_lowercase() == "x" {
+            if self.cut_selection() {
+                return serde_wasm_bindgen::to_value(&self.create_event_result())
+                    .unwrap_or(JsValue::NULL);
+            }
         }
 
         // Handle paste (Ctrl+V) - paste from internal clipboard
-        if ctrl && key.to_lowercase() == "v" && self.paste() {
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+        if ctrl && key.to_lowercase() == "v" {
+            if self.paste() {
+                return serde_wasm_bindgen::to_value(&self.create_event_result())
+                    .unwrap_or(JsValue::NULL);
+            }
         }
 
         // Handle delete (Delete/Backspace) - delete selection or character
         if !ctrl && (key == "Delete" || key == "Backspace") {
             // For Select tool with active selection, delete the selection
-            if self.tool_id == ToolId::Select
-                && self.active_tool.is_active()
-                && self.delete_selection()
-            {
-                return serde_wasm_bindgen::to_value(&self.create_event_result())
-                    .unwrap_or(JsValue::NULL);
+            if self.tool_id == ToolId::Select && self.active_tool.is_active() {
+                if self.delete_selection() {
+                    return serde_wasm_bindgen::to_value(&self.create_event_result())
+                        .unwrap_or(JsValue::NULL);
+                }
             }
             // For Text tool, handle backspace/delete in the tool
             if self.tool_id == ToolId::Text && self.active_tool.is_active() {
