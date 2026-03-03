@@ -267,7 +267,7 @@ impl AsciiEditor {
 
         if !ctrl && (key == "Delete" || key == "Backspace") {
             if self.tool_id == ToolId::Select
-                && self.active_tool.is_active()
+                && self.current_selection.is_some()
                 && self.delete_selection()
             {
                 let event_result = self.create_event_result();
