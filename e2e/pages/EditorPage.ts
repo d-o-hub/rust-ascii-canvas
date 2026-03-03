@@ -37,6 +37,8 @@ export class EditorPage {
         zoomReset: Locator;
         zoomFit: Locator;
     };
+
+    readonly statusBar: {
         container: Locator;
         cursorPosition: Locator;
         gridInfo: Locator;
@@ -106,8 +108,11 @@ export class EditorPage {
     }
 
     async selectToolByShortcut(shortcut: string): Promise<void> {
-        await this.canvas.click();
+        // Focus the canvas properly
+        await this.canvas.focus();
+        await this.page.waitForTimeout(50);
         await this.page.keyboard.press(shortcut.toLowerCase());
+        await this.page.waitForTimeout(100);
     }
 
     async drawWithTool(

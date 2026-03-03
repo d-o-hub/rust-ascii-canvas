@@ -27,7 +27,7 @@ interface AsciiEditorInterface {
     height: number;
     tool: string;
     zoom: number;
-    pan: number[];
+    pan: number[] | Float64Array;
     can_undo: boolean;
     can_redo: boolean;
     setTool(toolId: string): void;
@@ -45,7 +45,7 @@ interface AsciiEditorInterface {
     undo(): boolean;
     redo(): boolean;
     clear(): void;
-    export_ascii(): string;
+    exportAscii(): string;
     getRenderCommands(): RenderCommand[];
     requestRedraw(): void;
 }
@@ -55,7 +55,9 @@ let editor: AsciiEditorInterface | null = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number | null = null;
+// Track initialization state
 let isInitialized = false;
+void isInitialized; // Suppress unused variable warning
 
 // Expose editor for testing
 declare global {
@@ -103,7 +105,9 @@ let currentBorderStyleIndex = 0;
 
 // Line direction options
 const LINE_DIRECTIONS = ['auto', 'horizontal', 'vertical'];
+void LINE_DIRECTIONS; // Suppress unused - reserved for future UI
 let currentLineDirection = 'auto';
+void currentLineDirection; // Suppress unused - state tracked via DOM
 
 /**
  * Get DOM element with null check
@@ -238,6 +242,8 @@ function resizeCanvas() {
  * Set up all event listeners
  */
 function setupEventListeners() {
+    if (!canvas) return;
+    
     // Window resize
     window.addEventListener('resize', debounce(resizeCanvas, 100));
 
@@ -666,7 +672,7 @@ function updateUI() {
  */
 async function copyToClipboard() {
     if (!editor) return;
-    const ascii = editor.export_ascii();
+    const ascii = editor.exportAscii();
     try {
         await navigator.clipboard.writeText(ascii);
         showToast('Copied to clipboard!');
