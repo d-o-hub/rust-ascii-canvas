@@ -11,8 +11,6 @@ use crate::core::tools::{
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
 use serde::{Deserialize, Serialize};
-use std::cell::RefCell;
-use std::rc::Rc;
 use std::str::FromStr;
 use wasm_bindgen::prelude::*;
 
@@ -29,8 +27,6 @@ pub struct AsciiEditor {
     dirty_tracker: DirtyTracker,
     /// Active tool
     active_tool: Box<dyn Tool>,
-    /// Select tool shared reference for copy/paste operations
-    select_tool: Option<Rc<RefCell<SelectTool>>>,
     /// Currently active tool ID
     tool_id: ToolId,
     /// Preview operations (shown during drag but not committed)
@@ -61,7 +57,6 @@ impl AsciiEditor {
             renderer,
             dirty_tracker: DirtyTracker::new(),
             active_tool: Box::new(RectangleTool::new()),
-            select_tool: None,
             tool_id: ToolId::Rectangle,
             preview_ops: Vec::new(),
             current_selection: None,
@@ -131,7 +126,6 @@ impl AsciiEditor {
 
         if id != ToolId::Select {
             self.current_selection = None;
-            self.select_tool = None;
         }
 
         match id {
@@ -154,8 +148,6 @@ impl AsciiEditor {
                 self.active_tool = Box::new(FreehandTool::new());
             }
             ToolId::Select => {
-                let tool = Rc::new(RefCell::new(SelectTool::new()));
-                self.select_tool = Some(Rc::clone(&tool));
                 self.active_tool = Box::new(SelectTool::new());
             }
             ToolId::Eraser => {

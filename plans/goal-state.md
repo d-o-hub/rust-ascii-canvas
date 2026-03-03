@@ -1,80 +1,169 @@
-# Goal State: Production Readiness 2026
+# Goal State: Codebase Improvement & Feature Roadmap 2026
+
+## Status: ACTIVE
+**Updated**: 2026-03-03
+
+---
+
+## GOAP World State Model
+
+### Current State (Verified 2026-03-03)
+
+```yaml
+code_quality:
+  clippy_errors: 0
+  clippy_warnings: 0
+  dead_code_allow: true          # crate-level #![allow(dead_code)]
+  unused_deps: [thiserror, anyhow]
+  duplicate_types: true          # EventResult vs EditorEventResult
+  max_file_loc: 722              # bindings.rs exceeds 500 LOC guideline
+  stale_configs: [root vite.config.ts, web/postcss.config.js]
+
+tests:
+  rust_unit: 79/79
+  rust_integration: 44/44
+  rust_doc: 2/2
+  e2e_chromium: 35+
+  e2e_firefox: 0                 # not configured
+  e2e_webkit: 0                  # not configured
+  vitest_frontend: 0             # dependency exists, no tests
+  flaky_patterns: 85             # waitForTimeout calls
+  page_object_model: false
+
+error_handling:
+  unwrap_in_prod: ~4             # unwrap() calls outside test code
+  boundary_bugs: 3               # SelectTool, ArrowTool, TextTool
+  select_tool_duplicate: true    # Rc<RefCell<SelectTool>> never synced
+
+features:
+  drawing_tools: 8
+  border_styles: 6
+  undo_redo: true
+  zoom_pan: true
+  clipboard_export: true
+  layers: false
+  file_persistence: false
+  png_svg_export: false
+  grid_customization: false
+  preview_rendering: false
+
+documentation:
+  adr_count: 22                  # 001-021 + duplicate 005
+  stale_adrs: 4                  # Proposed but actually implemented
+  test_count_contradictions: 5+
+  doc_warnings: ~52
+```
+
+### Target State
+
+```yaml
+code_quality:
+  clippy_errors: 0
+  clippy_warnings: 0
+  dead_code_allow: false         # REMOVED
+  unused_deps: []                # CLEANED
+  duplicate_types: false         # RESOLVED
+  max_file_loc: 500              # ALL files under limit
+  stale_configs: []              # REMOVED
+
+tests:
+  rust_unit: 85+                 # new tests for layers, persistence
+  rust_integration: 50+          # new integration tests
+  rust_doc: 5+                   # more doc tests
+  e2e_chromium: 40+
+  e2e_firefox: 40+               # ENABLED
+  e2e_webkit: 40+                # ENABLED
+  vitest_frontend: 20+           # NEW
+  flaky_patterns: 0              # ALL waitForTimeout REMOVED
+  page_object_model: true        # IMPLEMENTED
+
+error_handling:
+  unwrap_in_prod: 0              # ALL replaced
+  boundary_bugs: 0               # ALL fixed
+  select_tool_duplicate: false   # RESOLVED
+
+features:
+  drawing_tools: 8
+  border_styles: 6
+  undo_redo: true
+  zoom_pan: true
+  clipboard_export: true
+  layers: true                   # NEW
+  file_persistence: true         # NEW
+  png_svg_export: false          # DEFERRED (P2)
+  grid_customization: false      # DEFERRED (P1)
+  preview_rendering: false       # DEFERRED (P1)
+
+documentation:
+  adr_count: 30                  # 8 new ADRs (022-029)
+  stale_adrs: 0                  # ALL statuses correct
+  test_count_contradictions: 0   # ALL reconciled
+  doc_warnings: 0                # ALL documented
+```
+
+---
 
 ## Definition of Done
 
-The ASCII Canvas Editor is production-ready when all of the following criteria are met:
+### Tier 1: Code Quality (Must Have)
 
-### 1. Code Quality Gates
+- [ ] `cargo clippy --all-targets --all-features -- -D warnings` — 0 errors, 0 warnings
+- [ ] No `#![allow(dead_code)]` at crate level
+- [ ] All source files < 500 LOC
+- [ ] No unused dependencies in Cargo.toml
+- [ ] No duplicate type definitions
+- [ ] No stale configuration files
+- [ ] `cargo test` — 100% passing
+- [ ] `cargo doc` — 0 warnings
 
-| Criterion | Target | Verification |
-|-----------|--------|--------------|
-| Clippy warnings | 0 | `cargo clippy --all-targets --all-features -- -D warnings` |
-| Rust tests | 100% pass | `cargo test` |
-| E2E tests | 100% pass | `npx playwright test` |
-| TypeScript strict | No errors | `tsc --noEmit` |
-| Documentation | All public APIs documented | `cargo doc` |
+### Tier 2: Test Reliability (Must Have)
 
-### 2. Rust Code Standards
+- [ ] 0 `waitForTimeout` calls in E2E tests
+- [ ] Page Object Model in `e2e/pages/`
+- [ ] Cross-browser: Chromium + Firefox + WebKit
+- [ ] Vitest unit tests for frontend TypeScript
+- [ ] ASCII output verification in E2E (draw → export → assert)
 
-- [ ] All `unwrap()` calls replaced with proper error handling
-- [ ] No unsafe code without safety documentation
-- [ ] All traits properly implemented (e.g., `FromStr` instead of `from_str()`)
-- [ ] No duplicate method definitions
-- [ ] Proper `Option`/`Result` handling throughout
+### Tier 3: Robustness (Must Have)
 
-### 3. TypeScript Code Standards
+- [ ] 0 `unwrap()` outside `#[cfg(test)]` blocks
+- [ ] All known bugs fixed (SelectTool boundary, ArrowTool Bresenham, TextTool position)
+- [ ] No duplicate tool instances
 
-- [ ] No non-null assertions (`!`) without guards
-- [ ] Proper type definitions for WASM bindings
-- [ ] Centralized configuration constants
-- [ ] Defensive DOM element access
-- [ ] ARIA attributes for accessibility
+### Tier 4: New Features (Should Have)
 
-### 4. E2E Test Coverage
+- [ ] Layer system with visibility, locking, reordering
+- [ ] File persistence (save/load with `.asc` format)
+- [ ] localStorage auto-save
 
-- [ ] Pan functionality tested
-- [ ] Drawing output verified with ASCII assertions
-- [ ] Cross-browser testing (Chromium, Firefox, WebKit)
-- [ ] No flaky patterns (waitForTimeout replaced)
-- [ ] Page Object Model implemented
+### Tier 5: Performance (Should Have)
 
-### 5. CI/CD Pipeline
+- [ ] No `.to_string()` allocations in hot paths
+- [ ] Sparse grid iteration
+- [ ] Content-bounds caching
+- [ ] Benchmark suite with `criterion`
 
-- [ ] All GitHub Actions pass
-- [ ] Proper caching for fast builds
-- [ ] Matrix testing for multiple browsers
-- [ ] Artifact sharing between jobs
+### Tier 6: Documentation (Must Have)
 
-### 6. Documentation
+- [ ] All ADR statuses accurate
+- [ ] PROJECT_STATUS.md reflects actual state
+- [ ] No contradictions across plan files
+- [ ] All public APIs documented
 
-- [ ] All ADRs properly formatted and linked
-- [ ] Technical analysis updated
-- [ ] Skill documentation cleaned up
+---
 
 ## Success Metrics
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| Clippy errors | 1 | 0 |
-| Clippy warnings | 0 | 0 |
-| Rust tests passing | 79/79 | 79/79 |
-| E2E tests passing | 12/12 | 12/12 |
-| TypeScript errors | Unknown | 0 |
-| Cross-browser coverage | Chromium only | Chrome, Firefox, Safari |
-
-## Timeline
-
-- **Phase 1**: Critical Clippy fix (immediate)
-- **Phase 2**: Rust production fixes (ADR-017)
-- **Phase 3**: TypeScript production standards (ADR-018)
-- **Phase 4**: E2E test enhancement (ADR-019)
-- **Phase 5**: Documentation cleanup (ADR-020)
-- **Phase 6**: Git workflow and PR creation
-
-## Final Deliverable
-
-A pull request on branch `feat/production-readiness-2026` with:
-- Atomic commits for each logical change
-- All CI checks passing
-- Updated ADRs documenting decisions
-- Clean, maintainable, production-ready code
+| Metric | Current | Target | Priority |
+|--------|---------|--------|----------|
+| Clippy issues | 0 | 0 | Maintain |
+| Source files > 500 LOC | 1 | 0 | High |
+| Unused deps | 2 | 0 | High |
+| `unwrap()` in prod | ~4 | 0 | High |
+| `waitForTimeout` calls | 85 | 0 | High |
+| Cross-browser E2E | 1/3 | 3/3 | High |
+| Vitest tests | 0 | 20+ | Medium |
+| Layers support | No | Yes | Medium |
+| File persistence | No | Yes | Medium |
+| Doc warnings | ~52 | 0 | Medium |
+| Stale ADR statuses | 4 | 0 | Medium |

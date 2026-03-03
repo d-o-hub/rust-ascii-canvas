@@ -225,53 +225,78 @@ See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package
 2. ✅ Package Metadata Sync - DONE
 3. ✅ GitHub Actions CI - DONE
 4. ✅ Production Readiness Analysis - DONE (2026-03-01)
+5. ✅ GOAP Codebase Analysis - DONE (2026-03-03)
 
-### Production Readiness Analysis (2026-03-01)
+### GOAP Codebase Analysis (2026-03-03)
 
-Comprehensive codebase analysis completed with 2026 best practices. See `plans/PRODUCTION_READINESS_PLAN.md` for details.
+Comprehensive GOAP analysis completed. See `plans/current-plan.md` for the full action plan.
 
-#### Critical Issues Found
+#### Verified Test Counts (from `cargo test` + `npx playwright test`)
+- Rust unit tests: 79 passing
+- Rust integration tests: 44 passing  
+- Rust doc tests: 2 passing
+- E2E tests: 35+ (Chromium only)
+- **Total Rust**: 125 | **Total all**: 160+
 
-| Domain | Critical | Medium | Low |
-|--------|----------|--------|-----|
-| Rust Code | 4 | 5 | 4 |
-| TypeScript | 4 | 6 | 6 |
-| E2E Tests | 3 | 4 | 3 |
-| Skill Docs | 3 | 3 | 2 |
+#### Code Quality Issues Found
 
-#### New ADRs Proposed
+| Issue | Severity | Location |
+|-------|----------|----------|
+| Crate-level `#![allow(dead_code)]` | High | `src/lib.rs:37` |
+| `bindings.rs` exceeds 500 LOC (722) | High | `src/wasm/bindings.rs` |
+| 85 `waitForTimeout` calls in E2E | High | `e2e/canvas.spec.ts` |
+| Unused deps (thiserror, anyhow) | Medium | `Cargo.toml` |
+| Duplicate EventResult types | Medium | `events.rs` vs `bindings.rs` |
+| Duplicate select_tool instances | Medium | `bindings.rs:33` |
+| Stale root vite.config.ts | Low | Root vs web/ conflict |
+| Empty postcss.config.js | Low | `web/postcss.config.js` |
+| Duplicate ADR-005 numbering | Low | `plans/ADRs/` |
+| 0 vitest frontend tests | Medium | `web/` |
+| Single browser E2E only | Medium | Chromium, no Firefox/WebKit |
 
-- **ADR-017**: Rust Critical Fixes
-- **ADR-018**: TypeScript Production Standards
-- **ADR-019**: E2E Test Enhancement Strategy
-- **ADR-020**: Skill Documentation Cleanup
+#### New ADRs Created (022-029)
 
-#### Cleanup Completed
+- **ADR-022**: Code Hygiene & Dead Code Cleanup
+- **ADR-023**: Split bindings.rs Into Focused Modules
+- **ADR-024**: Test Robustness Strategy
+- **ADR-025**: Error Handling Hardening
+- **ADR-026**: Layer System (NEW FEATURE)
+- **ADR-027**: File Persistence / Save/Load (NEW FEATURE)
+- **ADR-028**: Performance Optimization
+- **ADR-029**: Documentation Reconciliation
 
-- ✅ Deleted `.agents/skills/vite/GENERATION.md` (useless artifact)
-- ✅ Deleted `.agents/skills/ln-732-cicd-generator/diagram.html` (broken CSS)
-- ✅ Fixed `typescript-expert/SKILL.md` (removed vague placeholder)
-- ✅ Fixed `ln-732-cicd-generator/SKILL.md` (removed broken path references)
+#### 8-Phase Action Plan
 
-### Gap Analysis Complete (2026-02-27)
-See `plans/gap-analysis-enhancement-roadmap.md` for full analysis.
+| Phase | Description | Est. Effort |
+|-------|-------------|-------------|
+| 1 | Code Hygiene & Dead Code Cleanup | 2.5 hr |
+| 2 | Split bindings.rs (< 500 LOC) | 3.25 hr |
+| 3 | Test Robustness (POM, no flaky tests, cross-browser) | 10 hr |
+| 4 | Error Handling Hardening | 3 hr |
+| 5 | Layer System (NEW FEATURE) | 15.5 hr |
+| 6 | File Persistence (NEW FEATURE) | 10 hr |
+| 7 | Performance Optimization | 7.5 hr |
+| 8 | Documentation Reconciliation | 4 hr |
+| **Total** | | **~52.5 hr** |
 
-### Critical Features (P0)
-1. Selection Copy/Paste - ADR-009 proposed
-2. Enhanced Text Tool - ADR-010 proposed
-3. Selection Move Fix - Implementation incomplete
+### Previously Identified (Carried Forward)
 
-### Important Features (P1)
-4. Preview Rendering - ADR-011 proposed
-5. Eraser Size Options - Not started
-6. Grid Size Customization - ADR-012 proposed
+#### Critical Features (P0)
+1. Selection Copy/Paste - ADR-009
+2. Enhanced Text Tool - ADR-010
+3. Selection Move Fix - incomplete
 
-### Enhancements (P2)
-7. PNG/SVG Export - ADR-013 proposed
-8. Touch/Mobile Support - Not started
-9. Theme Customization - Not started
+#### Important Features (P1)
+4. Preview Rendering - ADR-011
+5. Eraser Size Options
+6. Grid Size Customization - ADR-012
 
-### Future Improvements (P3)
+#### Enhancements (P2)
+7. PNG/SVG Export - ADR-013
+8. Touch/Mobile Support
+9. Theme Customization
+
+#### Future Improvements (P3)
 10. Cloud save functionality
 11. Color support (foreground/background)
 12. Shape resize handles
