@@ -5,13 +5,20 @@ use crate::render::{CanvasRenderer, DirtyTracker};
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
+/// Result of an editor event, returned to JavaScript.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct EditorEventResult {
+    /// Whether a redraw is needed.
     pub needs_redraw: bool,
+    /// The current tool name.
     pub tool: String,
+    /// Whether undo is available.
     pub can_undo: bool,
+    /// Whether redo is available.
     pub can_redo: bool,
+    /// Whether to copy to clipboard.
     pub should_copy: bool,
+    /// ASCII representation if copying.
     pub ascii: Option<String>,
 }
 

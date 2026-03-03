@@ -1,5 +1,7 @@
 //! WASM bindings - main entry point for JavaScript interop.
 
+#![allow(missing_docs)]
+
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
@@ -514,11 +516,13 @@ impl AsciiEditor {
         )
     }
 
+    /// Check if a redraw is needed.
     #[wasm_bindgen(getter = needsRedraw)]
     pub fn needs_redraw(&self) -> bool {
         needs_redraw(&self.dirty_tracker)
     }
 
+    /// Request a full redraw on the next frame.
     #[wasm_bindgen(js_name = requestRedraw)]
     pub fn request_redraw(&mut self) {
         request_full_redraw(&mut self.dirty_tracker);
