@@ -37,8 +37,6 @@ export class EditorPage {
         zoomReset: Locator;
         zoomFit: Locator;
     };
-
-    readonly statusBar: {
         container: Locator;
         cursorPosition: Locator;
         gridInfo: Locator;
@@ -77,10 +75,10 @@ export class EditorPage {
 
         this.controls = {
             borderStyle: page.locator('#border-style'),
-            zoomIn: page.locator('#zoom-in-btn'),
-            zoomOut: page.locator('#zoom-out-btn'),
-            zoomReset: page.locator('#zoom-reset-btn'),
-            zoomFit: page.locator('#zoom-fit-btn'),
+            zoomIn: page.locator('#zoom-in'),
+            zoomOut: page.locator('#zoom-out'),
+            zoomReset: page.locator('#zoom-reset'),
+            zoomFit: page.locator('#zoom-fit'),
         };
 
         this.statusBar = {
