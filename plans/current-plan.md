@@ -236,7 +236,7 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 
 | Phase | Description | Status | Completion |
 |-------|-------------|--------|------------|
-| Phase 1 | Code Hygiene & Dead Code Cleanup | ⏸️ Pending | 0% |
+| Phase 1 | Code Hygiene & Dead Code Cleanup | ✅ Complete | 100% |
 | Phase 2 | Split bindings.rs | ⏸️ Pending | 0% |
 | Phase 3 | Test Robustness | ⏸️ Pending | 0% |
 | Phase 4 | Error Handling Hardening | ⏸️ Pending | 0% |
@@ -244,6 +244,18 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 | Phase 6 | File Persistence (NEW FEATURE) | ⏸️ Pending | 0% |
 | Phase 7 | Performance Optimization | ⏸️ Pending | 0% |
 | Phase 8 | Documentation Reconciliation | ⏸️ Pending | 0% |
+
+### Completed Actions (2026-03-03)
+
+- ✅ **1.1**: Removed `#![allow(dead_code)]` from lib.rs, added local allows for unused event types
+- ✅ **1.2**: Removed unused `thiserror` and `anyhow` dependencies
+- ✅ **1.3**: Removed unused `EventResult` type (duplicate of EditorEventResult)
+- ✅ **1.4**: Removed unused `select_tool` Rc<RefCell<SelectTool>> field
+- ✅ **1.5**: Removed stale root vite.config.ts (web/vite.config.ts is canonical)
+- ✅ **1.6**: Removed empty web/postcss.config.js
+- ✅ **1.7**: Renamed ADR-005 to ADR-005a and ADR-005b
+
+**CI Verification**: ✅ All tests pass (Rust + E2E)
 
 ---
 

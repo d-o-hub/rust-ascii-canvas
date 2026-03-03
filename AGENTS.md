@@ -216,5 +216,26 @@ if let Some(line_tool) = tool.as_any_mut().downcast_mut::<LineTool>() {
 
 ---
 
-*Last Updated: 2026-03-01*
+## Learnings from Phase 1 Implementation (2026-03-03)
+
+### Rust Code Hygiene
+
+1. **Finding unused dependencies**: Use `cargo remove <crate>` or manually edit Cargo.toml, then verify with `cargo check`
+2. **Dead code detection**: Removing crate-level `#![allow(dead_code)]` exposes hidden unused code - must address each piece individually
+3. **Duplicate type patterns**: When both a public and private version of a type exist, check which is actually used before removing
+4. **Rc<RefCell> patterns**: Unused `Rc<RefCell<T>>` fields that are never read should be removed entirely
+
+### ADR Management
+
+1. **Numbering conflicts**: When duplicate ADR numbers exist, rename to sequential suffix (005a, 005b)
+2. **ADR numbering format**: Use leading zeros (001-099) for consistent sorting
+
+### Configuration Cleanup
+
+1. **Redundant configs**: Root-level configs that duplicate web/ versions should be removed
+2. **Empty config files**: Files with no meaningful content (empty plugins array) should be removed
+
+---
+
+*Last Updated: 2026-03-03*
 *Part of Production Readiness 2026 Initiative*
