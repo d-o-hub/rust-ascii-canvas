@@ -5,6 +5,7 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 ## Features
 
 - 🎨 **8 Drawing Tools**: Rectangle, Line, Arrow, Diamond, Text, Freehand, Select, Eraser
+- ✋ **Select Tool**: Click and drag to select regions, move selected objects
 - 🖼️ **6 Border Styles**: Single, Double, Heavy, Rounded, ASCII, Dotted
 - ↩️ **Full Undo/Redo**: Command pattern with configurable history depth
 - 🔍 **Zoom & Pan**: Mouse wheel zoom, Space+drag panning
@@ -79,6 +80,14 @@ ascii-canvas/
 └── vite.config.ts          # Vite build config
 ```
 
+## Select Tool
+
+The Select tool (V) allows you to:
+- **Click and drag** to create a selection rectangle
+- **Click inside selection** and drag to **move** the selected content
+- **Delete** selected region with `Delete` or `Backspace`
+- **Copy** selected region to clipboard
+
 ## Keyboard Shortcuts
 
 | Key | Action |
@@ -94,6 +103,7 @@ ascii-canvas/
 | `Ctrl+Z` | Undo |
 | `Ctrl+Shift+Z` | Redo |
 | `Ctrl+C` | Copy ASCII |
+| `Delete/Backspace` | Delete selected region |
 | `Space+Drag` | Pan canvas |
 | `Scroll` | Zoom |
 
