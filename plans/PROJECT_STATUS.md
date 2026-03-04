@@ -231,6 +231,16 @@ See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package
 
 Comprehensive GOAP analysis completed. See `plans/current-plan.md` for the full action plan.
 
+#### Phase 2 Progress: bindings.rs Refactor
+
+| Module | LOC | Status |
+|--------|-----|--------|
+| tool_manager.rs | 92 | ✅ Extracted |
+| render_bridge.rs | 90 | ✅ Extracted |
+| bindings.rs | 578 | 🔄 (was 722) |
+
+Event handlers remain in bindings.rs due to tight coupling. Target: < 300 LOC.
+
 #### Verified Test Counts (from `cargo test` + `npx playwright test`)
 - Rust unit tests: 79 passing
 - Rust integration tests: 44 passing  
