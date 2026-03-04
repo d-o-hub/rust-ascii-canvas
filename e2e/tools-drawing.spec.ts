@@ -282,7 +282,9 @@ test.describe('Edge Cases', () => {
         ];
         
         for (const pos of positions) {
+            await canvas.focus();
             await page.mouse.click(pos.x, pos.y);
+            await canvas.focus();
             await page.waitForTimeout(100);
             await page.keyboard.type(pos.text);
             await page.waitForTimeout(50);

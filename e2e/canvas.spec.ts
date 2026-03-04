@@ -43,18 +43,20 @@ test.describe('ASCII Canvas Editor', () => {
     });
 
     test('should switch tools with keyboard shortcuts', async ({ page }) => {
+        // Click on canvas and release to ensure we start from a clean state
         await page.click('#canvas');
-        await page.waitForTimeout(100);
+        await page.mouse.up(); // Release any mouse button state
+        await page.waitForTimeout(200);
         
         // Press 'L' for line tool
         await page.keyboard.press('l');
-        await page.waitForTimeout(100);
+        await page.waitForTimeout(200);
         const lineButton = page.locator('[data-tool="line"]');
         await expect(lineButton).toHaveClass(/active/);
         
         // Press 'R' for rectangle tool
         await page.keyboard.press('r');
-        await page.waitForTimeout(100);
+        await page.waitForTimeout(200);
         const rectButton = page.locator('[data-tool="rectangle"]');
         await expect(rectButton).toHaveClass(/active/);
     });
@@ -251,10 +253,13 @@ test.describe('Drawing Tools Interaction', () => {
         const box = await canvas.boundingBox();
         if (!box) return;
         
-        // Click at position
+        // Click at position - focus canvas first
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 50);
         await page.waitForTimeout(100);
+        
+        // Re-focus canvas before typing (clicking may have moved focus)
+        await canvas.focus();
         
         // Type 5 characters one by one
         await page.keyboard.type('A');
@@ -288,6 +293,7 @@ test.describe('Drawing Tools Interaction', () => {
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 30);
         await page.waitForTimeout(100);
+        await canvas.focus();
         await page.keyboard.type('X');
         await page.waitForTimeout(100);
         
@@ -296,7 +302,9 @@ test.describe('Drawing Tools Interaction', () => {
         await page.waitForTimeout(100);
         
         // Second position - type "Y"
+        await canvas.focus();
         await page.mouse.click(box.x + 100, box.y + 30);
+        await canvas.focus();
         await page.waitForTimeout(100);
         await page.keyboard.type('Y');
         await page.waitForTimeout(200);
@@ -324,6 +332,7 @@ test.describe('Drawing Tools Interaction', () => {
         
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 50);
+        await canvas.focus();
         await page.waitForTimeout(100);
         
         // Type "Hello"
@@ -357,12 +366,15 @@ test.describe('Drawing Tools Interaction', () => {
         // First click - type "AAA"
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 30);
+        await canvas.focus();
         await page.waitForTimeout(100);
         await page.keyboard.type('AAA');
         await page.waitForTimeout(100);
         
         // Click in new position - type "BBB"
+        await canvas.focus();
         await page.mouse.click(box.x + 150, box.y + 30);
+        await canvas.focus();
         await page.waitForTimeout(100);
         await page.keyboard.type('BBB');
         await page.waitForTimeout(200);
@@ -385,7 +397,9 @@ test.describe('Drawing Tools Interaction', () => {
         if (!box) return;
         
         // Click and type "Hello"
+        await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 50);
+        await canvas.focus();
         await page.waitForTimeout(100);
         await page.keyboard.type('Hello');
         await page.waitForTimeout(100);
@@ -648,7 +662,7 @@ test.describe('Keyboard Shortcuts', () => {
     });
 
     test('should support all tool shortcuts', async ({ page }) => {
-        await page.click('#canvas');
+        await page.locator('#canvas').focus();
         await page.waitForTimeout(100);
         
         const shortcuts = [
@@ -663,6 +677,7 @@ test.describe('Keyboard Shortcuts', () => {
         ];
         
         for (const { key, tool } of shortcuts) {
+            await page.locator('#canvas').focus();
             await page.keyboard.press(key);
             await page.waitForTimeout(100);
             await expect(page.locator(`[data-tool="${tool}"]`)).toHaveClass(/active/, { timeout: 3000 });

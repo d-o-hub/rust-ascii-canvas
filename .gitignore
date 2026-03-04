@@ -46,3 +46,4 @@ test-results/
 # Blackbox
 .blackbox/
 .blackboxcli/
+.blackboxcli/settings.json

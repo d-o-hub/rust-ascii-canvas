@@ -88,7 +88,8 @@ impl AsciiEditor {
         }
     }
 
-    fn set_tool_by_id_impl(&mut self, _id: ToolId) {
+    fn set_tool_by_id_impl(&mut self, id: ToolId) {
+        self.tool_id = id;
         set_tool_by_id(
             &mut self.active_tool,
             &mut self.tool_id,
