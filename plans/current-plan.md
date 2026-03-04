@@ -309,6 +309,52 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 
 ---
 
+## Known Issues (2026-03-04 Evening)
+
+### 🔴 Select Tool: Move Functionality Not Implemented
+
+**Status**: Feature stub exists but not wired up
+
+**Description**: Select tool creates selection highlight but doesn't support drag-to-move. The infrastructure exists (`moving` flag, `move_offset`, `original_content` buffers) but `on_pointer_move` returns empty ToolResult when moving.
+
+**Expected**: Click inside selection → drag → content moves to new location  
+**Actual**: Click inside selection → drag → nothing happens (comment at `select.rs:110` says "Moving is handled by the editor state" but it isn't)
+
+**Fix Required**: Implement cut/paste logic in SelectTool:
+1. On drag start (when `moving=true`): copy selected cells to buffer, generate ops to clear original
+2. During drag: calculate new position from drag delta, generate preview ops showing content at new location
+3. On pointer_up: commit move as single undo operation
+
+**Estimated Effort**: 2-3 hours
+
+### ⚠️ Eraser Tool: Possibly Working as Designed
+
+**Status**: E2E test passes, may be user confusion
+
+**Description**: User reports eraser "should work" but E2E test "Eraser tool clears content" passes with current implementation.
+
+**Possible Issues**:
+- Eraser size=1 (single cell) may feel too small - user may not see effect
+- Tool selection state not clear to user
+- Expecting different erase behavior?
+
+**Action**: Awaiting user clarification on specific failure case.
+
+### ⚠️ Grid Boundary: Need Clarification
+
+**User Report**: "drawing works only when cursor is in 79,x - after 80 is not drawing"
+
+**Current Behavior**: Grid is 80x40 (indices 0-79, 0-39). Drawing at x≥80 gets clamped to x=79. This is correct for a 0-indexed 80-column grid.
+
+**Possible Interpretations**:
+1. User expects grid to be 81 columns wide (0-80)?
+2. Visual misalignment - clicking at pixel 80 gets clamped to column 79?
+3. Off-by-one error somewhere?
+
+**Action**: Awaiting user clarification on expected vs actual behavior.
+
+---
+
 ## Estimated Total Effort
 
 | Category | Effort |
