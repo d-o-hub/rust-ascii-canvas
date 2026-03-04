@@ -2,6 +2,7 @@
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use smallvec::SmallVec;
+use std::any::Any;
 
 /// Freehand drawing tool.
 pub struct FreehandTool {
@@ -90,6 +91,9 @@ impl Tool for FreehandTool {
     fn on_pointer_down(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
 
+        // Update draw char from current border style
+        self.draw_char = ctx.border_style.freehand_char();
+
         self.drawing = true;
         self.last_pos = Some((x, y));
         self.ops_buffer.clear();
@@ -142,6 +146,10 @@ impl Tool for FreehandTool {
 
     fn is_active(&self) -> bool {
         self.drawing
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

@@ -153,6 +153,25 @@ impl CanvasRenderer {
 
     /// Build full render commands (for initial render).
     pub fn build_full_render(&self, grid: &Grid) -> Vec<RenderCommand> {
+        self.build_full_render_with_preview(grid, &[])
+    }
+
+    /// Build full render commands with preview overlay ops and optional selection.
+    pub fn build_full_render_with_preview(
+        &self,
+        grid: &Grid,
+        preview_ops: &[crate::core::tools::DrawOp],
+    ) -> Vec<RenderCommand> {
+        self.build_full_render_with_preview_and_selection(grid, preview_ops, None)
+    }
+
+    /// Build full render commands with preview overlay ops and optional selection highlight.
+    pub fn build_full_render_with_preview_and_selection(
+        &self,
+        grid: &Grid,
+        preview_ops: &[crate::core::tools::DrawOp],
+        selection: Option<&crate::core::selection::Selection>,
+    ) -> Vec<RenderCommand> {
         let mut commands = vec![RenderCommand::Clear {
             color: self.bg_color.clone(),
         }];
@@ -187,6 +206,33 @@ impl CanvasRenderer {
                     scale: self.zoom,
                 });
             }
+        }
+
+        // Draw preview ops (temporary overlay during drag)
+        for op in preview_ops {
+            if op.cell.is_visible() {
+                let (sx, sy) = self.grid_to_screen(op.x, op.y);
+                commands.push(RenderCommand::DrawChar {
+                    x: sx,
+                    y: sy + self.metrics.baseline * self.zoom,
+                    char: op.cell.ch,
+                    scale: self.zoom,
+                });
+            }
+        }
+
+        // Draw selection highlight if present
+        if let Some(sel) = selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let (sx1, sy1) = self.grid_to_screen(min_x, min_y);
+            let (sx2, sy2) = self.grid_to_screen(max_x + 1, max_y + 1);
+            commands.push(RenderCommand::DrawRect {
+                x: sx1,
+                y: sy1,
+                width: sx2 - sx1,
+                height: sy2 - sy1,
+                color: self.selection_color.clone(),
+            });
         }
 
         commands

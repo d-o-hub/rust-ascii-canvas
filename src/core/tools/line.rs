@@ -1,12 +1,50 @@
 //! Line tool - draws ASCII lines using Bresenham's algorithm.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use std::any::Any;
+use std::str::FromStr;
+
+/// Line direction mode
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub enum LineDirection {
+    /// Auto-detect direction from drag
+    #[default]
+    Auto,
+    /// Force horizontal line
+    Horizontal,
+    /// Force vertical line
+    Vertical,
+}
+
+impl FromStr for LineDirection {
+    type Err = std::convert::Infallible;
+
+    /// Parse line direction from string.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::str::FromStr;
+    /// use ascii_canvas::core::tools::LineDirection;
+    ///
+    /// let dir = LineDirection::from_str("horizontal").unwrap();
+    /// assert_eq!(dir, LineDirection::Horizontal);
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "horizontal" => Ok(LineDirection::Horizontal),
+            "vertical" => Ok(LineDirection::Vertical),
+            _ => Ok(LineDirection::Auto),
+        }
+    }
+}
 
 /// Line drawing tool using Bresenham's algorithm with ASCII characters.
 #[derive(Default)]
 pub struct LineTool {
     /// Start point of drag
     start: Option<(i32, i32)>,
+    /// Forced direction
+    direction: LineDirection,
 }
 
 impl LineTool {
@@ -15,28 +53,44 @@ impl LineTool {
         Self::default()
     }
 
+    /// Set the line direction.
+    pub fn set_direction(&mut self, direction: LineDirection) {
+        self.direction = direction;
+    }
+
+    /// Get the current line direction.
+    pub fn direction(&self) -> LineDirection {
+        self.direction
+    }
+
     /// Get appropriate line character based on line direction.
     /// sx, sy: direction of line movement (sign of delta)
     /// dx, dy: absolute distances
-    fn get_line_char(sx: i32, sy: i32, dx: i32, dy: i32) -> char {
-        if dx == 0 {
-            // Pure vertical
-            '│'
-        } else if dy == 0 {
-            // Pure horizontal
-            '─'
-        } else {
-            // Diagonal - determine character based on direction
-            if sx > 0 {
-                if sy > 0 {
-                    '\\' // moving down-right
+    fn get_line_char(sx: i32, sy: i32, dx: i32, dy: i32, forced: LineDirection) -> char {
+        match forced {
+            LineDirection::Horizontal => '─',
+            LineDirection::Vertical => '│',
+            LineDirection::Auto => {
+                if dx == 0 {
+                    // Pure vertical
+                    '│'
+                } else if dy == 0 {
+                    // Pure horizontal
+                    '─'
                 } else {
-                    '/' // moving up-right
+                    // Diagonal - determine character based on direction
+                    if sx > 0 {
+                        if sy > 0 {
+                            '\\' // moving down-right
+                        } else {
+                            '/' // moving up-right
+                        }
+                    } else if sy > 0 {
+                        '/' // moving down-left
+                    } else {
+                        '\\' // moving up-left
+                    }
                 }
-            } else if sy > 0 {
-                '/' // moving down-left
-            } else {
-                '\\' // moving up-left
             }
         }
     }
@@ -50,8 +104,8 @@ impl LineTool {
         let sx = if x1 < x2 { 1 } else { -1 };
         let sy = if y1 < y2 { 1 } else { -1 };
 
-        // Get the character for this line's primary direction
-        let ch = Self::get_line_char(sx, sy, dx, dy);
+        // Get the character based on forced direction or auto-detect
+        let ch = Self::get_line_char(sx, sy, dx, dy, self.direction);
 
         let mut err = dx - dy;
         let mut x = x1;
@@ -116,6 +170,10 @@ impl Tool for LineTool {
 
     fn is_active(&self) -> bool {
         self.start.is_some()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

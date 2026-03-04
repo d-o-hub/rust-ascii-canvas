@@ -34,7 +34,6 @@
 //! state.set_tool(ToolId::Rectangle);
 //! ```
 
-#![allow(dead_code)]
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 

@@ -2,58 +2,9 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Result of processing a user event.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
-pub struct EventResult {
-    /// Whether the canvas needs redraw
-    pub needs_redraw: bool,
-    /// Current tool name
-    pub tool: String,
-    /// Whether undo is available
-    pub can_undo: bool,
-    /// Whether redo is available
-    pub can_redo: bool,
-    /// Whether to copy ASCII to clipboard
-    pub should_copy: bool,
-    /// ASCII content for clipboard
-    pub ascii: Option<String>,
-    /// Cursor position in grid coordinates
-    pub cursor: Option<(i32, i32)>,
-}
-
-impl EventResult {
-    /// Create a new event result.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Set needs redraw flag.
-    pub fn with_redraw(mut self, redraw: bool) -> Self {
-        self.needs_redraw = redraw;
-        self
-    }
-
-    /// Set tool name.
-    pub fn with_tool(mut self, tool: impl Into<String>) -> Self {
-        self.tool = tool.into();
-        self
-    }
-
-    /// Set clipboard copy data.
-    pub fn with_copy(mut self, ascii: String) -> Self {
-        self.should_copy = true;
-        self.ascii = Some(ascii);
-        self
-    }
-
-    /// Set cursor position.
-    pub fn with_cursor(mut self, x: i32, y: i32) -> Self {
-        self.cursor = Some((x, y));
-        self
-    }
-}
-
 /// Key modifier state.
+/// Reserved for future use with advanced event handling from JavaScript.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct KeyModifiers {
     pub ctrl: bool,
@@ -63,6 +14,8 @@ pub struct KeyModifiers {
 }
 
 impl KeyModifiers {
+    /// Reserved for future use.
+    #[allow(dead_code)]
     pub fn new(ctrl: bool, shift: bool, alt: bool, meta: bool) -> Self {
         Self {
             ctrl,
@@ -74,6 +27,8 @@ impl KeyModifiers {
 }
 
 /// Mouse button identifier.
+/// Reserved for future use with advanced event handling from JavaScript.
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MouseButton {
     Left,
@@ -82,6 +37,8 @@ pub enum MouseButton {
 }
 
 impl MouseButton {
+    /// Reserved for future use.
+    #[allow(dead_code)]
     pub fn from_button(button: i16) -> Option<Self> {
         match button {
             0 => Some(Self::Left),
@@ -93,6 +50,8 @@ impl MouseButton {
 }
 
 /// Pointer event data.
+/// Reserved for future use with advanced event handling from JavaScript.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PointerEventData {
     /// Screen X coordinate
@@ -112,6 +71,8 @@ pub struct PointerEventData {
 }
 
 /// Keyboard event data.
+/// Reserved for future use with advanced event handling from JavaScript.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyboardEventData {
     /// Key value
@@ -125,6 +86,8 @@ pub struct KeyboardEventData {
 }
 
 /// Wheel event data.
+/// Reserved for future use with advanced event handling from JavaScript.
+#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WheelEventData {
     /// Screen X coordinate
@@ -144,19 +107,6 @@ pub struct WheelEventData {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_event_result() {
-        let result = EventResult::new()
-            .with_redraw(true)
-            .with_tool("Rectangle")
-            .with_copy("test".to_string());
-
-        assert!(result.needs_redraw);
-        assert_eq!(result.tool, "Rectangle");
-        assert!(result.should_copy);
-        assert_eq!(result.ascii, Some("test".to_string()));
-    }
 
     #[test]
     fn test_mouse_button() {

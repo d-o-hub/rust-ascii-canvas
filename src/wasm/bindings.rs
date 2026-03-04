@@ -1,45 +1,46 @@
 //! WASM bindings - main entry point for JavaScript interop.
 
-use crate::core::ascii_export::{export_grid, ExportOptions};
+#![allow(missing_docs)]
+
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
-use crate::core::tools::{
-    ArrowTool, BorderStyle, DiamondTool, DrawOp, EraserTool, FreehandTool, LineTool, RectangleTool,
-    SelectTool, TextTool, Tool, ToolContext, ToolId,
-};
+use crate::core::selection::{Selection, SelectionClipboard};
+use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolContext, ToolId};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
-use serde::{Deserialize, Serialize};
+use crate::wasm::render_bridge::{
+    create_event_result, create_event_result_with_copy, export_ascii, get_dirty_render_commands,
+    get_render_commands, get_render_commands_full, needs_redraw, request_full_redraw,
+    EditorEventResult,
+};
+use crate::wasm::tool_manager::{
+    parse_tool_id, set_border_style, set_line_direction, set_tool_by_id,
+};
 use wasm_bindgen::prelude::*;
 
-/// Main ASCII editor class exposed to JavaScript.
 #[wasm_bindgen]
 pub struct AsciiEditor {
-    /// Editor state
     state: EditorState,
-    /// History for undo/redo
     history: History,
-    /// Canvas renderer
     renderer: CanvasRenderer,
-    /// Dirty region tracker
     dirty_tracker: DirtyTracker,
-    /// Active tool
     active_tool: Box<dyn Tool>,
-    /// Currently active tool ID
     tool_id: ToolId,
-    /// Preview operations (shown during drag but not committed)
     preview_ops: Vec<DrawOp>,
-    /// Space key held for panning
+    current_selection: Option<Selection>,
+    clipboard: SelectionClipboard,
     space_held: bool,
-    /// Currently panning
     is_panning: bool,
-    /// Last pan position
     last_pan_pos: Option<(f64, f64)>,
+    /// Content and position when moving a selection
+    move_clipboard: Option<SelectionClipboard>,
+    move_original_selection: Option<Selection>,
+    /// Track if select tool is currently moving
+    is_moving_selection: bool,
 }
 
 #[wasm_bindgen]
 impl AsciiEditor {
-    /// Create a new ASCII editor.
     #[wasm_bindgen(constructor)]
     pub fn new(width: usize, height: usize) -> Self {
         let state = EditorState::new(width, height);
@@ -53,124 +54,93 @@ impl AsciiEditor {
             active_tool: Box::new(RectangleTool::new()),
             tool_id: ToolId::Rectangle,
             preview_ops: Vec::new(),
+            current_selection: None,
+            clipboard: SelectionClipboard::new(),
             space_held: false,
             is_panning: false,
             last_pan_pos: None,
+            move_clipboard: None,
+            move_original_selection: None,
+            is_moving_selection: false,
         }
     }
 
-    /// Get grid width.
     #[wasm_bindgen(getter)]
     pub fn width(&self) -> usize {
         self.state.grid.width()
     }
 
-    /// Get grid height.
     #[wasm_bindgen(getter)]
     pub fn height(&self) -> usize {
         self.state.grid.height()
     }
 
-    /// Get current tool ID.
     #[wasm_bindgen(getter)]
     pub fn tool(&self) -> String {
         self.tool_id.name().to_string()
     }
 
-    /// Set the current tool by ID.
     #[wasm_bindgen(js_name = setTool)]
     pub fn set_tool(&mut self, tool_id: String) {
-        if let Some(id) = self.parse_tool_id(&tool_id) {
-            self.set_tool_by_id(id);
+        if let Some(id) = parse_tool_id(&tool_id) {
+            self.set_tool_by_id_impl(id);
         }
     }
 
-    /// Set tool by keyboard shortcut.
     #[wasm_bindgen(js_name = setToolByShortcut)]
     pub fn set_tool_by_shortcut(&mut self, shortcut: char) -> bool {
         if let Some(id) = ToolId::from_shortcut(shortcut) {
-            self.set_tool_by_id(id);
+            self.set_tool_by_id_impl(id);
             true
         } else {
             false
         }
     }
 
-    fn parse_tool_id(&self, s: &str) -> Option<ToolId> {
-        match s.to_lowercase().as_str() {
-            "rectangle" | "rect" | "r" => Some(ToolId::Rectangle),
-            "line" | "l" => Some(ToolId::Line),
-            "arrow" | "a" => Some(ToolId::Arrow),
-            "diamond" | "d" => Some(ToolId::Diamond),
-            "text" | "t" => Some(ToolId::Text),
-            "freehand" | "f" => Some(ToolId::Freehand),
-            "select" | "v" => Some(ToolId::Select),
-            "eraser" | "e" => Some(ToolId::Eraser),
-            _ => None,
-        }
-    }
-
-    fn set_tool_by_id(&mut self, id: ToolId) {
-        self.active_tool.reset();
-        self.preview_ops.clear();
+    fn set_tool_by_id_impl(&mut self, id: ToolId) {
         self.tool_id = id;
-        self.state.tool = id;
-
-        self.active_tool = match id {
-            ToolId::Rectangle => Box::new(RectangleTool::new()),
-            ToolId::Line => Box::new(LineTool::new()),
-            ToolId::Arrow => Box::new(ArrowTool::new()),
-            ToolId::Diamond => Box::new(DiamondTool::new()),
-            ToolId::Text => Box::new(TextTool::new()),
-            ToolId::Freehand => Box::new(FreehandTool::new()),
-            ToolId::Select => Box::new(SelectTool::new()),
-            ToolId::Eraser => Box::new(EraserTool::new()),
-        };
+        set_tool_by_id(
+            &mut self.active_tool,
+            &mut self.tool_id,
+            &mut self.preview_ops,
+            &mut self.state,
+            &mut self.current_selection,
+        );
     }
 
-    /// Set border style for shapes.
     #[wasm_bindgen(js_name = setBorderStyle)]
     pub fn set_border_style(&mut self, style: String) {
-        let style = match style.to_lowercase().as_str() {
-            "single" => BorderStyle::Single,
-            "double" => BorderStyle::Double,
-            "heavy" => BorderStyle::Heavy,
-            "rounded" => BorderStyle::Rounded,
-            "ascii" => BorderStyle::Ascii,
-            "dotted" => BorderStyle::Dotted,
-            _ => BorderStyle::Single,
-        };
-        self.state.border_style = style;
+        set_border_style(&mut self.state, style);
     }
 
-    /// Set zoom level.
+    #[wasm_bindgen(js_name = setLineDirection)]
+    pub fn set_line_direction(&mut self, direction: String) {
+        set_line_direction(self.tool_id, &mut self.active_tool, direction);
+    }
+
     #[wasm_bindgen(js_name = setZoom)]
     pub fn set_zoom(&mut self, zoom: f64) {
         self.renderer.set_zoom(zoom);
         self.dirty_tracker.request_full_redraw();
     }
 
-    /// Get zoom level.
     #[wasm_bindgen(getter)]
     pub fn zoom(&self) -> f64 {
         self.renderer.zoom()
     }
 
-    /// Set pan offset.
     #[wasm_bindgen(js_name = setPan)]
     pub fn set_pan(&mut self, x: f64, y: f64) {
         self.renderer.set_pan(x, y);
         self.dirty_tracker.request_full_redraw();
     }
 
-    /// Get pan offset.
     #[wasm_bindgen(getter = pan)]
     pub fn get_pan(&self) -> Vec<f64> {
         let (x, y) = self.renderer.pan();
         vec![x, y]
     }
 
-    /// Set font metrics from measured values.
     #[wasm_bindgen(js_name = setFontMetrics)]
     pub fn set_font_metrics(&mut self, char_width: f64, line_height: f64, size: f64) {
         let mut metrics = FontMetrics::new("JetBrains Mono, monospace", size);
@@ -180,7 +150,6 @@ impl AsciiEditor {
         self.dirty_tracker.request_full_redraw();
     }
 
-    /// Handle pointer down event.
     #[wasm_bindgen(js_name = onPointerDown)]
     pub fn on_pointer_down(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.space_held {
@@ -194,16 +163,33 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
 
-        self.preview_ops = result.ops.clone();
-
-        if result.finished && result.modified {
-            self.commit_ops(&result.ops);
+        // If select tool and clicking inside selection, start moving
+        if self.tool_id == ToolId::Select {
+            if let Some(ref sel) = self.current_selection {
+                if sel.contains(x, y) {
+                    self.is_moving_selection = true;
+                    self.start_selection_move();
+                } else {
+                    self.is_moving_selection = false;
+                }
+            }
         }
 
-        serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL)
+        if self.is_incremental_tool() && result.modified {
+            // For freehand/eraser, commit each stroke point immediately
+            self.commit_ops(&result.ops);
+            self.preview_ops.clear();
+        } else {
+            self.preview_ops = result.ops.clone();
+            if !self.preview_ops.is_empty() {
+                self.dirty_tracker.request_full_redraw();
+            }
+        }
+
+        let event_result = self.create_event_result();
+        serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
     }
 
-    /// Handle pointer move event.
     #[wasm_bindgen(js_name = onPointerMove)]
     pub fn on_pointer_move(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.is_panning {
@@ -215,8 +201,8 @@ impl AsciiEditor {
                 self.dirty_tracker.request_full_redraw();
             }
             self.last_pan_pos = Some((screen_x, screen_y));
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
@@ -224,19 +210,41 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_move(x, y, &ctx);
 
-        self.preview_ops = result.ops.clone();
+        if self.is_incremental_tool() && result.modified {
+            // For freehand/eraser, commit each stroke segment immediately
+            self.commit_ops(&result.ops);
+            self.preview_ops.clear();
+        } else if !result.ops.is_empty() {
+            // For shape tools (rect, line, etc.), store as preview overlay
+            self.preview_ops = result.ops.clone();
+            self.dirty_tracker.request_full_redraw();
+        }
 
-        serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL)
+        // Update selection during select tool drag (triggers redraw for highlight)
+        if self.tool_id == ToolId::Select {
+            self.update_select_tool_selection();
+
+            // If moving, generate preview ops
+            if self.is_select_moving() {
+                self.preview_ops = self.generate_move_preview_ops();
+            }
+
+            if self.current_selection.is_some() || !self.preview_ops.is_empty() {
+                self.dirty_tracker.request_full_redraw();
+            }
+        }
+
+        let event_result = self.create_event_result();
+        serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
     }
 
-    /// Handle pointer up event.
     #[wasm_bindgen(js_name = onPointerUp)]
     pub fn on_pointer_up(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.is_panning {
             self.is_panning = false;
             self.last_pan_pos = None;
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
@@ -246,63 +254,102 @@ impl AsciiEditor {
 
         self.preview_ops.clear();
 
+        if self.tool_id == ToolId::Select {
+            // If we were moving, commit the move
+            if self.is_moving_selection {
+                self.commit_selection_move();
+                self.is_moving_selection = false;
+            }
+
+            self.update_select_tool_selection();
+            // Always redraw to show/update selection highlight
+            self.dirty_tracker.request_full_redraw();
+        }
+
         if result.modified {
             self.commit_ops(&result.ops);
         }
 
-        serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL)
+        let event_result = self.create_event_result();
+        serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
     }
 
-    /// Handle keyboard input.
+    fn update_select_tool_selection(&mut self) {
+        self.current_selection = self.active_tool.get_selection();
+    }
+
     #[wasm_bindgen(js_name = onKeyDown)]
     pub fn on_key_down(&mut self, key: String, ctrl: bool, shift: bool) -> JsValue {
         let key_char = key.chars().next().unwrap_or('\0');
 
-        // Handle escape to cancel active operations
         if key == "Escape" {
             self.active_tool.reset();
             self.preview_ops.clear();
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
-        // Handle space for panning
         if key_char == ' ' && !ctrl && !shift {
             self.space_held = true;
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
-        // Handle undo/redo
         if ctrl && !shift && key.to_lowercase() == "z" {
             self.undo();
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
         if ctrl && shift && key.to_lowercase() == "z" {
             self.redo();
-            return serde_wasm_bindgen::to_value(&self.create_event_result())
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
-        // Handle copy
         if ctrl && key.to_lowercase() == "c" {
-            return serde_wasm_bindgen::to_value(&self.create_event_result_with_copy(true))
-                .unwrap_or(JsValue::NULL);
+            let event_result = self.create_event_result_with_copy(true);
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
-        // Handle tool shortcuts only when tool is not active
-        // This prevents shortcuts from interrupting text input, selection, etc.
-        if !ctrl && !shift && !self.active_tool.is_active() {
-            if let Some(tool_id) = ToolId::from_shortcut(key_char) {
-                self.set_tool_by_id(tool_id);
-                return serde_wasm_bindgen::to_value(&self.create_event_result())
-                    .unwrap_or(JsValue::NULL);
+        if ctrl && key.to_lowercase() == "x" && self.cut_selection() {
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
+        }
+
+        if ctrl && key.to_lowercase() == "v" && self.paste() {
+            let event_result = self.create_event_result();
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
+        }
+
+        if !ctrl && (key == "Delete" || key == "Backspace") {
+            if self.tool_id == ToolId::Select
+                && self.current_selection.is_some()
+                && self.delete_selection()
+            {
+                let event_result = self.create_event_result();
+                return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
+            }
+            if self.tool_id == ToolId::Text && self.active_tool.is_active() {
+                let ctx = self.create_tool_context();
+                let delete_char = if key == "Delete" { '\0' } else { '\x08' };
+                let result = self.active_tool.on_key(delete_char, &ctx);
+                if result.modified {
+                    self.commit_ops(&result.ops);
+                }
+                let event_result = self.create_event_result();
+                return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
             }
         }
 
-        // Handle text input
+        if !ctrl && !shift && !self.active_tool.is_active() {
+            if let Some(tool_id) = ToolId::from_shortcut(key_char) {
+                self.set_tool_by_id_impl(tool_id);
+                let event_result = self.create_event_result();
+                return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
+            }
+        }
+
         if self.tool_id == ToolId::Text && self.active_tool.is_active() {
             let ctx = self.create_tool_context();
             let result = self.active_tool.on_key(key_char, &ctx);
@@ -311,10 +358,10 @@ impl AsciiEditor {
             }
         }
 
-        serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL)
+        let event_result = self.create_event_result();
+        serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
     }
 
-    /// Handle key up event.
     #[wasm_bindgen(js_name = onKeyUp)]
     pub fn on_key_up(&mut self, key: String) {
         if key == " " {
@@ -323,14 +370,11 @@ impl AsciiEditor {
         }
     }
 
-    /// Handle mouse wheel for zoom.
     #[wasm_bindgen(js_name = onWheel)]
     pub fn on_wheel(&mut self, delta: f64, screen_x: f64, screen_y: f64) -> JsValue {
-        // Calculate new zoom
         let zoom_factor = if delta > 0.0 { 0.9 } else { 1.1 };
         let new_zoom = self.renderer.zoom() * zoom_factor;
 
-        // Adjust pan to zoom toward cursor position
         let (px, py) = self.renderer.pan();
         let zoom_ratio = new_zoom / self.renderer.zoom();
 
@@ -341,10 +385,10 @@ impl AsciiEditor {
         self.renderer.set_pan(new_pan_x, new_pan_y);
         self.dirty_tracker.request_full_redraw();
 
-        serde_wasm_bindgen::to_value(&self.create_event_result()).unwrap_or(JsValue::NULL)
+        let event_result = self.create_event_result();
+        serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
     }
 
-    /// Perform undo.
     #[wasm_bindgen]
     pub fn undo(&mut self) -> bool {
         let result = self.history.undo(&mut self.state.grid);
@@ -354,7 +398,6 @@ impl AsciiEditor {
         result
     }
 
-    /// Perform redo.
     #[wasm_bindgen]
     pub fn redo(&mut self) -> bool {
         let result = self.history.redo(&mut self.state.grid);
@@ -364,67 +407,194 @@ impl AsciiEditor {
         result
     }
 
-    /// Check if undo is available.
     #[wasm_bindgen(getter)]
     pub fn can_undo(&self) -> bool {
         self.history.can_undo()
     }
 
-    /// Check if redo is available.
     #[wasm_bindgen(getter)]
     pub fn can_redo(&self) -> bool {
         self.history.can_redo()
     }
 
-    /// Clear the canvas.
     #[wasm_bindgen]
     pub fn clear(&mut self) {
         self.state.grid.clear();
         self.history.clear();
+        self.clipboard.clear();
         self.dirty_tracker.request_full_redraw();
     }
 
-    /// Export ASCII to string.
-    #[wasm_bindgen(js_name = exportAscii)]
-    pub fn export_ascii(&self) -> String {
-        let options = ExportOptions::default();
-        export_grid(&self.state.grid, &options)
-    }
-
-    /// Get render commands for JavaScript.
-    #[wasm_bindgen(js_name = getRenderCommands)]
-    pub fn get_render_commands(&self) -> JsValue {
-        let commands = self.renderer.build_full_render(&self.state.grid);
-        serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
-    }
-
-    /// Get dirty render commands.
-    #[wasm_bindgen(js_name = getDirtyRenderCommands)]
-    pub fn get_dirty_render_commands(&mut self) -> JsValue {
-        if self.dirty_tracker.needs_full_redraw() {
-            self.dirty_tracker.clear();
-            return self.get_render_commands();
+    #[wasm_bindgen(js_name = copySelection)]
+    pub fn copy_selection(&mut self) -> bool {
+        if self.tool_id != ToolId::Select {
+            return false;
         }
 
-        let dirty = *self.dirty_tracker.dirty_rect();
-        self.dirty_tracker.clear();
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let width = max_x - min_x + 1;
+            let height = max_y - min_y + 1;
 
-        let commands = self
-            .renderer
-            .build_render_commands(&self.state.grid, &dirty);
-        serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
+            let mut cells = Vec::new();
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    if let Some(cell) = self.state.grid.get(x, y) {
+                        cells.push((x - min_x, y - min_y, *cell));
+                    }
+                }
+            }
+
+            self.clipboard = SelectionClipboard {
+                cells,
+                width,
+                height,
+            };
+            return true;
+        }
+        false
     }
 
-    /// Check if full redraw is needed.
+    #[wasm_bindgen(js_name = cutSelection)]
+    pub fn cut_selection(&mut self) -> bool {
+        if !self.copy_selection() {
+            return false;
+        }
+
+        if self.tool_id == ToolId::Select {
+            if let Some(ref sel) = self.current_selection {
+                let (min_x, min_y, max_x, max_y) = sel.bounds();
+                let mut ops = Vec::new();
+
+                for y in min_y..=max_y {
+                    for x in min_x..=max_x {
+                        ops.push(DrawOp::new(x, y, ' '));
+                    }
+                }
+
+                if !ops.is_empty() {
+                    let mut cmd = DrawCommand::new(ops);
+                    cmd.apply(&mut self.state.grid);
+                    self.history.push(Box::new(cmd));
+                    self.dirty_tracker.request_full_redraw();
+                }
+
+                self.current_selection = None;
+                return true;
+            }
+        }
+        false
+    }
+
+    #[wasm_bindgen]
+    pub fn paste(&mut self) -> bool {
+        if self.clipboard.is_empty() {
+            return false;
+        }
+
+        let grid_width = self.state.grid.width() as i32;
+        let grid_height = self.state.grid.height() as i32;
+        let mut ops = Vec::new();
+
+        for (rel_x, rel_y, cell) in &self.clipboard.cells {
+            let x = *rel_x;
+            let y = *rel_y;
+
+            if x >= 0 && x < grid_width && y >= 0 && y < grid_height {
+                ops.push(DrawOp::new(x, y, cell.ch));
+            }
+        }
+
+        if !ops.is_empty() {
+            let mut cmd = DrawCommand::new(ops);
+            cmd.apply(&mut self.state.grid);
+            self.history.push(Box::new(cmd));
+            self.dirty_tracker.request_full_redraw();
+            return true;
+        }
+        false
+    }
+
+    #[wasm_bindgen(js_name = deleteSelection)]
+    pub fn delete_selection(&mut self) -> bool {
+        if self.tool_id != ToolId::Select {
+            return false;
+        }
+
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let mut ops = Vec::new();
+
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    ops.push(DrawOp::new(x, y, ' '));
+                }
+            }
+
+            if !ops.is_empty() {
+                let mut cmd = DrawCommand::new(ops);
+                cmd.apply(&mut self.state.grid);
+                self.history.push(Box::new(cmd));
+                self.dirty_tracker.request_full_redraw();
+            }
+
+            self.current_selection = None;
+            return true;
+        }
+        false
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn has_clipboard(&self) -> bool {
+        !self.clipboard.is_empty()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn has_selection(&self) -> bool {
+        self.current_selection.is_some()
+    }
+
+    #[wasm_bindgen(js_name = exportAscii)]
+    pub fn export_ascii(&self) -> String {
+        export_ascii(&self.state.grid)
+    }
+
+    #[wasm_bindgen(js_name = getRenderCommands)]
+    pub fn get_render_commands(&self) -> JsValue {
+        let has_preview = !self.preview_ops.is_empty();
+        let has_selection = self.current_selection.is_some();
+
+        if !has_preview && !has_selection {
+            get_render_commands(&self.renderer, &self.state.grid)
+        } else {
+            get_render_commands_full(
+                &self.renderer,
+                &self.state.grid,
+                &self.preview_ops,
+                self.current_selection.as_ref(),
+            )
+        }
+    }
+
+    #[wasm_bindgen(js_name = getDirtyRenderCommands)]
+    pub fn get_dirty_render_commands(&mut self) -> JsValue {
+        get_dirty_render_commands(
+            &mut self.renderer,
+            &self.state.grid,
+            &mut self.dirty_tracker,
+        )
+    }
+
+    /// Check if a redraw is needed.
     #[wasm_bindgen(getter = needsRedraw)]
     pub fn needs_redraw(&self) -> bool {
-        self.dirty_tracker.needs_full_redraw() || !self.dirty_tracker.dirty_rect().is_empty()
+        needs_redraw(&self.dirty_tracker)
     }
 
-    /// Request a full redraw.
+    /// Request a full redraw on the next frame.
     #[wasm_bindgen(js_name = requestRedraw)]
     pub fn request_redraw(&mut self) {
-        self.dirty_tracker.request_full_redraw();
+        request_full_redraw(&mut self.dirty_tracker);
     }
 }
 
@@ -446,21 +616,103 @@ impl AsciiEditor {
         cmd.apply(&mut self.state.grid);
         self.history.push(Box::new(cmd));
 
-        // Mark dirty regions
         for op in ops {
             self.dirty_tracker.mark_dirty(op.x, op.y);
         }
     }
 
-    fn create_event_result(&self) -> EditorEventResult {
-        EditorEventResult {
-            needs_redraw: self.needs_redraw(),
-            tool: self.tool_id.name().to_string(),
-            can_undo: self.can_undo(),
-            can_redo: self.can_redo(),
-            should_copy: false,
-            ascii: None,
+    /// Check if current tool commits incrementally during drag
+    /// (freehand draws points as you move, eraser clears as you move).
+    fn is_incremental_tool(&self) -> bool {
+        matches!(self.tool_id, ToolId::Freehand | ToolId::Eraser)
+    }
+
+    /// Check if select tool is currently moving a selection.
+    fn is_select_moving(&self) -> bool {
+        self.tool_id == ToolId::Select && self.is_moving_selection
+    }
+
+    /// Capture the current selection content before starting a move.
+    fn start_selection_move(&mut self) {
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let width = max_x - min_x + 1;
+            let height = max_y - min_y + 1;
+
+            let mut cells = Vec::new();
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    if let Some(cell) = self.state.grid.get(x, y) {
+                        cells.push((x - min_x, y - min_y, *cell));
+                    }
+                }
+            }
+
+            self.move_clipboard = Some(SelectionClipboard {
+                cells,
+                width,
+                height,
+            });
+            self.move_original_selection = Some(sel.clone());
         }
+    }
+
+    /// Generate preview ops for the current move operation.
+    fn generate_move_preview_ops(&self) -> Vec<DrawOp> {
+        let mut ops = Vec::new();
+
+        if let (Some(ref orig_sel), Some(ref curr_sel), Some(ref move_clip)) = (
+            &self.move_original_selection,
+            &self.current_selection,
+            &self.move_clipboard,
+        ) {
+            let (orig_x, orig_y, orig_x2, orig_y2) = orig_sel.bounds();
+            let (curr_x, curr_y, _, _) = curr_sel.bounds();
+
+            // Only generate ops if we've actually moved
+            if orig_x != curr_x || orig_y != curr_y {
+                // Clear original area
+                for y in orig_y..=orig_y2 {
+                    for x in orig_x..=orig_x2 {
+                        ops.push(DrawOp::new(x, y, ' '));
+                    }
+                }
+
+                // Draw at new position
+                for (rel_x, rel_y, cell) in &move_clip.cells {
+                    let new_x = curr_x + rel_x;
+                    let new_y = curr_y + rel_y;
+
+                    if self.state.grid.in_bounds(new_x, new_y) {
+                        ops.push(DrawOp::new(new_x, new_y, cell.ch));
+                    }
+                }
+            }
+        }
+
+        ops
+    }
+
+    /// Commit the move operation.
+    fn commit_selection_move(&mut self) {
+        let ops = self.generate_move_preview_ops();
+
+        if !ops.is_empty() {
+            self.commit_ops(&ops);
+        }
+
+        // Clear move state
+        self.move_clipboard = None;
+        self.move_original_selection = None;
+    }
+
+    fn create_event_result(&self) -> EditorEventResult {
+        create_event_result(
+            self.needs_redraw(),
+            self.tool_id.name(),
+            self.can_undo(),
+            self.can_redo(),
+        )
     }
 
     fn create_event_result_with_copy(&self, should_copy: bool) -> EditorEventResult {
@@ -470,24 +722,11 @@ impl AsciiEditor {
             None
         };
 
-        EditorEventResult {
-            needs_redraw: false,
-            tool: self.tool_id.name().to_string(),
-            can_undo: self.can_undo(),
-            can_redo: self.can_redo(),
-            should_copy,
-            ascii,
-        }
+        create_event_result_with_copy(
+            self.tool_id.name(),
+            self.can_undo(),
+            self.can_redo(),
+            ascii.unwrap_or_default(),
+        )
     }
-}
-
-/// Result of an editor event.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct EditorEventResult {
-    needs_redraw: bool,
-    tool: String,
-    can_undo: bool,
-    can_redo: bool,
-    should_copy: bool,
-    ascii: Option<String>,
 }

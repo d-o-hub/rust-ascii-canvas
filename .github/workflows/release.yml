@@ -1,0 +1,242 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 0.1.0 or patch/minor/major)'
+        required: false
+        default: 'patch'
+        type: string
+      dry_run:
+        description: 'Dry run (no actual release)'
+        required: false
+        default: 'false'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  guard-rails:
+    name: Guard Rails
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      is_dry_run: ${{ github.inputs.dry_run == 'true' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "release-workflow"
+
+      - name: Run tests
+        run: cargo test --lib --all-features
+
+      - name: Run clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Determine version
+        id: version
+        run: |
+          INPUT_VERSION="${{ github.inputs.version }}"
+          IS_DRY_RUN="${{ github.inputs.dry_run }}"
+          
+          if [ "$IS_DRY_RUN" == "true" ]; then
+            echo "Dry run mode - using 0.0.0-dryrun"
+            echo "version=0.0.0-dryrun" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          if [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Exact version provided
+            echo "version=$INPUT_VERSION" >> $GITHUB_OUTPUT
+          else
+            # Auto-increment
+            case "$INPUT_VERSION" in
+              patch)
+                TAG_TYPE="patch"
+                ;;
+              minor)
+                TAG_TYPE="minor"
+                ;;
+              major)
+                TAG_TYPE="major"
+                ;;
+              *)
+                TAG_TYPE="patch"
+                ;;
+            esac
+            
+            # Get latest tag
+            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            LAST_VERSION=${LAST_TAG#v}
+            
+            # Parse version
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$LAST_VERSION"
+            MAJOR=${MAJOR:-0}
+            MINOR=${MINOR:-0}
+            PATCH=${PATCH:-0}
+            
+            case "$TAG_TYPE" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+            
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Selected version: ${{ steps.version.outputs.version }}"
+
+  build-wasm:
+    name: Build WASM
+    needs: guard-rails
+    runs-on: ubuntu-latest
+    if: needs.guard-rails.outputs.is_dry_run != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --version 0.13.1
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: "release-workflow"
+
+      - name: Build WASM
+        run: wasm-pack build --release --target web --out-dir web/pkg
+
+      - name: Upload WASM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-pkg
+          path: web/pkg
+          retention-days: 1
+
+  create-release:
+    name: Create Release
+    needs: [guard-rails, build-wasm]
+    runs-on: ubuntu-latest
+    if: needs.guard-rails.outputs.is_dry_run != 'true'
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ needs.guard-rails.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: wasm-pkg
+          path: web/pkg
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          VERSION="${{ needs.guard-rails.outputs.version }}"
+          TAG_NAME="v$VERSION"
+          
+          # Get previous tag for changelog
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          
+          if [ -n "$PREV_TAG" ]; then
+            CHANGES=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" 2>/dev/null | grep -v "^$" | head -20)
+          else
+            CHANGES=$(git log --pretty=format:"- %s (%h)" -n 20 | grep -v "^$")
+          fi
+          
+          cat > release_body.md << EOF
+          ## v$VERSION
+          
+          ### Changes
+          $CHANGES
+          
+          ### Quick Start
+          \`\`\`bash
+          wasm-pack build --release --target web --out-dir web/pkg
+          cd web && npm run dev
+          \`\`\`
+          
+          See CHANGELOG.md for full details.
+          EOF
+          
+          cat release_body.md
+
+      - name: Create Release
+        id: create_release
+        run: |
+          VERSION="${{ needs.guard-rails.outputs.version }}"
+          TAG_NAME="v$VERSION"
+          
+          # Create tag
+          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
+          
+          # Create release
+          gh release create "$TAG_NAME" \
+            --title "$TAG_NAME" \
+            --notes-file release_body.md \
+            --draft false \
+            --prerelease false
+          
+          echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
+
+  publish-wasm:
+    name: Publish WASM
+    needs: create-release
+    runs-on: ubuntu-latest
+    if: needs.guard-rails.outputs.is_dry_run != 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Push tags
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          TAG_NAME="v$VERSION"
+          git push origin "$TAG_NAME"
+          git push origin main
+
+  dry-run:
+    name: Dry Run
+    needs: guard-rails
+    runs-on: ubuntu-latest
+    if: needs.guard-rails.outputs.is_dry_run == 'true'
+    steps:
+      - name: Summary
+        run: |
+          echo "## Dry Run Summary"
+          echo "Version: ${{ needs.guard-rails.outputs.version }}"
+          echo ""
+          echo "All guard-rails passed! Ready for release."

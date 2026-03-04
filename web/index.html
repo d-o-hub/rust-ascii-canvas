@@ -32,9 +32,21 @@
                         <span class="tool-label">Rect</span>
                     </button>
                     <button class="tool-btn" data-tool="line" title="Line (L)" aria-label="Line tool">
-                        <span class="tool-icon">─</span>
+                        <span class="tool-icon">╱</span>
                         <span class="tool-label">Line</span>
                     </button>
+                    <!-- Line Direction Options (hidden by default) -->
+                    <div id="line-direction-group" class="tool-group line-options" role="group" aria-label="Line Direction" style="display: none;">
+                        <button class="direction-btn active" data-direction="auto" title="Auto direction" aria-label="Auto">
+                            <span class="tool-icon">◐</span>
+                        </button>
+                        <button class="direction-btn" data-direction="horizontal" title="Horizontal (━)" aria-label="Horizontal">
+                            <span class="tool-icon">━</span>
+                        </button>
+                        <button class="direction-btn" data-direction="vertical" title="Vertical (│)" aria-label="Vertical">
+                            <span class="tool-icon">│</span>
+                        </button>
+                    </div>
                     <button class="tool-btn" data-tool="arrow" title="Arrow (A)" aria-label="Arrow tool">
                         <span class="tool-icon">→</span>
                         <span class="tool-label">Arrow</span>
@@ -191,11 +203,11 @@
     </div>
 
     <!-- Keyboard Shortcuts Modal -->
-    <div id="shortcuts-modal" class="modal-overlay hidden">
+    <div id="shortcuts-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>Keyboard Shortcuts</h2>
-                <button class="modal-close" aria-label="Close">&times;</button>
+                <h2 id="modal-title">Keyboard Shortcuts</h2>
+                <button class="modal-close" aria-label="Close modal">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="shortcuts-section">

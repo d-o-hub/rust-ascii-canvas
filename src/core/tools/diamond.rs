@@ -1,6 +1,7 @@
 //! Diamond tool - draws diamond/rhombus shapes.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use std::any::Any;
 
 /// Diamond drawing tool.
 #[derive(Default)]
@@ -150,6 +151,10 @@ impl Tool for DiamondTool {
 
     fn is_active(&self) -> bool {
         self.start.is_some()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 

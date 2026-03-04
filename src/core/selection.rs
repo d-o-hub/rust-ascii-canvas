@@ -1,6 +1,41 @@
 //! Selection module - represents a rectangular selection on the canvas.
 
+use crate::core::cell::Cell;
 use serde::{Deserialize, Serialize};
+
+/// Internal clipboard for storing copied selection content.
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct SelectionClipboard {
+    /// Cells as (relative_x, relative_y, cell_content)
+    pub cells: Vec<(i32, i32, Cell)>,
+    /// Width of the clipboard content
+    pub width: i32,
+    /// Height of the clipboard content
+    pub height: i32,
+}
+
+impl SelectionClipboard {
+    /// Create a new empty clipboard.
+    pub fn new() -> Self {
+        Self {
+            cells: Vec::new(),
+            width: 0,
+            height: 0,
+        }
+    }
+
+    /// Check if clipboard is empty.
+    pub fn is_empty(&self) -> bool {
+        self.cells.is_empty()
+    }
+
+    /// Clear the clipboard.
+    pub fn clear(&mut self) {
+        self.cells.clear();
+        self.width = 0;
+        self.height = 0;
+    }
+}
 
 /// A rectangular selection region.
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]

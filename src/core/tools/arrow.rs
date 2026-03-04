@@ -1,6 +1,7 @@
 //! Arrow tool - draws lines with arrowheads.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use std::any::Any;
 
 /// Arrow drawing tool.
 #[derive(Default)]
@@ -176,6 +177,10 @@ impl Tool for ArrowTool {
 
     fn is_active(&self) -> bool {
         self.start.is_some()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
     }
 }
 
