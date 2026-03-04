@@ -249,6 +249,39 @@ if let Some(line_tool) = tool.as_any_mut().downcast_mut::<LineTool>() {
 - Reuse existing clipboard + preview ops infrastructure
 - Commit entire move as single undo operation
 
+### Release Workflow (2026-03-04)
+
+**GitHub Release Best Practices 2026**:
+- Use semantic versioning: `vMAJOR.MINOR.PATCH` (e.g., `v0.1.0`)
+- Release title: Just version number `v0.1.0` (not "v0.1.0 - Production Ready")
+- Use GitHub Actions for automated releases with guard-rails
+
+**Release Workflow**:
+```yaml
+# .github/workflows/release.yml
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (patch/minor/major or exact like 0.1.0'
+        default: 'patch'
+```
+
+**Guard-rails Required**:
+1. `cargo test --lib` - Unit tests
+2. `cargo clippy -- -D warnings` - No warnings allowed
+3. `cargo fmt --check` - Code formatting
+4. `wasm-pack build --release` - WASM build
+
+**Local Release**:
+```bash
+# Dry run first
+./scripts/release.sh patch true
+
+# Actual release
+./scripts/release.sh patch
+```
+
 ---
 
 *Last Updated: 2026-03-04*

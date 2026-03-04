@@ -33,7 +33,14 @@ test result: ok. 44 passed; 0 failed; 0 ignored
 
 All 63 E2E tests pass (comprehensive coverage of all tools, undo/redo, zoom, keyboard shortcuts).
 
-### Recent Critical Fixes (2026-03-04)
+### Release v0.1.0 (2026-03-04)
+
+- Created GitHub release workflow (`.github/workflows/release.yml`)
+- Created local release script (`scripts/release.sh`)
+- Release uses semantic versioning: `vMAJOR.MINOR.PATCH`
+- Guard-rails: tests, clippy, fmt, WASM build
+
+### Previous Fixes (2026-03-04 Morning)
 
 #### Select Tool Move Functionality (2026-03-04 Evening)
 - **Issue**: Select tool could create selections but couldn't move them - move logic was stubbed out
