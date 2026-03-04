@@ -35,6 +35,19 @@ All 63 E2E tests pass (comprehensive coverage of all tools, undo/redo, zoom, key
 
 ### Recent Critical Fixes (2026-03-04)
 
+#### Select Tool Move Functionality (2026-03-04 Evening)
+- **Issue**: Select tool could create selections but couldn't move them - move logic was stubbed out
+- **Fix**: Implemented full move functionality at editor level:
+  1. Added `move_clipboard`, `move_original_selection`, and `is_moving_selection` state to AsciiEditor
+  2. `on_pointer_down`: Detect click inside selection → capture content
+  3. `on_pointer_move`: Generate preview ops (clear original + draw at new position)
+  4. `on_pointer_up`: Commit as single undo operation
+  5. Select tool updates selection bounds during drag
+- **Files**: `src/core/tools/select.rs`, `src/wasm/bindings.rs`
+- **Tests**: ✅ All 63 E2E tests pass including "should select and move a shape"
+
+### Previous Fixes (2026-03-04 Morning)
+
 #### Tool Switching Bug
 - `set_tool_by_id_impl` ignored its `_id` parameter — tool was never actually switched
 - Fixed: `self.tool_id = id` before delegating to `set_tool_by_id`

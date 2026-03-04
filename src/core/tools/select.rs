@@ -73,6 +73,20 @@ impl SelectTool {
     fn should_start_move(&self, x: i32, y: i32) -> bool {
         self.selection.is_some() && self.point_in_selection(x, y)
     }
+
+    /// Get the move offset if currently moving.
+    pub fn get_move_offset(&self) -> Option<(i32, i32)> {
+        if self.moving {
+            self.move_offset
+        } else {
+            None
+        }
+    }
+
+    /// Check if currently moving a selection.
+    pub fn is_moving(&self) -> bool {
+        self.moving
+    }
 }
 
 impl Tool for SelectTool {
@@ -107,7 +121,26 @@ impl Tool for SelectTool {
             }
         }
 
-        // Moving is handled by the editor state
+        if self.moving {
+            if let Some((offset_x, offset_y)) = self.move_offset {
+                if let Some(ref mut sel) = self.selection {
+                    // Calculate new position based on drag point minus offset
+                    let new_x1 = x - offset_x;
+                    let new_y1 = y - offset_y;
+                    let width = sel.width() - 1;
+                    let height = sel.height() - 1;
+
+                    // Update selection bounds to new position
+                    sel.x1 = new_x1;
+                    sel.y1 = new_y1;
+                    sel.x2 = new_x1 + width;
+                    sel.y2 = new_y1 + height;
+                }
+            }
+            // Return with preview flag to indicate moving
+            return ToolResult::new();
+        }
+
         ToolResult::new()
     }
 

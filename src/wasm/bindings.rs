@@ -32,6 +32,11 @@ pub struct AsciiEditor {
     space_held: bool,
     is_panning: bool,
     last_pan_pos: Option<(f64, f64)>,
+    /// Content and position when moving a selection
+    move_clipboard: Option<SelectionClipboard>,
+    move_original_selection: Option<Selection>,
+    /// Track if select tool is currently moving
+    is_moving_selection: bool,
 }
 
 #[wasm_bindgen]
@@ -54,6 +59,9 @@ impl AsciiEditor {
             space_held: false,
             is_panning: false,
             last_pan_pos: None,
+            move_clipboard: None,
+            move_original_selection: None,
+            is_moving_selection: false,
         }
     }
 
@@ -155,6 +163,18 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
 
+        // If select tool and clicking inside selection, start moving
+        if self.tool_id == ToolId::Select {
+            if let Some(ref sel) = self.current_selection {
+                if sel.contains(x, y) {
+                    self.is_moving_selection = true;
+                    self.start_selection_move();
+                } else {
+                    self.is_moving_selection = false;
+                }
+            }
+        }
+
         if self.is_incremental_tool() && result.modified {
             // For freehand/eraser, commit each stroke point immediately
             self.commit_ops(&result.ops);
@@ -203,7 +223,13 @@ impl AsciiEditor {
         // Update selection during select tool drag (triggers redraw for highlight)
         if self.tool_id == ToolId::Select {
             self.update_select_tool_selection();
-            if self.current_selection.is_some() {
+
+            // If moving, generate preview ops
+            if self.is_select_moving() {
+                self.preview_ops = self.generate_move_preview_ops();
+            }
+
+            if self.current_selection.is_some() || !self.preview_ops.is_empty() {
                 self.dirty_tracker.request_full_redraw();
             }
         }
@@ -229,6 +255,12 @@ impl AsciiEditor {
         self.preview_ops.clear();
 
         if self.tool_id == ToolId::Select {
+            // If we were moving, commit the move
+            if self.is_moving_selection {
+                self.commit_selection_move();
+                self.is_moving_selection = false;
+            }
+
             self.update_select_tool_selection();
             // Always redraw to show/update selection highlight
             self.dirty_tracker.request_full_redraw();
@@ -593,6 +625,85 @@ impl AsciiEditor {
     /// (freehand draws points as you move, eraser clears as you move).
     fn is_incremental_tool(&self) -> bool {
         matches!(self.tool_id, ToolId::Freehand | ToolId::Eraser)
+    }
+
+    /// Check if select tool is currently moving a selection.
+    fn is_select_moving(&self) -> bool {
+        self.tool_id == ToolId::Select && self.is_moving_selection
+    }
+
+    /// Capture the current selection content before starting a move.
+    fn start_selection_move(&mut self) {
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let width = max_x - min_x + 1;
+            let height = max_y - min_y + 1;
+
+            let mut cells = Vec::new();
+            for y in min_y..=max_y {
+                for x in min_x..=max_x {
+                    if let Some(cell) = self.state.grid.get(x, y) {
+                        cells.push((x - min_x, y - min_y, *cell));
+                    }
+                }
+            }
+
+            self.move_clipboard = Some(SelectionClipboard {
+                cells,
+                width,
+                height,
+            });
+            self.move_original_selection = Some(sel.clone());
+        }
+    }
+
+    /// Generate preview ops for the current move operation.
+    fn generate_move_preview_ops(&self) -> Vec<DrawOp> {
+        let mut ops = Vec::new();
+
+        if let (Some(ref orig_sel), Some(ref curr_sel), Some(ref move_clip)) = (
+            &self.move_original_selection,
+            &self.current_selection,
+            &self.move_clipboard,
+        ) {
+            let (orig_x, orig_y, orig_x2, orig_y2) = orig_sel.bounds();
+            let (curr_x, curr_y, _, _) = curr_sel.bounds();
+
+            // Only generate ops if we've actually moved
+            if orig_x != curr_x || orig_y != curr_y {
+                // Clear original area
+                for y in orig_y..=orig_y2 {
+                    for x in orig_x..=orig_x2 {
+                        ops.push(DrawOp::new(x, y, ' '));
+                    }
+                }
+
+                // Draw at new position
+                for (rel_x, rel_y, cell) in &move_clip.cells {
+                    let new_x = curr_x + rel_x;
+                    let new_y = curr_y + rel_y;
+
+                    if self.state.grid.in_bounds(new_x, new_y) {
+                        ops.push(DrawOp::new(new_x, new_y, cell.ch));
+                    }
+                }
+            }
+        }
+
+        ops
+    }
+
+    /// Commit the move operation.
+    fn commit_selection_move(&mut self) {
+        let ops = self.generate_move_preview_ops();
+
+        if !ops.is_empty() {
+            self.commit_ops(&ops);
+        }
+
+        // Clear move state
+        self.move_clipboard = None;
+        self.move_original_selection = None;
     }
 
     fn create_event_result(&self) -> EditorEventResult {

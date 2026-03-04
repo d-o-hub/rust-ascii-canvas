@@ -794,5 +794,73 @@ Multiple bugs in this codebase followed the same pattern: functionality was **im
 - `build_selection_render()` — existed but never called
 - `preview_ops` — stored but never rendered
 - `set_tool_by_id_impl(_id)` — parameter accepted but never used
+- **Select tool move** — infrastructure existed (`moving` flag, `move_offset`) but no actual move logic
 
 When reviewing code, watch for: unused parameters (`_` prefix), functions with no callers, and data stored but never read.
+
+---
+
+## Select Tool Move Implementation (2026-03-04)
+
+### Problem
+Select tool had move infrastructure (flags, state) but comment said "Moving is handled by the editor state" — which was not implemented.
+
+### Solution Architecture
+Move logic implemented at **editor level** (not tool level) because:
+1. Tool doesn't have access to grid content
+2. Move is essentially: copy → clear original → paste at new location
+3. Editor already has clipboard infrastructure from copy/paste
+
+### Implementation Pattern
+
+```rust
+// State in AsciiEditor
+move_clipboard: Option<SelectionClipboard>,       // Captured content
+move_original_selection: Option<Selection>,       // Original bounds
+is_moving_selection: bool,                        // Move active flag
+
+// On pointer down - detect and capture
+if self.tool_id == ToolId::Select {
+    if let Some(ref sel) = self.current_selection {
+        if sel.contains(x, y) {  // Clicked inside?
+            self.is_moving_selection = true;
+            self.start_selection_move();  // Capture content
+        }
+    }
+}
+
+// On pointer move - generate preview
+if self.is_select_moving() {
+    self.preview_ops = self.generate_move_preview_ops();  // Clear old + draw new
+}
+
+// On pointer up - commit
+if self.is_moving_selection {
+    self.commit_selection_move();  // As single undo operation
+    self.is_moving_selection = false;
+}
+```
+
+### Key Design Decisions
+
+1. **Preview during drag**: Uses same `preview_ops` mechanism as other tools
+2. **Single undo operation**: Entire move commits as one command (not separate clear + paste)
+3. **Bounds clamping**: Selection bounds update during drag, respecting grid limits
+4. **State management**: Move state tracked at editor level, select tool just updates bounds
+
+### Lessons Learned
+
+1. **Tool vs Editor responsibilities**:
+   - Tool: Handle pointer events, update internal state (selection bounds)
+   - Editor: Access grid, generate ops, manage history
+   
+2. **Reuse existing patterns**: Move reuses clipboard + preview ops infrastructure
+
+3. **State flags**: Sometimes adding a simple boolean flag (`is_moving_selection`) is cleaner than complex trait downcasting
+
+4. **Testing**: E2E test already existed (`should select and move a shape`) — fix made it pass
+
+### Related Code
+- `src/core/tools/select.rs:101-132` — Select tool move state
+- `src/wasm/bindings.rs:633-686` — Editor move logic
+- `e2e/canvas.spec.ts:451-472` — E2E test
