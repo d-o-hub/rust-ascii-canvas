@@ -275,7 +275,21 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 - ✅ **1.6**: Removed empty web/postcss.config.js
 - ✅ **1.7**: Renamed ADR-005 to ADR-005a and ADR-005b
 
-**CI Verification**: ✅ All tests pass (Rust + E2E)
+### Critical Bug Fixes (2026-03-04)
+
+#### Tool Switching Bug
+- **Root cause**: `set_tool_by_id_impl` had unused `_id` parameter — tool_id was never updated
+- **Fix**: `self.tool_id = id` before calling `set_tool_by_id` (`bindings.rs:92`)
+
+#### Drawing Position / Preview Bug  
+- **Root cause**: `preview_ops` stored during drag but never rendered; `needs_redraw` false during pointer_move
+- **Three issues fixed**:
+  1. `build_full_render_with_preview()` added to `canvas_renderer.rs` — renders preview ops as overlay
+  2. `on_pointer_move` now calls `dirty_tracker.request_full_redraw()` when preview ops exist
+  3. Freehand/eraser tools now commit ops incrementally during drag via `is_incremental_tool()` check
+- **Files changed**: `canvas_renderer.rs`, `render_bridge.rs`, `bindings.rs`
+
+**CI Verification**: ✅ All 63 E2E tests pass, 125 Rust tests pass, clippy clean
 
 ---
 

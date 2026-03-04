@@ -10,7 +10,8 @@ use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
 use crate::wasm::render_bridge::{
     create_event_result, create_event_result_with_copy, export_ascii, get_dirty_render_commands,
-    get_render_commands, needs_redraw, request_full_redraw, EditorEventResult,
+    get_render_commands, get_render_commands_with_preview, needs_redraw, request_full_redraw,
+    EditorEventResult,
 };
 use crate::wasm::tool_manager::{
     parse_tool_id, set_border_style, set_line_direction, set_tool_by_id,
@@ -154,10 +155,15 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
 
-        self.preview_ops = result.ops.clone();
-
-        if result.finished && result.modified {
+        if self.is_incremental_tool() && result.modified {
+            // For freehand/eraser, commit each stroke point immediately
             self.commit_ops(&result.ops);
+            self.preview_ops.clear();
+        } else {
+            self.preview_ops = result.ops.clone();
+            if !self.preview_ops.is_empty() {
+                self.dirty_tracker.request_full_redraw();
+            }
         }
 
         let event_result = self.create_event_result();
@@ -184,7 +190,15 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_move(x, y, &ctx);
 
-        self.preview_ops = result.ops.clone();
+        if self.is_incremental_tool() && result.modified {
+            // For freehand/eraser, commit each stroke segment immediately
+            self.commit_ops(&result.ops);
+            self.preview_ops.clear();
+        } else if !result.ops.is_empty() {
+            // For shape tools (rect, line, etc.), store as preview overlay
+            self.preview_ops = result.ops.clone();
+            self.dirty_tracker.request_full_redraw();
+        }
 
         let event_result = self.create_event_result();
         serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
@@ -505,7 +519,11 @@ impl AsciiEditor {
 
     #[wasm_bindgen(js_name = getRenderCommands)]
     pub fn get_render_commands(&self) -> JsValue {
-        get_render_commands(&self.renderer, &self.state.grid)
+        if self.preview_ops.is_empty() {
+            get_render_commands(&self.renderer, &self.state.grid)
+        } else {
+            get_render_commands_with_preview(&self.renderer, &self.state.grid, &self.preview_ops)
+        }
     }
 
     #[wasm_bindgen(js_name = getDirtyRenderCommands)]
@@ -551,6 +569,12 @@ impl AsciiEditor {
         for op in ops {
             self.dirty_tracker.mark_dirty(op.x, op.y);
         }
+    }
+
+    /// Check if current tool commits incrementally during drag
+    /// (freehand draws points as you move, eraser clears as you move).
+    fn is_incremental_tool(&self) -> bool {
+        matches!(self.tool_id, ToolId::Freehand | ToolId::Eraser)
     }
 
     fn create_event_result(&self) -> EditorEventResult {

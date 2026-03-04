@@ -153,6 +153,15 @@ impl CanvasRenderer {
 
     /// Build full render commands (for initial render).
     pub fn build_full_render(&self, grid: &Grid) -> Vec<RenderCommand> {
+        self.build_full_render_with_preview(grid, &[])
+    }
+
+    /// Build full render commands with preview overlay ops.
+    pub fn build_full_render_with_preview(
+        &self,
+        grid: &Grid,
+        preview_ops: &[crate::core::tools::DrawOp],
+    ) -> Vec<RenderCommand> {
         let mut commands = vec![RenderCommand::Clear {
             color: self.bg_color.clone(),
         }];
@@ -184,6 +193,19 @@ impl CanvasRenderer {
                     x: sx,
                     y: sy + self.metrics.baseline * self.zoom,
                     char: cell.ch,
+                    scale: self.zoom,
+                });
+            }
+        }
+
+        // Draw preview ops (temporary overlay during drag)
+        for op in preview_ops {
+            if op.cell.is_visible() {
+                let (sx, sy) = self.grid_to_screen(op.x, op.y);
+                commands.push(RenderCommand::DrawChar {
+                    x: sx,
+                    y: sy + self.metrics.baseline * self.zoom,
+                    char: op.cell.ch,
                     scale: self.zoom,
                 });
             }

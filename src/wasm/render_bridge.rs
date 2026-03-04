@@ -64,6 +64,15 @@ pub(crate) fn get_render_commands(renderer: &CanvasRenderer, grid: &crate::core:
     serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
 }
 
+pub(crate) fn get_render_commands_with_preview(
+    renderer: &CanvasRenderer,
+    grid: &crate::core::Grid,
+    preview_ops: &[crate::core::tools::DrawOp],
+) -> JsValue {
+    let commands = renderer.build_full_render_with_preview(grid, preview_ops);
+    serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
+}
+
 pub(crate) fn get_dirty_render_commands(
     renderer: &mut CanvasRenderer,
     grid: &crate::core::Grid,

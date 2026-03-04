@@ -28,24 +28,23 @@ test result: ok. 44 passed; 0 failed; 0 ignored
 
 #### E2E Tests (Playwright - Chromium)
 ```
-12 passed (11.6s)
+63 passed
 ```
 
-All 12 E2E tests pass:
-1. ✅ should load the editor
-2. ✅ should have all tool buttons
-3. ✅ should switch tools when clicked
-4. ✅ should switch tools with keyboard shortcuts
-5. ✅ should draw a rectangle on canvas
-6. ✅ should show border style selector
-7. ✅ should have undo/redo buttons disabled initially
-8. ✅ should have copy button
-9. ✅ should zoom with scroll wheel
-10. ✅ should display cursor position
-11. ✅ should show status bar
-12. ✅ should support all tool shortcuts
+### Recent Critical Fixes (2026-03-04)
 
-> Note: Firefox E2E tests require browser installation (`npx playwright install firefox`)
+#### Tool Switching Bug
+- `set_tool_by_id_impl` ignored its `_id` parameter — tool was never actually switched
+- Fixed: `self.tool_id = id` before delegating to `set_tool_by_id`
+
+#### Drawing Position / Preview Bug
+- `preview_ops` were stored during drag but never rendered — no visual feedback
+- `needs_redraw` was false during pointer_move — canvas never refreshed during drag
+- Freehand/eraser ops only committed on pointer_up — no intermediate drawing visible
+- Fixed with three changes:
+  1. Added `build_full_render_with_preview()` to render preview ops as overlay
+  2. `on_pointer_move` triggers `request_full_redraw()` when preview ops exist
+  3. Freehand/eraser commit incrementally via `is_incremental_tool()` check
 
 ## Architecture
 
