@@ -1,15 +1,30 @@
 {
   "version": 1,
   "skills": {
+    "create-github-pull-request-from-specification": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "2693885db375a1e4a21f66ac69761a86db30911c0a2a9fcb8bac5d9dd05eeb5c"
+    },
     "ln-732-cicd-generator": {
       "source": "levnikolaevich/claude-code-skills",
       "sourceType": "github",
       "computedHash": "1f34b5baef1dcfef00dc297a20efd5181f4a55db8be2b1263d7839a1a67a74af"
     },
+    "my-pull-requests": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "computedHash": "79d5b3c35f5358322bf650f86afbdbf00bb6304ee8464fb424e91b461e3fd412"
+    },
     "rust-wasm": {
       "source": "pluginagentmarketplace/custom-plugin-rust",
       "sourceType": "github",
       "computedHash": "cc1d37d632641d8cd05b8405c2fb522d6bbd46330745ef5fb03234b16609d444"
+    },
+    "technical-writing": {
+      "source": "supercent-io/skills-template",
+      "sourceType": "github",
+      "computedHash": "0245935fbcc7aa2952b8b9799559a7bf9623c097e722124fb501fe1794f9caa6"
     },
     "typescript-expert": {
       "source": "sickn33/antigravity-awesome-skills",
