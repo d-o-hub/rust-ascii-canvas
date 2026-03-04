@@ -19,16 +19,16 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) (1.70+)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/)
+- [Rust](https://rustup.rs/) (1.75+)
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) (0.12.1+)
 - [Node.js](https://nodejs.org/) (18+)
 
 ### Build
 
 ```bash
 # Clone the repository
-git clone https://github.com/user/ascii-canvas.git
-cd ascii-canvas
+git clone https://github.com/d-o-hub/rust-ascii-canvas.git
+cd rust-ascii-canvas
 
 # Build WASM module
 wasm-pack build --release --target web
@@ -103,6 +103,8 @@ The Select tool (V) allows you to:
 | `Ctrl+Z` | Undo |
 | `Ctrl+Shift+Z` | Redo |
 | `Ctrl+C` | Copy ASCII |
+| `Ctrl+X` | Cut selected region |
+| `Ctrl+V` | Paste from clipboard |
 | `Delete/Backspace` | Delete selected region |
 | `Space+Drag` | Pan canvas |
 | `Scroll` | Zoom |
@@ -250,6 +252,32 @@ cargo fmt --check
 ```bash
 ls -lh pkg/ascii_canvas_bg.wasm
 ```
+
+## Troubleshooting
+
+### WASM build fails with "cargo: command not found"
+Ensure Rust is installed and `cargo` is in your PATH:
+```bash
+source ~/.cargo/env
+```
+
+### wasm-pack install fails
+Try specifying the target explicitly:
+```bash
+wasm-pack build --target web
+```
+
+### Browser shows "WebAssembly not supported"
+Ensure you're using a modern browser (Chrome 80+, Firefox 75+, Safari 14+, Edge 80+).
+
+### Build errors about missing dependencies
+```bash
+cargo update
+```
+
+## Version
+
+Current: **v0.1.0**
 
 ## License
 
