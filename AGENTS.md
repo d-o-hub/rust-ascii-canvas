@@ -235,7 +235,21 @@ if let Some(line_tool) = tool.as_any_mut().downcast_mut::<LineTool>() {
 1. **Redundant configs**: Root-level configs that duplicate web/ versions should be removed
 2. **Empty config files**: Files with no meaningful content (empty plugins array) should be removed
 
+### Select Tool Move Implementation (2026-03-04)
+
+**Problem**: Select tool had move infrastructure (flags, offset tracking) but move logic was stubbed out.
+
+**Solution**: Implemented move functionality at editor level (not tool level) because:
+1. Tool doesn't have access to grid content
+2. Move = copy → clear original → paste at new location
+3. Editor already has clipboard infrastructure
+
+**Key Pattern**:
+- Use boolean flags (`is_moving_selection`) instead of complex trait downcasting
+- Reuse existing clipboard + preview ops infrastructure
+- Commit entire move as single undo operation
+
 ---
 
-*Last Updated: 2026-03-03*
+*Last Updated: 2026-03-04*
 *Part of Production Readiness 2026 Initiative*
