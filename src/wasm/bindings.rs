@@ -10,7 +10,7 @@ use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
 use crate::wasm::render_bridge::{
     create_event_result, create_event_result_with_copy, export_ascii, get_dirty_render_commands,
-    get_render_commands, get_render_commands_with_preview, needs_redraw, request_full_redraw,
+    get_render_commands, get_render_commands_full, needs_redraw, request_full_redraw,
     EditorEventResult,
 };
 use crate::wasm::tool_manager::{
@@ -200,6 +200,14 @@ impl AsciiEditor {
             self.dirty_tracker.request_full_redraw();
         }
 
+        // Update selection during select tool drag (triggers redraw for highlight)
+        if self.tool_id == ToolId::Select {
+            self.update_select_tool_selection();
+            if self.current_selection.is_some() {
+                self.dirty_tracker.request_full_redraw();
+            }
+        }
+
         let event_result = self.create_event_result();
         serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL)
     }
@@ -222,6 +230,8 @@ impl AsciiEditor {
 
         if self.tool_id == ToolId::Select {
             self.update_select_tool_selection();
+            // Always redraw to show/update selection highlight
+            self.dirty_tracker.request_full_redraw();
         }
 
         if result.modified {
@@ -519,10 +529,18 @@ impl AsciiEditor {
 
     #[wasm_bindgen(js_name = getRenderCommands)]
     pub fn get_render_commands(&self) -> JsValue {
-        if self.preview_ops.is_empty() {
+        let has_preview = !self.preview_ops.is_empty();
+        let has_selection = self.current_selection.is_some();
+
+        if !has_preview && !has_selection {
             get_render_commands(&self.renderer, &self.state.grid)
         } else {
-            get_render_commands_with_preview(&self.renderer, &self.state.grid, &self.preview_ops)
+            get_render_commands_full(
+                &self.renderer,
+                &self.state.grid,
+                &self.preview_ops,
+                self.current_selection.as_ref(),
+            )
         }
     }
 

@@ -64,12 +64,14 @@ pub(crate) fn get_render_commands(renderer: &CanvasRenderer, grid: &crate::core:
     serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
 }
 
-pub(crate) fn get_render_commands_with_preview(
+pub(crate) fn get_render_commands_full(
     renderer: &CanvasRenderer,
     grid: &crate::core::Grid,
     preview_ops: &[crate::core::tools::DrawOp],
+    selection: Option<&crate::core::selection::Selection>,
 ) -> JsValue {
-    let commands = renderer.build_full_render_with_preview(grid, preview_ops);
+    let commands =
+        renderer.build_full_render_with_preview_and_selection(grid, preview_ops, selection);
     serde_wasm_bindgen::to_value(&commands).unwrap_or(JsValue::NULL)
 }
 

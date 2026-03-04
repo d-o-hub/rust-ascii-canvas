@@ -48,6 +48,15 @@ All 63 E2E tests pass (comprehensive coverage of all tools, undo/redo, zoom, key
   2. `on_pointer_move` triggers `request_full_redraw()` when preview ops exist
   3. Freehand/eraser commit incrementally via `is_incremental_tool()` check
 
+#### Select Tool Not Showing Highlight
+- `build_selection_render()` existed but was never called from any render path
+- Fixed: render pipeline now passes `current_selection` through to the renderer
+- Select tool drag/release triggers `request_full_redraw()` for visual feedback
+
+#### Freehand Ignoring Border Style
+- `FreehandTool.draw_char` was hardcoded to `'*'`, never reading border style
+- Fixed: added `BorderStyle::freehand_char()`, freehand reads from `ToolContext` on each stroke
+
 ## Architecture
 
 ### Project Structure

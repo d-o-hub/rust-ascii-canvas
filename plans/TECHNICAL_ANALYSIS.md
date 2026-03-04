@@ -765,3 +765,34 @@ For the drawing bug, the coordinates were correct throughout the pipeline (verif
 - Rust Unit Tests: 44 passed
 - Doc Tests: 2 passed
 - Clippy: Clean
+
+### Bug 3: Select Tool Not Showing Selection Highlight
+
+**Symptom**: Dragging with the select tool showed no visual feedback. No highlight rectangle appeared.
+
+**Root Cause**: `build_selection_render()` existed in `canvas_renderer.rs:218` but was **never called** by any render path. The select tool's `on_pointer_move` returned empty `ToolResult` (no ops, no modified), so the preview system skipped it entirely.
+
+**Fix**:
+1. Added `build_full_render_with_preview_and_selection()` to `canvas_renderer.rs` — renders selection rect as overlay
+2. `bindings.rs` `get_render_commands()` now passes `current_selection` to renderer
+3. `on_pointer_move` + `on_pointer_up` trigger `update_select_tool_selection()` + `request_full_redraw()` for select tool
+
+### Bug 4: Freehand Tool Ignoring Border Style Dropdown
+
+**Symptom**: Changing the border style dropdown had no effect on freehand tool — always drew `*`.
+
+**Root Cause**: `FreehandTool::default()` hardcodes `draw_char: '*'`. The border style dropdown updates `EditorState.border_style`, which is passed to tools via `ToolContext`, but freehand never read it.
+
+**Fix**:
+1. Added `BorderStyle::freehand_char()` in `tools/mod.rs` — maps each style to a unique character:
+   - Single → `·`, Double → `•`, Heavy → `●`, Rounded → `·`, ASCII → `*`, Dotted → `·`
+2. `FreehandTool::on_pointer_down` now calls `ctx.border_style.freehand_char()` to set draw char
+
+### Key Pattern: "Dead Code" as Bug Indicator
+
+Multiple bugs in this codebase followed the same pattern: functionality was **implemented but never wired into the pipeline**:
+- `build_selection_render()` — existed but never called
+- `preview_ops` — stored but never rendered
+- `set_tool_by_id_impl(_id)` — parameter accepted but never used
+
+When reviewing code, watch for: unused parameters (`_` prefix), functions with no callers, and data stored but never read.

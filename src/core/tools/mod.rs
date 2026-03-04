@@ -147,6 +147,18 @@ impl BorderStyle {
             BorderStyle::Dotted => '*',
         }
     }
+
+    /// Get character used by the freehand tool for this style.
+    pub fn freehand_char(&self) -> char {
+        match self {
+            BorderStyle::Single => '·',
+            BorderStyle::Double => '•',
+            BorderStyle::Heavy => '●',
+            BorderStyle::Rounded => '·',
+            BorderStyle::Ascii => '*',
+            BorderStyle::Dotted => '·',
+        }
+    }
 }
 
 /// A single draw operation to be applied to the grid.

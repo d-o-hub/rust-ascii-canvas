@@ -291,6 +291,22 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 
 **CI Verification**: ✅ All 63 E2E tests pass, 125 Rust tests pass, clippy clean
 
+#### Select Tool Not Showing Selection Highlight
+- **Root cause**: `build_selection_render()` existed in canvas_renderer but was never called
+- Select tool's `on_pointer_move` updates internal selection but returns empty ToolResult (no ops)
+- The render pipeline only rendered preview_ops and committed grid — no selection highlight
+- **Fix**:
+  1. Added `build_full_render_with_preview_and_selection()` to canvas_renderer — renders selection rect overlay
+  2. `get_render_commands` in bindings now passes `current_selection` to renderer
+  3. `on_pointer_move` and `on_pointer_up` now call `update_select_tool_selection()` + `request_full_redraw()` during select drag
+
+#### Freehand Tool Ignoring Border Style Dropdown
+- **Root cause**: `FreehandTool.draw_char` hardcoded to `'*'` in Default impl
+- The border style dropdown changes `EditorState.border_style` but freehand never read it
+- **Fix**:
+  1. Added `BorderStyle::freehand_char()` method — maps each style to a freehand character (·, •, ●, *, etc.)
+  2. `FreehandTool::on_pointer_down` now reads `ctx.border_style.freehand_char()` to set draw char
+
 ---
 
 ## Estimated Total Effort

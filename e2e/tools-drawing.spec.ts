@@ -138,7 +138,8 @@ test.describe('Tool Drawing Verification', () => {
         await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
-        expect(ascii).toContain('*');
+        // Freehand uses the border style's freehand character (default: · for Single style)
+        expect(ascii).toContain('·');
         
         await page.screenshot({ path: 'test-results/freehand-drawing.png' });
     });
