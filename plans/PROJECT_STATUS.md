@@ -31,6 +31,8 @@ test result: ok. 44 passed; 0 failed; 0 ignored
 63 passed
 ```
 
+All 63 E2E tests pass (comprehensive coverage of all tools, undo/redo, zoom, keyboard shortcuts).
+
 ### Recent Critical Fixes (2026-03-04)
 
 #### Tool Switching Bug

@@ -705,3 +705,63 @@ docs: add ADRs for production readiness
 **Files Changed**: 30+ files
 **New ADRs**: 5
 **Lines Added**: ~1,500
+
+---
+
+## Learnings from 2026-03-04: Tool Switching & Drawing Bug Fixes
+
+### Bug 1: Tool Switching Not Working
+
+**Symptom**: Clicking tool buttons worked, but keyboard shortcuts (R, L, T, etc.) didn't switch tools. E2E tests failed.
+
+**Root Cause**: In `src/wasm/bindings.rs:91`, the function `set_tool_by_id_impl` had an **ignored parameter**:
+```rust
+fn set_tool_by_id_impl(&mut self, _id: ToolId) {  // _id never used!
+    set_tool_by_id(...)
+}
+```
+The `self.tool_id` was never updated because the passed `_id` was discarded.
+
+**Fix**: 
+```rust
+fn set_tool_by_id_impl(&mut self, id: ToolId) {
+    self.tool_id = id;  // Added this line
+    set_tool_by_id(...)
+}
+```
+
+### Bug 2: Drawing Only Appeared at Click Point
+
+**Symptom**: Users saw no visual feedback while dragging. When releasing mouse, shape appeared at the release point - but without a preview, it felt like "drawing at the same position."
+
+**Root Causes** (3 compounding issues):
+
+1. **Preview ops never rendered**: `preview_ops` stored in `on_pointer_move` were never passed to the renderer. `build_full_render()` only drew committed grid content.
+
+2. **No redraw during drag**: `on_pointer_move` never called `dirty_tracker.request_full_redraw()`, so even if previews were rendered, the canvas wouldn't repaint.
+
+3. **Freehand/Eraser deferred commits**: The condition `result.finished && result.modified` meant these tools only committed when mouse was released, not during drag.
+
+**Fixes Applied**:
+
+| File | Change |
+|------|--------|
+| `canvas_renderer.rs` | Added `build_full_render_with_preview(grid, preview_ops)` that draws preview ops as overlay on top of grid |
+| `render_bridge.rs` | Added `get_render_commands_with_preview()` bridge |
+| `bindings.rs` | `on_pointer_move` triggers `request_full_redraw()` when preview ops exist |
+| `bindings.rs` | Added `is_incremental_tool()` - freehand/eraser commit during drag, not just on pointer_up |
+
+### Key Lesson
+
+**When debugging "not working" features, trace the full data flow, not just the obvious path.** 
+
+The tool switching seemed like it should work - function existed, called other functions, returned values. But the critical line `self.tool_id = id` was missing because the parameter was named `_id` (convention for unused) and was indeed never used.
+
+For the drawing bug, the coordinates were correct throughout the pipeline (verified via analysis), but the visual feedback loop was broken at multiple layers - data was collected but never displayed.
+
+### Test Results After Fixes
+
+- E2E Tests: 63 passed (was failing before)
+- Rust Unit Tests: 44 passed
+- Doc Tests: 2 passed
+- Clippy: Clean
