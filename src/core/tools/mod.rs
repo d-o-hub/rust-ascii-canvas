@@ -192,8 +192,6 @@ pub struct ToolResult {
     pub finished: bool,
     /// Whether the grid was modified
     pub modified: bool,
-    /// Description for the undo history
-    pub description: String,
 }
 
 impl ToolResult {
@@ -221,12 +219,6 @@ impl ToolResult {
     /// Mark the result as finished.
     pub fn finish(mut self) -> Self {
         self.finished = true;
-        self
-    }
-
-    /// Set the description for the result.
-    pub fn with_description(mut self, description: impl Into<String>) -> Self {
-        self.description = description.into();
         self
     }
 }

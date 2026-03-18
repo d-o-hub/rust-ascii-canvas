@@ -1,5 +1,5 @@
-use ascii_canvas::core::grid::Grid;
 use ascii_canvas::core::ascii_export::{export_grid, ExportOptions};
+use ascii_canvas::core::grid::Grid;
 use std::time::Instant;
 
 fn main() {
@@ -39,5 +39,8 @@ fn benchmark_ascii_export() {
     }
 
     let duration = start.elapsed();
-    println!("ASCII export (10k cells x 100 iterations): {:?}", duration / 100);
+    println!(
+        "ASCII export (10k cells x 100 iterations): {:?}",
+        duration / 100
+    );
 }
