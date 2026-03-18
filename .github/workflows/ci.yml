@@ -20,10 +20,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
+      - name: Setup mise
+        uses: jdx/mise-action@v2
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
@@ -37,18 +35,15 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Build WASM
-        run: |
-          cargo install wasm-pack --version 0.13.1
-          wasm-pack build --release --target web --out-dir web/pkg
+        run: npm run build:wasm
 
-      - name: Install binaryen
-        run: sudo apt-get update && sudo apt-get install -y binaryen
-
-      - name: Optimize WASM with wasm-opt
-        run: wasm-opt --enable-simd --enable-bulk-memory -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
-
-      - name: Run tests
+      - name: Run tests (Native)
         run: cargo test --all
+
+      - name: Run tests (WASM)
+        run: cargo test --all --target wasm32-unknown-unknown
+        env:
+          WASM_BINDGEN_TEST_ONLY_NODE: 1
 
       - name: Upload WASM
         uses: actions/upload-artifact@v4
