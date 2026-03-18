@@ -32,6 +32,9 @@ pub trait Command {
 
     /// Get a reference to Any for downcasting.
     fn as_any(&self) -> &dyn std::any::Any;
+
+    /// Get a mutable reference to Any for downcasting.
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 /// Command to set a single cell.
@@ -94,6 +97,10 @@ impl Command for SetCellCommand {
     fn as_any(&self) -> &dyn std::any::Any {
         self
     }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
+        self
+    }
 }
 
 /// Command to clear a single cell.
@@ -139,6 +146,10 @@ impl Command for ClearCellCommand {
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 }
@@ -194,6 +205,10 @@ impl Command for ClearGridCommand {
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 }

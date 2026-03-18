@@ -37,6 +37,10 @@ pub struct AsciiEditor {
     move_original_selection: Option<Selection>,
     /// Track if select tool is currently moving
     is_moving_selection: bool,
+    /// Performance: number of full renders
+    full_render_count: u32,
+    /// Performance: number of dirty renders
+    dirty_render_count: u32,
 }
 
 #[wasm_bindgen]
@@ -62,6 +66,8 @@ impl AsciiEditor {
             move_clipboard: None,
             move_original_selection: None,
             is_moving_selection: false,
+            full_render_count: 0,
+            dirty_render_count: 0,
         }
     }
 
@@ -560,7 +566,8 @@ impl AsciiEditor {
     }
 
     #[wasm_bindgen(js_name = getRenderCommands)]
-    pub fn get_render_commands(&self) -> JsValue {
+    pub fn get_render_commands(&mut self) -> JsValue {
+        self.full_render_count += 1;
         let has_preview = !self.preview_ops.is_empty();
         let has_selection = self.current_selection.is_some();
 
@@ -578,11 +585,33 @@ impl AsciiEditor {
 
     #[wasm_bindgen(js_name = getDirtyRenderCommands)]
     pub fn get_dirty_render_commands(&mut self) -> JsValue {
+        if self.dirty_tracker.needs_full_redraw() {
+            self.full_render_count += 1;
+        } else if !self.dirty_tracker.dirty_rect().is_empty() {
+            self.dirty_render_count += 1;
+        }
+
         get_dirty_render_commands(
             &mut self.renderer,
             &self.state.grid,
             &mut self.dirty_tracker,
         )
+    }
+
+    #[wasm_bindgen(getter = fullRenderCount)]
+    pub fn full_render_count(&self) -> u32 {
+        self.full_render_count
+    }
+
+    #[wasm_bindgen(getter = dirtyRenderCount)]
+    pub fn dirty_render_count(&self) -> u32 {
+        self.dirty_render_count
+    }
+
+    #[wasm_bindgen(js_name = resetPerformanceMetrics)]
+    pub fn reset_performance_metrics(&mut self) {
+        self.full_render_count = 0;
+        self.dirty_render_count = 0;
     }
 
     /// Check if a redraw is needed.
