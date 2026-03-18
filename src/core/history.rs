@@ -39,6 +39,14 @@ impl History {
         // Clear redo stack when new action is performed
         self.redo_stack.clear();
 
+        // Try merging with last command if possible
+        if let Some(last) = self.undo_stack.back_mut() {
+            if last.can_merge(&*command) {
+                last.merge(command);
+                return;
+            }
+        }
+
         // Enforce max depth
         if self.undo_stack.len() >= self.max_depth {
             self.undo_stack.pop_front();

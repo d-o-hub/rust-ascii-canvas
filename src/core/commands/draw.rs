@@ -101,23 +101,32 @@ impl Command for DrawCommand {
     fn can_merge(&self, other: &dyn Command) -> bool {
         // Can merge if the other is also a DrawCommand and we're still small
         if let Some(other_draw) = other.as_any().downcast_ref::<DrawCommand>() {
-            self.ops.len() + other_draw.ops.len() < 1000
+            // Only merge if both are DrawCommands and not too large
+            // Also only merge if they have the same description (e.g. both "Draw")
+            self.ops.len() + other_draw.ops.len() < 1000 && self.description == other_draw.description
         } else {
             false
         }
     }
 
-    fn merge(&mut self, other: Box<dyn Command>) {
-        if let Some(other_draw) = other.as_any().downcast_ref::<DrawCommand>() {
-            // Only merge if not yet applied
-            if !self.applied {
-                self.ops.extend(other_draw.ops.iter().cloned());
+    fn merge(&mut self, mut other: Box<dyn Command>) {
+        if let Some(other_draw) = other.as_any_mut().downcast_mut::<DrawCommand>() {
+            // When merging, we append the operations.
+            // Since the new command has already been applied, we need to handle its previous states.
+            self.ops.extend(other_draw.ops.iter().cloned());
+            self.previous.extend(other_draw.previous.drain(..));
+
+            if self.ops.len() > 1 {
                 self.description = format!("Draw {} cells", self.ops.len());
             }
         }
     }
 
     fn as_any(&self) -> &dyn std::any::Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
         self
     }
 }

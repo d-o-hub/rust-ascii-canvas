@@ -133,6 +133,17 @@ impl CanvasRenderer {
             return commands;
         }
 
+        // Clear the dirty region first
+        let (sx1, sy1) = self.grid_to_screen(dirty.x1, dirty.y1);
+        let (sx2, sy2) = self.grid_to_screen(dirty.x2 + 1, dirty.y2 + 1);
+        commands.push(RenderCommand::DrawRect {
+            x: sx1,
+            y: sy1,
+            width: sx2 - sx1,
+            height: sy2 - sy1,
+            color: self.bg_color.clone(),
+        });
+
         // Draw each visible cell in the dirty region
         for (x, y) in dirty.iter() {
             if let Some(cell) = grid.get(x, y) {

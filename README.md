@@ -214,6 +214,35 @@ wasm-pack test --headless --firefox
 
 Target: < 1.5MB WASM bundle
 
+## Deployment
+
+### Netlify
+
+This project is configured for one-click deployment to Netlify.
+
+1. Connect your repository to Netlify.
+2. The `netlify.toml` file automatically configures:
+   - **Build command**: `npm run netlify:build`
+   - **Publish directory**: `dist`
+   - **Environment**: Node 22, Rust stable
+3. Netlify will handle WASM MIME types and SPA routing automatically.
+
+### Local Production Build
+
+```bash
+npm run build
+```
+The final static assets will be in the `dist/` directory.
+
+## Performance
+
+- **Dirty-Rect Rendering**: Only redraws modified regions, significantly reducing CPU usage during edits.
+- **Zero Per-Frame Allocations**: Pre-allocated buffers for core rendering loops.
+- **SmallVec**: Stack allocation for small collections to avoid heap thrashing.
+- **Optimized WASM**: LTO, stripping, and `opt-level = "z"` for minimum binary size.
+- **Instrumentation**: `AsciiEditor` tracks `fullRenderCount` and `dirtyRenderCount` for performance auditing.
+- **History Coalescing**: Consecutive small draw operations (like freehand drawing) are automatically coalesced into single undo/redo steps.
+
 ## Browser Support
 
 - Chrome 80+

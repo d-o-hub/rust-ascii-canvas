@@ -47,7 +47,11 @@ interface AsciiEditorInterface {
     clear(): void;
     exportAscii(): string;
     getRenderCommands(): RenderCommand[];
+    getDirtyRenderCommands(): RenderCommand[];
     requestRedraw(): void;
+    readonly needsRedraw: boolean;
+    readonly fullRenderCount: number;
+    readonly dirtyRenderCount: number;
 }
 
 // Global state
@@ -79,6 +83,8 @@ let cursorIndicator: HTMLElement;
 let gridSizeEl: HTMLElement;
 let cursorPosEl: HTMLElement;
 let zoomLevelEl: HTMLElement;
+let fullRendersEl: HTMLElement;
+let dirtyRendersEl: HTMLElement;
 let statusToolEl: HTMLElement;
 let statusMessageEl: HTMLElement;
 let statusToast: HTMLElement;
@@ -135,6 +141,8 @@ async function initialize() {
         gridSizeEl = getElement('grid-size');
         cursorPosEl = getElement('cursor-pos');
         zoomLevelEl = getElement('zoom-level');
+        fullRendersEl = getElement('full-renders');
+        dirtyRendersEl = getElement('dirty-renders');
         statusToolEl = getElement('status-tool');
         statusMessageEl = getElement('status-message');
         statusToast = getElement('status-toast');
@@ -529,8 +537,8 @@ function render() {
     if (!editor || !canvas || !ctx) return;
     animationFrameId = null;
 
-    // Get render commands
-    const commands = editor.getRenderCommands();
+    // Get render commands - use dirty rendering if available
+    const commands = editor.getDirtyRenderCommands();
 
     // Execute render commands
     for (const cmd of commands) {
@@ -539,6 +547,13 @@ function render() {
 
     // Update zoom display
     zoomLevelEl.textContent = `${Math.round(editor.zoom * 100)}%`;
+    fullRendersEl.textContent = editor.fullRenderCount.toString();
+    dirtyRendersEl.textContent = editor.dirtyRenderCount.toString();
+
+    // If still needs redraw (e.g. for animations), request another frame
+    if (editor.needsRedraw) {
+        requestRender();
+    }
 }
 
 /**
