@@ -1,5 +1,5 @@
 [tools]
-rust = "stable"
+rust = { version = "stable", targets = "wasm32-unknown-unknown" }
 node = "22"
 "cargo:wasm-bindgen-cli" = "0.2.114"
-"ubi:WebAssembly/binaryen" = "latest"
+"github:WebAssembly/binaryen" = "latest"
