@@ -133,6 +133,12 @@ jobs:
       - name: Build WASM
         run: wasm-pack build --release --target web --out-dir web/pkg
 
+      - name: Install binaryen
+        run: sudo apt-get update && sudo apt-get install -y binaryen
+
+      - name: Optimize WASM with wasm-opt
+        run: wasm-opt -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
+
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4
         with:
