@@ -15,31 +15,37 @@ pub struct DrawCommand {
     applied: bool,
     /// Description of the operation
     description: String,
+    /// Base description for coalescing check
+    base_description: String,
 }
 
 impl DrawCommand {
     /// Create a new draw command from operations.
     pub fn new(ops: Vec<DrawOp>) -> Self {
         let count = ops.len();
+        let description = if count == 1 {
+            "Draw".to_string()
+        } else {
+            format!("Draw {} cells", count)
+        };
         Self {
             ops,
             previous: Vec::new(),
             applied: false,
-            description: if count == 1 {
-                "Draw".to_string()
-            } else {
-                format!("Draw {} cells", count)
-            },
+            base_description: "Draw".to_string(),
+            description,
         }
     }
 
     /// Create with a description.
     pub fn with_description(ops: Vec<DrawOp>, description: impl Into<String>) -> Self {
+        let desc = description.into();
         Self {
             ops,
             previous: Vec::new(),
             applied: false,
-            description: description.into(),
+            base_description: desc.clone(),
+            description: desc,
         }
     }
 
@@ -102,8 +108,9 @@ impl Command for DrawCommand {
         // Can merge if the other is also a DrawCommand and we're still small
         if let Some(other_draw) = other.as_any().downcast_ref::<DrawCommand>() {
             // Only merge if both are DrawCommands and not too large
-            // Also only merge if they have the same description (e.g. both "Draw")
-            self.ops.len() + other_draw.ops.len() < 1000 && self.description == other_draw.description
+            // Also only merge if they have the same base description (e.g. both "Draw" or both "Freehand")
+            self.ops.len() + other_draw.ops.len() < 1000
+                && self.base_description == other_draw.base_description
         } else {
             false
         }
@@ -114,7 +121,7 @@ impl Command for DrawCommand {
             // When merging, we append the operations.
             // Since the new command has already been applied, we need to handle its previous states.
             self.ops.extend(other_draw.ops.iter().cloned());
-            self.previous.extend(other_draw.previous.drain(..));
+            self.previous.append(&mut other_draw.previous);
 
             if self.ops.len() > 1 {
                 self.description = format!("Draw {} cells", self.ops.len());

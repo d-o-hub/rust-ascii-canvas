@@ -63,3 +63,7 @@ wasm-opt = false
 [[test]]
 name = "core_tests"
 path = "tests/core/mod.rs"
+
+[[bench]]
+name = "grid_bench"
+harness = false
