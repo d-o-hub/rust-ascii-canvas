@@ -7,7 +7,7 @@ use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolContext, ToolId};
 use crate::core::EditorState;
-use crate::render::{CanvasRenderer, DirtyTracker, FontMetrics};
+use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
 use crate::wasm::render_bridge::{
     create_event_result, create_event_result_with_copy, export_ascii, get_dirty_render_commands,
     get_render_commands, get_render_commands_full, needs_redraw, request_full_redraw,
@@ -41,6 +41,10 @@ pub struct AsciiEditor {
     full_render_count: u32,
     /// Performance: number of dirty renders
     dirty_render_count: u32,
+    /// Pixel buffer for direct WASM-to-Canvas rendering
+    pixel_buffer: Vec<u8>,
+    /// Font atlas for pixel buffer rendering
+    font_atlas: FontAtlas,
 }
 
 #[wasm_bindgen]
@@ -68,6 +72,8 @@ impl AsciiEditor {
             is_moving_selection: false,
             full_render_count: 0,
             dirty_render_count: 0,
+            pixel_buffer: vec![0u8; width * 8 * height * 20 * 4],
+            font_atlas: FontAtlas::new(),
         }
     }
 
@@ -624,6 +630,78 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = requestRedraw)]
     pub fn request_redraw(&mut self) {
         request_full_redraw(&mut self.dirty_tracker);
+    }
+
+    /// Clear dirty state after rendering.
+    #[wasm_bindgen(js_name = clearDirtyState)]
+    pub fn clear_dirty_state(&mut self) {
+        self.dirty_tracker.clear();
+    }
+
+    #[wasm_bindgen(js_name = getPixelBufferPtr)]
+    pub fn get_pixel_buffer_ptr(&self) -> *const u8 {
+        self.pixel_buffer.as_ptr()
+    }
+
+    #[wasm_bindgen(js_name = getPixelBufferLen)]
+    pub fn get_pixel_buffer_len(&self) -> usize {
+        self.pixel_buffer.len()
+    }
+
+    #[wasm_bindgen(js_name = renderToPixelBuffer)]
+    pub fn render_to_pixel_buffer(&mut self) {
+        let grid_width = self.state.grid.width();
+        let grid_height = self.state.grid.height();
+        let glyph_w = 8;
+        let glyph_h = 20;
+        let buffer_width = grid_width * glyph_w;
+        let buffer_height = grid_height * glyph_h;
+
+        // Resize pixel buffer if needed
+        let required_len = buffer_width * buffer_height * 4;
+        if self.pixel_buffer.len() != required_len {
+            self.pixel_buffer.resize(required_len, 0);
+        }
+
+        // Fill with background color
+        let bg_color = [30, 30, 30, 255]; // Matching --bg: #1e1e1e
+        for i in 0..buffer_width * buffer_height {
+            let idx = i * 4;
+            self.pixel_buffer[idx] = bg_color[0];
+            self.pixel_buffer[idx + 1] = bg_color[1];
+            self.pixel_buffer[idx + 2] = bg_color[2];
+            self.pixel_buffer[idx + 3] = bg_color[3];
+        }
+
+        let fg_color = [212, 212, 212, 255]; // Matching --fg: #d4d4d4
+
+        // Draw cells from grid
+        for (x, y, cell) in self.state.grid.iter_with_coords() {
+            if cell.is_visible() {
+                self.font_atlas.render_glyph(
+                    &mut self.pixel_buffer,
+                    buffer_width,
+                    x as usize * glyph_w,
+                    y as usize * glyph_h,
+                    cell.ch,
+                    fg_color,
+                );
+            }
+        }
+
+        // Draw preview overlay
+        for op in &self.preview_ops {
+            if op.cell.is_visible() {
+                self.font_atlas.render_glyph(
+                    &mut self.pixel_buffer,
+                    buffer_width,
+                    op.x as usize * glyph_w,
+                    op.y as usize * glyph_h,
+                    op.cell.ch,
+                    fg_color,
+                );
+            }
+        }
     }
 }
 

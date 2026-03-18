@@ -23,13 +23,13 @@ interface RenderCommand {
 
 // WASM AsciiEditor interface
 interface AsciiEditorInterface {
-    width: number;
-    height: number;
-    tool: string;
-    zoom: number;
-    pan: number[] | Float64Array;
-    can_undo: boolean;
-    can_redo: boolean;
+    readonly width: number;
+    readonly height: number;
+    readonly tool: string;
+    readonly zoom: number;
+    readonly pan: number[] | Float64Array;
+    readonly can_undo: boolean;
+    readonly can_redo: boolean;
     setTool(toolId: string): void;
     setBorderStyle(style: string): void;
     setLineDirection(direction: string): void;
@@ -48,7 +48,11 @@ interface AsciiEditorInterface {
     exportAscii(): string;
     getRenderCommands(): RenderCommand[];
     getDirtyRenderCommands(): RenderCommand[];
+    getPixelBufferPtr(): number;
+    getPixelBufferLen(): number;
+    renderToPixelBuffer(): void;
     requestRedraw(): void;
+    clearDirtyState(): void;
     readonly needsRedraw: boolean;
     readonly fullRenderCount: number;
     readonly dirtyRenderCount: number;
@@ -56,8 +60,12 @@ interface AsciiEditorInterface {
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let wasmMemory: any = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
+let offscreenCanvas: HTMLCanvasElement | null = null;
+let offscreenCtx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number | null = null;
 // Track initialization state
 let isInitialized = false;
@@ -105,6 +113,11 @@ let directionBtns: NodeListOf<Element>;
 const GRID_WIDTH = 80;
 const GRID_HEIGHT = 40;
 
+// Rendering configuration
+const USE_PIXEL_BUFFER = true;
+const GLYPH_WIDTH = 8;
+const GLYPH_HEIGHT = 20;
+
 // Border styles for cycling
 const BORDER_STYLES = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
 let currentBorderStyleIndex = 0;
@@ -132,7 +145,8 @@ function getElement<T extends HTMLElement>(id: string): T {
 async function initialize() {
     try {
         // Initialize WASM
-        await init();
+        const wasm = await init();
+        wasmMemory = wasm.memory;
 
         // Initialize DOM elements
         loadingOverlay = getElement('loading');
@@ -214,13 +228,23 @@ async function initialize() {
  */
 function measureFont() {
     if (!ctx || !editor) return;
-    ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
-    const metrics = ctx.measureText('M');
-    charWidth = metrics.width;
-    lineHeight = FONT_SIZE * 1.4;
+
+    if (USE_PIXEL_BUFFER) {
+        charWidth = GLYPH_WIDTH;
+        lineHeight = GLYPH_HEIGHT;
+    } else {
+        ctx.font = `${FONT_SIZE}px 'JetBrains Mono', monospace`;
+        const metrics = ctx.measureText('M');
+        charWidth = metrics.width;
+        lineHeight = FONT_SIZE * 1.4;
+    }
 
     // Update editor with font metrics
     editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
+
+    // Expose for testing
+    (window as any).charWidth = charWidth;
+    (window as any).lineHeight = lineHeight;
 }
 
 /**
@@ -409,8 +433,9 @@ function handlePointerMove(e: PointerEvent) {
     const y = e.clientY - rect.top;
 
     // Update cursor position display
-    const gridX = Math.floor((x - editor.pan[0]) / editor.zoom / charWidth);
-    const gridY = Math.floor((y - editor.pan[1]) / editor.zoom / lineHeight);
+    const pan = editor.pan as number[] | Float64Array;
+    const gridX = Math.floor((x - pan[0]) / editor.zoom / charWidth);
+    const gridY = Math.floor((y - pan[1]) / editor.zoom / lineHeight);
     cursorPosEl.textContent = `${gridX}, ${gridY}`;
 
     // Update cursor indicator
@@ -537,12 +562,58 @@ function render() {
     if (!editor || !canvas || !ctx) return;
     animationFrameId = null;
 
-    // Get render commands - use dirty rendering if available
-    const commands = editor.getDirtyRenderCommands();
+    if (USE_PIXEL_BUFFER && wasmMemory) {
+        // Pixel buffer rendering path (Issue #9)
+        const bufferWidth = editor.width * 8;
+        const bufferHeight = editor.height * 20;
 
-    // Execute render commands
-    for (const cmd of commands) {
-        executeRenderCommand(cmd as RenderCommand);
+        if (!offscreenCanvas) {
+            offscreenCanvas = document.createElement('canvas');
+            offscreenCanvas.width = bufferWidth;
+            offscreenCanvas.height = bufferHeight;
+            offscreenCtx = offscreenCanvas.getContext('2d', { alpha: false });
+        }
+
+        if (editor.needsRedraw) {
+            editor.renderToPixelBuffer();
+
+            const ptr = editor.getPixelBufferPtr();
+            const len = editor.getPixelBufferLen();
+            const data = new Uint8ClampedArray(wasmMemory.buffer, ptr, len);
+            const imageData = new ImageData(data, bufferWidth, bufferHeight);
+
+            offscreenCtx?.putImageData(imageData, 0, 0);
+            editor.clearDirtyState();
+        }
+
+        // Scale pixel buffer for zoom/pan
+        const dpr = window.devicePixelRatio || 1;
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+
+        // Fill background first to clear outside scaled area
+        ctx.fillStyle = '#1e1e1e';
+        ctx.fillRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+        // For pixel-art look, disable smoothing
+        ctx.imageSmoothingEnabled = false;
+
+        const pan = editor.pan as number[] | Float64Array;
+        ctx.drawImage(
+            offscreenCanvas,
+            pan[0],
+            pan[1],
+            bufferWidth * editor.zoom,
+            bufferHeight * editor.zoom
+        );
+        ctx.restore();
+    } else {
+        // Traditional command-based rendering path
+        const commands = editor.getDirtyRenderCommands();
+        for (const cmd of commands) {
+            executeRenderCommand(cmd as RenderCommand);
+        }
     }
 
     // Update zoom display
@@ -799,4 +870,4 @@ if (document.readyState === 'loading') {
 }
 
 // Export for testing
-export { editor, canvas, ctx };
+export { editor, canvas, ctx, charWidth, lineHeight };
