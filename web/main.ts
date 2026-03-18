@@ -54,6 +54,11 @@ interface AsciiEditorInterface {
     readonly dirtyRenderCount: number;
 }
 
+interface FrameStats {
+    fps: number;
+    avgFrameTime: number;
+}
+
 // Global state
 let editor: AsciiEditorInterface | null = null;
 let canvas: HTMLCanvasElement | null = null;
@@ -85,6 +90,7 @@ let cursorPosEl: HTMLElement;
 let zoomLevelEl: HTMLElement;
 let fullRendersEl: HTMLElement;
 let dirtyRendersEl: HTMLElement;
+let fpsEl: HTMLElement;
 let statusToolEl: HTMLElement;
 let statusMessageEl: HTMLElement;
 let statusToast: HTMLElement;
@@ -143,6 +149,7 @@ async function initialize() {
         zoomLevelEl = getElement('zoom-level');
         fullRendersEl = getElement('full-renders');
         dirtyRendersEl = getElement('dirty-renders');
+        fpsEl = getElement('fps-counter');
         statusToolEl = getElement('status-tool');
         statusMessageEl = getElement('status-message');
         statusToast = getElement('status-toast');
@@ -530,10 +537,29 @@ function requestRender() {
     }
 }
 
+let lastFrameTime = 0;
+let frameCount = 0;
+let lastFpsUpdateTime = 0;
+
 /**
  * Render the canvas
  */
-function render() {
+function render(timestamp: number) {
+    // Calculate FPS
+    if (lastFrameTime > 0) {
+        frameCount++;
+        const delta = timestamp - lastFpsUpdateTime;
+        if (delta >= 1000) {
+            const fps = Math.round((frameCount * 1000) / delta);
+            fpsEl.textContent = `${fps} FPS`;
+            frameCount = 0;
+            lastFpsUpdateTime = timestamp;
+        }
+    } else {
+        lastFpsUpdateTime = timestamp;
+    }
+    lastFrameTime = timestamp;
+
     if (!editor || !canvas || !ctx) return;
     animationFrameId = null;
 

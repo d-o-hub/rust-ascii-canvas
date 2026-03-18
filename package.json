@@ -16,8 +16,8 @@
   "scripts": {
     "build:wasm": "wasm-pack build --release --target web --out-dir web/pkg",
     "build:web": "cd web && npm run build",
-    "build": "npm run build:wasm && npm run build:web",
-    "netlify:build": "npm ci && cd web && npm ci && cd .. && npm run build",
+    "build": "npm run build:wasm && npm run build:web && npm run check-size",
+    "netlify:build": "curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh && export PATH=$PATH:$HOME/.cargo/bin && npm ci && cd web && npm ci && cd .. && npm run build && npm run check-size",
     "dev": "cd web && npm run dev",
     "test": "cargo test && npx playwright test --project=chromium",
     "test:unit": "cargo test",

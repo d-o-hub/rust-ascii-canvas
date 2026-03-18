@@ -135,7 +135,10 @@ impl Tool for FreehandTool {
         let ops: Vec<DrawOp> = self.ops_buffer.to_vec();
         self.ops_buffer.clear();
 
-        ToolResult::new().with_ops(ops).finish()
+        ToolResult::new()
+            .with_ops(ops)
+            .with_description("Freehand")
+            .finish()
     }
 
     fn reset(&mut self) {

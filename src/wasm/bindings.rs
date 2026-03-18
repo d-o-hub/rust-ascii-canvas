@@ -183,7 +183,12 @@ impl AsciiEditor {
 
         if self.is_incremental_tool() && result.modified {
             // For freehand/eraser, commit each stroke point immediately
-            self.commit_ops(&result.ops);
+            let description = if self.tool_id == ToolId::Freehand {
+                "Freehand"
+            } else {
+                "Eraser"
+            };
+            self.commit_ops_with_description(&result.ops, description);
             self.preview_ops.clear();
         } else {
             self.preview_ops = result.ops.clone();
@@ -218,7 +223,12 @@ impl AsciiEditor {
 
         if self.is_incremental_tool() && result.modified {
             // For freehand/eraser, commit each stroke segment immediately
-            self.commit_ops(&result.ops);
+            let description = if self.tool_id == ToolId::Freehand {
+                "Freehand"
+            } else {
+                "Eraser"
+            };
+            self.commit_ops_with_description(&result.ops, description);
             self.preview_ops.clear();
         } else if !result.ops.is_empty() {
             // For shape tools (rect, line, etc.), store as preview overlay
@@ -273,7 +283,12 @@ impl AsciiEditor {
         }
 
         if result.modified {
-            self.commit_ops(&result.ops);
+            let description = if !result.description.is_empty() {
+                &result.description
+            } else {
+                "Draw"
+            };
+            self.commit_ops_with_description(&result.ops, description);
         }
 
         let event_result = self.create_event_result();
@@ -637,11 +652,15 @@ impl AsciiEditor {
     }
 
     fn commit_ops(&mut self, ops: &[DrawOp]) {
+        self.commit_ops_with_description(ops, "Draw")
+    }
+
+    fn commit_ops_with_description(&mut self, ops: &[DrawOp], description: &str) {
         if ops.is_empty() {
             return;
         }
 
-        let mut cmd = DrawCommand::new(ops.to_vec());
+        let mut cmd = DrawCommand::with_description(ops.to_vec(), description);
         cmd.apply(&mut self.state.grid);
         self.history.push(Box::new(cmd));
 
