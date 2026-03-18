@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>ASCII Canvas Editor</title>
     <link rel="stylesheet" href="./style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -111,6 +111,8 @@
                 <canvas id="canvas" tabindex="0" aria-label="ASCII Canvas Editor"></canvas>
                 <!-- Cursor indicator -->
                 <div id="cursor-indicator" class="cursor-indicator hidden"></div>
+                <!-- Mobile keyboard proxy -->
+                <input type="text" id="mobile-keyboard-proxy" autocomplete="off" autoconnect="off" autocapitalize="none" spellcheck="false" aria-hidden="true" style="position: absolute; opacity: 0; pointer-events: none; left: -9999px;">
             </div>
 
             <!-- Side Panel -->

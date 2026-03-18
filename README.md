@@ -20,8 +20,10 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (1.75+)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) (0.12.1+)
-- [Node.js](https://nodejs.org/) (18+)
+- [mise](https://mise.jdx.dev/) (modern toolchain manager)
+- [Node.js](https://nodejs.org/) (22+)
+
+The project uses `mise` to automatically manage and pin the correct versions of Rust, Node, `wasm-bindgen-cli`, and `wasm-opt`.
 
 ### Build
 
@@ -31,7 +33,7 @@ git clone https://github.com/d-o-hub/rust-ascii-canvas.git
 cd rust-ascii-canvas
 
 # Build WASM module
-wasm-pack build --release --target web
+npm run build:wasm
 
 # Install dependencies and start dev server
 cd web
@@ -257,16 +259,10 @@ Requires:
 
 ## Development
 
-### Build WASM (Development)
+### Build WASM
 
 ```bash
-wasm-pack build --dev --target web
-```
-
-### Build WASM (Production)
-
-```bash
-wasm-pack build --release --target web
+npm run build:wasm
 ```
 
 ### Run Linter

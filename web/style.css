@@ -75,7 +75,12 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    height: 100svh;
     overflow: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
 }
 
 /* Toolbar */
@@ -300,6 +305,7 @@ body {
     overflow: hidden;
     background-color: var(--bg);
     cursor: crosshair;
+    touch-action: none;
 }
 
 .canvas-container.panning {
@@ -657,16 +663,51 @@ body {
     }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 768px) {
     .side-panel {
         display: none;
     }
     
+    .app {
+        flex-direction: column-reverse;
+    }
+
     .toolbar {
+        height: 64px;
+        flex-shrink: 0;
+        border-bottom: none;
+        border-top: 1px solid var(--border);
         padding: 0 var(--spacing-sm);
+        justify-content: center;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
-    .logo-text {
+    .toolbar-left, .toolbar-right {
+        display: none;
+    }
+
+    .toolbar-center {
+        justify-content: flex-start;
+        width: 100%;
+    }
+
+    .tool-btn {
+        width: 44px;
+        height: 44px;
+        min-width: 44px;
+    }
+
+    .action-btn {
+        height: 44px;
+        min-width: 44px;
+    }
+
+    .select-input {
+        height: 44px;
+    }
+
+    .status-bar {
         display: none;
     }
 }

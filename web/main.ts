@@ -108,6 +108,10 @@ let zoomOutBtn: HTMLButtonElement;
 let zoomInBtn: HTMLButtonElement;
 let lineDirectionGroup: HTMLDivElement;
 let directionBtns: NodeListOf<Element>;
+let mobileKeyboardProxy: HTMLInputElement;
+
+// Mobile state
+let lastTouchDistance: number | null = null;
 
 // Grid dimensions
 const GRID_WIDTH = 80;
@@ -172,6 +176,7 @@ async function initialize() {
         zoomInBtn = getElement<HTMLButtonElement>('zoom-in');
         lineDirectionGroup = getElement<HTMLDivElement>('line-direction-group');
         directionBtns = document.querySelectorAll('.direction-btn');
+        mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
 
         // Get canvas and context
         canvas = getElement<HTMLCanvasElement>('canvas');
@@ -284,6 +289,19 @@ function setupEventListeners() {
     canvas.addEventListener('pointermove', handlePointerMove);
     canvas.addEventListener('pointerup', handlePointerUp);
     canvas.addEventListener('pointerleave', handlePointerLeave);
+
+    // Touch events for mobile
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    // Mobile keyboard proxy events
+    mobileKeyboardProxy.addEventListener('input', handleMobileInput);
+    mobileKeyboardProxy.addEventListener('keydown', (e) => {
+        if (e.key === 'Backspace' && mobileKeyboardProxy.value === '') {
+            handleKeyDown(new KeyboardEvent('keydown', { key: 'Backspace' }));
+        }
+    });
 
     // Prevent context menu
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -411,6 +429,7 @@ function setupEventListeners() {
  */
 function handlePointerDown(e: PointerEvent) {
     if (!editor || !canvas) return;
+    if (e.pointerType === 'touch') return; // Handled by touch events
     e.preventDefault();
     canvas.focus();
     canvas.setPointerCapture(e.pointerId);
@@ -428,6 +447,7 @@ function handlePointerDown(e: PointerEvent) {
  */
 function handlePointerMove(e: PointerEvent) {
     if (!editor || !canvas) return;
+    if (e.pointerType === 'touch') return; // Handled by touch events
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -450,6 +470,7 @@ function handlePointerMove(e: PointerEvent) {
  */
 function handlePointerUp(e: PointerEvent) {
     if (!editor || !canvas) return;
+    if (e.pointerType === 'touch') return; // Handled by touch events
     e.preventDefault();
     canvas.releasePointerCapture(e.pointerId);
 
@@ -459,6 +480,107 @@ function handlePointerUp(e: PointerEvent) {
 
     const result = editor.onPointerUp(x, y);
     handleEventResult(result);
+}
+
+/**
+ * Handle touch start event
+ */
+function handleTouchStart(e: TouchEvent) {
+    if (!editor || !canvas) return;
+    e.preventDefault();
+    canvas.focus();
+
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const result = editor.onPointerDown(x, y);
+        handleEventResult(result);
+    } else if (e.touches.length === 2) {
+        lastTouchDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+    }
+}
+
+/**
+ * Handle touch move event
+ */
+function handleTouchMove(e: TouchEvent) {
+    if (!editor || !canvas) return;
+    e.preventDefault();
+
+    if (e.touches.length === 1) {
+        const touch = e.touches[0];
+        const rect = canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+
+        // Update cursor indicator
+        const pan = editor.pan as number[] | Float64Array;
+        const gridX = Math.floor((x - pan[0]) / editor.zoom / charWidth);
+        const gridY = Math.floor((y - pan[1]) / editor.zoom / lineHeight);
+        updateCursorIndicator(gridX, gridY);
+
+        const result = editor.onPointerMove(x, y);
+        handleEventResult(result);
+    } else if (e.touches.length === 2) {
+        const currentDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+
+        if (lastTouchDistance !== null) {
+            const delta = lastTouchDistance - currentDistance;
+            const rect = canvas.getBoundingClientRect();
+            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+
+            // Map distance change to onWheel for zoom
+            const result = editor.onWheel(delta * 2, centerX, centerY);
+            handleEventResult(result);
+        }
+        lastTouchDistance = currentDistance;
+    }
+}
+
+/**
+ * Handle touch end event
+ */
+function handleTouchEnd(e: TouchEvent) {
+    if (!editor || !canvas) return;
+    e.preventDefault();
+
+    if (e.touches.length === 0 && e.changedTouches.length === 1) {
+        const touch = e.changedTouches[0];
+        const rect = canvas.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+        const result = editor.onPointerUp(x, y);
+        handleEventResult(result);
+    }
+    lastTouchDistance = null;
+}
+
+/**
+ * Handle mobile input proxy
+ */
+function handleMobileInput(e: Event) {
+    if (!editor) return;
+    const input = e.target as HTMLInputElement;
+    const value = input.value;
+
+    if (value.length > 0) {
+        const char = value[value.length - 1];
+        const result = editor.onKeyDown(char, false, false);
+        handleEventResult(result);
+        // Keep some text to allow backspace detection
+        if (input.value.length > 10) {
+            input.value = input.value.slice(-5);
+        }
+    }
 }
 
 /**
@@ -533,6 +655,13 @@ function handleKeyUp(e: KeyboardEvent) {
 function handleEventResult(result: EventResult) {
     if (result.needs_redraw) {
         requestRender();
+    }
+
+    // Handle mobile keyboard proxy
+    if (editor && editor.tool === 'text') {
+        mobileKeyboardProxy.focus();
+    } else {
+        mobileKeyboardProxy.blur();
     }
 
     if (result.should_copy && result.ascii) {

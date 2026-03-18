@@ -1,0 +1,5 @@
+[tools]
+rust = "stable"
+wasm-bindgen-cli = "0.2.114"
+wasm-opt = "latest"
+node = "22"
