@@ -17,6 +17,12 @@ pub struct FontAtlas {
     data: Vec<u8>,
 }
 
+impl Default for FontAtlas {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FontAtlas {
     /// Create a new font atlas with a simple embedded font.
     pub fn new() -> Self {
@@ -193,7 +199,7 @@ impl FontAtlas {
             _ => {
                 if !ch.is_whitespace() {
                     for x in 1..7 {
-                        glyph_data[1 * 8 + x] = 128;
+                        glyph_data[8 + x] = 128;
                         glyph_data[12 * 8 + x] = 128;
                     }
                     for y in 1..13 {
