@@ -14,10 +14,10 @@
   },
   "homepage": "https://github.com/anomalyco/ascii-canvas#readme",
   "scripts": {
-    "build:wasm": "wasm-pack build --release --target web --out-dir web/pkg",
+    "build:wasm": "cargo build --target wasm32-unknown-unknown --release && wasm-bindgen target/wasm32-unknown-unknown/release/ascii_canvas.wasm --out-dir web/pkg --target web && wasm-opt --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext -O3 web/pkg/ascii_canvas_bg.wasm -o web/pkg/ascii_canvas_bg.wasm",
     "build:web": "cd web && npm run build",
     "build": "npm run build:wasm && npm run build:web",
-    "netlify:build": "curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh && export PATH=$PATH:$HOME/.cargo/bin && npm ci && cd web && npm ci && cd .. && npm run build && npm run check-size",
+    "netlify:build": "curl https://mise.run | sh && export PATH=$HOME/.local/bin:$PATH && mise install && npm ci && cd web && npm ci && cd .. && mise exec -- npm run build && npm run check-size",
     "dev": "cd web && npm run dev",
     "test": "cargo test && npx playwright test --project=chromium",
     "test:unit": "cargo test",
