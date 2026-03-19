@@ -656,6 +656,14 @@ impl AsciiEditor {
         self.dirty_tracker.clear();
     }
 
+    #[wasm_bindgen(js_name = updateFontAtlasGlyph)]
+    pub fn update_font_atlas_glyph(&mut self, ch_code: u32, glyph_data: Vec<u8>) {
+        if let Some(ch) = char::from_u32(ch_code) {
+            self.font_atlas.update_glyph(ch, &glyph_data);
+            self.dirty_tracker.request_full_redraw();
+        }
+    }
+
     #[wasm_bindgen(js_name = getPixelBufferPtr)]
     pub fn get_pixel_buffer_ptr(&self) -> *const u8 {
         self.pixel_buffer.as_ptr()

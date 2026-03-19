@@ -152,6 +152,16 @@
 - All Rust/clippy issues resolved
 - Repository structure is sound
 
+### 2026-03-20 - Multi-Tool Malfunction Fix (#18, #19)
+- Fixed Select tool visual feedback in pixel buffer path.
+- Resolved Arrow tool arrowhead overwriting issue.
+- Corrected Text tool keyboard mapping and implemented dynamic font atlas for perfect rendering.
+- Fixed Freehand tool style synchronization.
+- Improved Diamond tool diagonal rendering and small shape handling.
+- Added grid bounds checking to Eraser tool.
+- Implemented generic GitHub Action for automated issue closing on PR merge.
+- Added Tool Validation skill and updated AGENTS.md checklist.
+
 ---
 
 ## References

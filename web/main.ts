@@ -51,6 +51,7 @@ interface AsciiEditorInterface {
     getPixelBufferPtr(): number;
     getPixelBufferLen(): number;
     renderToPixelBuffer(): void;
+    updateFontAtlasGlyph(chCode: number, glyphData: Uint8Array): void;
     resize(width: number, height: number): void;
     requestRedraw(): void;
     clearDirtyState(): void;
@@ -242,6 +243,11 @@ async function initialize() {
 
         // Focus canvas
         canvas.focus();
+
+        // Rasterize and upload font atlas
+        document.fonts.ready.then(() => {
+            uploadFontAtlas();
+        });
 
         // Set initial active tool button
         updateToolButtons('rectangle');
@@ -1015,6 +1021,61 @@ function hideShortcutsModal() {
     if (modal) {
         modal.classList.add('hidden');
     }
+}
+
+/**
+ * Rasterize all required glyphs and upload to WASM font atlas
+ */
+function uploadFontAtlas() {
+    if (!editor) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = GLYPH_WIDTH;
+    canvas.height = GLYPH_HEIGHT;
+    const ctx = canvas.getContext('2d', { alpha: true });
+    if (!ctx) return;
+
+    // Use a slightly smaller font size for rasterization to prevent clipping
+    const RASTER_FONT_SIZE = 13;
+    ctx.font = `${RASTER_FONT_SIZE}px 'JetBrains Mono', monospace`;
+    ctx.textBaseline = 'top';
+    ctx.fillStyle = 'white';
+
+    const charsToRasterize = [];
+    // Basic ASCII
+    for (let i = 32; i < 127; i++) {
+        charsToRasterize.push(String.fromCharCode(i));
+    }
+    // Custom symbols
+    charsToRasterize.push('┌', '┐', '└', '┘', '─', '│', '╔', '╗', '╚', '╝', '═', '║', '┏', '┓', '┗', '┛', '━', '┃', '╭', '╮', '╰', '╯', '+', '-', '|', '*', '·', '•', '●', '▲', '▼', '◄', '►', '╱', '╲', '◆');
+
+    for (const char of charsToRasterize) {
+        ctx.clearRect(0, 0, GLYPH_WIDTH, GLYPH_HEIGHT);
+
+        // Vertically center the character in the 20px high cell
+        // Monospace fonts usually have some built-in padding
+        ctx.fillText(char, 0, 2);
+
+        const imageData = ctx.getImageData(0, 0, GLYPH_WIDTH, GLYPH_HEIGHT);
+        const alphaData = new Uint8Array(GLYPH_WIDTH * GLYPH_HEIGHT);
+
+        let hasContent = false;
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            // Use alpha channel as mask
+            const alpha = imageData.data[i + 3];
+            alphaData[i / 4] = alpha;
+            if (alpha > 0) hasContent = true;
+        }
+
+        if (!hasContent && char !== ' ') {
+            console.warn(`Glyph for '${char}' (${char.charCodeAt(0)}) rasterized empty. Font might not be loaded.`);
+        }
+
+        editor.updateFontAtlasGlyph(char.charCodeAt(0), alphaData);
+    }
+
+    console.log(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
+    editor.requestRedraw();
 }
 
 /**
