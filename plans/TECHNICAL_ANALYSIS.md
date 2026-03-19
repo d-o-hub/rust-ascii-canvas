@@ -864,3 +864,33 @@ if self.is_moving_selection {
 - `src/core/tools/select.rs:101-132` — Select tool move state
 - `src/wasm/bindings.rs:633-686` — Editor move logic
 - `e2e/canvas.spec.ts:451-472` — E2E test
+
+---
+
+## Release Workflow: wasm-opt Feature Flags Fix (2026-03-19)
+
+### Problem
+Release build CI failed at "Optimize WASM with wasm-opt" step with:
+```
+[wasm-validator error] unexpected false: all used features should be allowed, on (i32.extend16_s ...)
+Fatal: error validating input
+```
+
+### Root Cause
+Rustc 1.94.0 (2026-03-02) generates WASM using newer instructions:
+- `i32.extend8_s`, `i32.extend16_s` — Sign extension operations
+- `i32.trunc_sat_f32_u`, `i32.trunc_sat_f64_s` — Non-trapping float-to-int conversions
+
+The `wasm-opt` command only had `--enable-simd` and `--enable-bulk-memory` flags, missing the feature flags required for these instructions.
+
+### Fix
+Added `--enable-sign-extension` and `--enable-nontrapping-float-to-int` to `wasm-opt` in `.github/workflows/release.yml`:
+```yaml
+- name: Optimize WASM with wasm-opt
+  run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-extension --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
+```
+
+### Lessons Learned
+1. **WASM instruction evolution**: As Rust evolves, newer compiler versions generate WASM using newer instruction sets. `wasm-opt` must have matching feature flags enabled.
+2. **Best practice**: Include all potentially needed feature flags or use `--all-features` on `wasm-opt` to future-proof against new instructions.
+3. **Error diagnosis**: The `wasm-validator error: all used features should be allowed` message is the key indicator of missing feature flags in `wasm-opt`.

@@ -54,6 +54,12 @@ All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive).
 - Completed Tool Validation Skill checklist for all 8 tools
 - Guard-rails: 152 E2E tests, clippy, fmt, WASM build
 
+### Release Build Fix (2026-03-19)
+
+- Fixed wasm-opt failure: added `--enable-sign-extension` and `--enable-nontrapping-float-to-int` flags
+- Cause: Rustc 1.94.0 generates WASM using newer instructions that require these feature flags
+- Updated release workflow with all required wasm-opt feature flags
+
 ### Previous Fixes (2026-03-04 Morning)
 
 #### Select Tool Move Functionality (2026-03-04 Evening)
