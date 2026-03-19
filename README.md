@@ -5,8 +5,9 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 ## Features
 
 - 🎨 **8 Drawing Tools**: Rectangle, Line, Arrow, Diamond, Text, Freehand, Select, Eraser
-- ✋ **Select Tool**: Click and drag to select regions, move selected objects
+- ✋ **Select Tool**: Click and drag to select regions, move selected objects, and see blue highlights
 - 🖼️ **6 Border Styles**: Single, Double, Heavy, Rounded, ASCII, Dotted
+- 🔠 **Dynamic Font Atlas**: High-fidelity character rendering using frontend rasterization (JetBrains Mono)
 - ↩️ **Full Undo/Redo**: Command pattern with configurable history depth
 - 🔍 **Zoom & Pan**: Mouse wheel zoom, Space+drag panning
 - 📋 **One-Click Copy**: Export trimmed ASCII to clipboard
@@ -124,7 +125,8 @@ The core layer contains all business logic with no WASM/web dependencies:
 
 - **Canvas Renderer**: Converts grid to render commands
 - **Dirty Rects**: Only redraws changed regions
-- **Font Metrics**: Precise monospace character measurement
+- **Dynamic Font Atlas**: Rasterizes characters on the frontend and uploads alpha masks to WASM for pixel-perfect alignment
+- **Font Metrics**: Precise 8x20 monospace character measurement
 
 ### WASM Layer
 

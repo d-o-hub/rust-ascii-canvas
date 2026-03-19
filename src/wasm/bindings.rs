@@ -183,6 +183,11 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
 
+        // Commit any operations returned by on_pointer_down (e.g. from TextTool finishing a session)
+        if !result.ops.is_empty() && (self.is_incremental_tool() || self.tool_id == ToolId::Text) {
+            self.commit_ops(&result.ops);
+        }
+
         // If select tool and clicking inside selection, start moving
         if self.tool_id == ToolId::Select {
             if let Some(ref sel) = self.current_selection {
