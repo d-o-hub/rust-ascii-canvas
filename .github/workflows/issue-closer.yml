@@ -7,8 +7,6 @@ on:
 jobs:
   close-issue:
     if: github.event.pull_request.merged == true
-    permissions:
-      issues: write
     runs-on: ubuntu-latest
     steps:
       - name: Close linked issues
