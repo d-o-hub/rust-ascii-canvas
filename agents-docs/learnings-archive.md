@@ -59,6 +59,35 @@ Replace unsafe pointer casts with `Any` trait downcasting.
 
 ---
 
+## Release Build: wasm-opt Feature Flags (2026-03-19)
+
+### Problem
+Release build CI failed at "Optimize WASM with wasm-opt" step with `wasm-validator error: all used features should be allowed`.
+
+### Root Cause
+Rustc 1.94.0 generates WASM using sign extension (`i32.extend8_s`, `i32.extend16_s`) and non-trapping float-to-int (`i32.trunc_sat_f32_u`) instructions.
+
+### Fix
+1. Download binaryen from GitHub releases (Ubuntu's apt version is too old)
+2. Use correct flag name: `--enable-sign-ext` (NOT `--enable-sign-extension`)
+3. Include `--enable-nontrapping-float-to-int`
+
+```yaml
+- run: |
+    wget -q https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
+    tar xzf binaryen-version_123-x86_64-linux.tar.gz
+    echo "$(pwd)/binaryen-version_123/bin" >> $GITHUB_PATH
+- run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz -o output.wasm input.wasm
+```
+
+### Release Workflow: gh release create Best Practices (2026-03-19)
+
+1. **Let `gh release create` create the tag** — no need for manual `git tag -a` + `git push`. Use `--target ${{ github.sha }}` to point at the right commit.
+2. **Set `GH_TOKEN` env var** — Required for `gh` CLI in GitHub Actions: `env: GH_TOKEN: ${{ github.token }}`
+3. **Avoid `--draft false`** — `gh release create` creates a non-draft release by default. Adding `--draft false` can cause bash parsing issues.
+
+---
+
 ## WASM Event Handling (2026-03-20)
 - **Text Tool Input**: Browser `keydown` events provide strings like `"Enter"`, `"Backspace"`, or `"Tab"`. These must be explicitly mapped to control characters (e.g., `\n`, `\x08`, `\t`) before being passed to the Rust logic. Alphanumeric keys can be reliably extracted by checking if the `key` string length is exactly 1.
 - **Dynamic Font Atlas**: To ensure perfect character and symbol rendering in the WASM pixel buffer path, glyphs are rasterized on the frontend using a hidden canvas at startup. The resulting alpha mask data is then uploaded to the WASM `FontAtlas`. This bypasses limitations of hardcoded bitmap patterns and allows the editor to use any font loaded in the browser (e.g., JetBrains Mono).

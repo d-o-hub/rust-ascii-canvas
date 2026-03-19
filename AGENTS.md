@@ -133,6 +133,28 @@ on:
 2. Ubuntu's `apt-get install binaryen` is too old — download from GitHub releases
 3. As Rust/WASM evolves, `wasm-opt` feature flags must match generated instructions
 
+### Release Workflow: gh release create (2026-03-19)
+
+**Problem**: Release workflow failed with multiple git/gh issues: missing git identity, missing `GH_TOKEN`, `--draft false` bash parsing.
+
+**Fix**: Simplify to let `gh release create` handle everything:
+```yaml
+- name: Create Release
+  env:
+    GH_TOKEN: ${{ github.token }}
+  run: |
+    gh release create "v$VERSION" \
+      --title "v$VERSION" \
+      --notes-file release_body.md \
+      --target "${{ github.sha }}"
+```
+
+**Key Insights**:
+1. `gh release create` creates both tag and release — no manual `git tag` needed
+2. Use `--target ${{ github.sha }}` to point at the correct commit
+3. Set `GH_TOKEN: ${{ github.token }}` env var for `gh` CLI in Actions
+4. Avoid `--draft false` — it's the default, and can cause bash parsing issues
+
 ---
 
 *Last Updated: 2026-03-20*

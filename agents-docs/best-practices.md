@@ -46,3 +46,11 @@ plans/
 - Provide structured output with summaries
 - Include specific issues and recommendations
 - Verify ADRs match implementation
+
+### CI/CD Best Practices (2026-03-19)
+
+1. **Release workflow**: Use `gh release create --target ${{ github.sha }}` to create both tag and release in one step. No manual `git tag` needed.
+2. **GH_TOKEN**: Always set `env: GH_TOKEN: ${{ github.token }}` on steps using `gh` CLI.
+3. **binaryen/wasm-opt**: Download from GitHub releases, not `apt-get`. Ubuntu packages are too old for latest Rust WASM output.
+4. **wasm-opt flags**: Use `--enable-sign-ext` (not `--enable-sign-extension`), `--enable-nontrapping-float-to-int`, `--enable-simd`, `--enable-bulk-memory`.
+5. **Always test CI fixes** — push, trigger, monitor. Fix iteratively until green.

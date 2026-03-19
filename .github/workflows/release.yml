@@ -155,7 +155,6 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.guard-rails.outputs.is_dry_run != 'true'
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ needs.guard-rails.outputs.version }}
     steps:
       - name: Checkout
@@ -209,21 +208,11 @@ jobs:
           VERSION="${{ needs.guard-rails.outputs.version }}"
           TAG_NAME="v$VERSION"
           
-          # Configure git user for tagging
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Create tag
-          git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
-          
-          # Create release
+          # gh release create creates the tag and the release in one step
           gh release create "$TAG_NAME" \
             --title "$TAG_NAME" \
             --notes-file release_body.md \
-            --draft false \
-            --prerelease false
-          
-          echo "upload_url=${{ steps.create_release.outputs.upload_url }}" >> $GITHUB_OUTPUT
+            --target "${{ github.sha }}"
 
   publish-wasm:
     name: Publish WASM
@@ -231,17 +220,11 @@ jobs:
     runs-on: ubuntu-latest
     if: needs.guard-rails.outputs.is_dry_run != 'true'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Push tags
+      - name: Summary
         run: |
           VERSION="${{ needs.create-release.outputs.version }}"
-          TAG_NAME="v$VERSION"
-          git push origin "$TAG_NAME"
-          git push origin main
+          echo "Release v$VERSION created successfully!"
+          echo "Tag v$VERSION pushed by gh release create."
 
   dry-run:
     name: Dry Run
