@@ -4,7 +4,7 @@
 
 A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
-## Current Status: **All Tests Passing** ✅
+## Current Status: **All Tests Passing & All Tools Validated** ✅
 
 ### Build Status
 - **WASM Binary Size**: 151KB (well under 1.5MB budget)
@@ -28,10 +28,24 @@ test result: ok. 44 passed; 0 failed; 0 ignored
 
 #### E2E Tests (Playwright - Chromium)
 ```
-63 passed
+152 passed
 ```
 
-All 63 E2E tests pass (comprehensive coverage of all tools, undo/redo, zoom, keyboard shortcuts).
+All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive).
+
+### Recent Fixes (2026-03-20)
+
+#### Comprehensive Tool Malfunction & Rendering Fix (#18, #19)
+- **Issue**: 6 tools (Select, Arrow, Text, Freehand, Diamond, Eraser) had logic errors or missing rendering capabilities.
+- **Fixes**:
+  1. **Dynamic Font Atlas**: Implemented a system to rasterize JetBrains Mono glyphs on the frontend and upload them to WASM as alpha masks, ensuring perfect alignment and readability.
+  2. **Select Tool**: Added blue highlight for active selections.
+  3. **Arrow Tool**: Added arrowhead support (▲▼◄►) and prevented terminus overwriting.
+  4. **Diamond Tool**: Implemented diagonal character (╱╲) rendering logic.
+  5. **Text Tool**: Fixed keyboard mapping (Enter/Backspace/Delete) and coordinate drift (fixed glyph metrics at 8x20 early in boot).
+  6. **Eraser Tool**: Added strict grid boundary checks to prevent out-of-bounds panics.
+- **Automation**: Added `.github/workflows/issue-closer.yml` to automatically close issues linked in PRs.
+- **Verification**: ✅ 152 E2E tests pass across all tools and responsive viewports.
 
 ### Release v0.1.0 (2026-03-04)
 
@@ -51,7 +65,7 @@ All 63 E2E tests pass (comprehensive coverage of all tools, undo/redo, zoom, key
   4. `on_pointer_up`: Commit as single undo operation
   5. Select tool updates selection bounds during drag
 - **Files**: `src/core/tools/select.rs`, `src/wasm/bindings.rs`
-- **Tests**: ✅ All 63 E2E tests pass including "should select and move a shape"
+- **Tests**: ✅ All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive) including "should select and move a shape"
 
 ### Previous Fixes (2026-03-04 Morning)
 

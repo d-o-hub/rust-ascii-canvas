@@ -268,7 +268,7 @@ async function initialize() {
  * Measure font metrics for precise grid alignment
  */
 function measureFont() {
-    if (!ctx || !editor) return;
+    if (!ctx) return;
 
     if (USE_PIXEL_BUFFER) {
         charWidth = GLYPH_WIDTH;
