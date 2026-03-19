@@ -130,7 +130,7 @@ impl AsciiEditor {
 
     #[wasm_bindgen(js_name = setBorderStyle)]
     pub fn set_border_style(&mut self, style: String) {
-        set_border_style(&mut self.state, style);
+        set_border_style(&mut self.state, style, &mut self.active_tool);
     }
 
     #[wasm_bindgen(js_name = setLineDirection)]
@@ -300,7 +300,17 @@ impl AsciiEditor {
 
     #[wasm_bindgen(js_name = onKeyDown)]
     pub fn on_key_down(&mut self, key: String, ctrl: bool, shift: bool) -> JsValue {
-        let key_char = key.chars().next().unwrap_or('\0');
+        let key_char = if key.len() == 1 {
+            key.chars().next().unwrap_or('\0')
+        } else {
+            match key.as_str() {
+                "Enter" => '\n',
+                "Backspace" => '\x08',
+                "Delete" => '\0',
+                "Tab" => '\t',
+                _ => '\0',
+            }
+        };
 
         if key == "Escape" {
             self.active_tool.reset();
@@ -682,6 +692,33 @@ impl AsciiEditor {
         }
 
         let fg_color = [212, 212, 212, 255]; // Matching --fg: #d4d4d4
+
+        // Draw selection highlight
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let highlight_color = [38, 79, 120, 255]; // #264f78
+
+            for gy in min_y..=max_y {
+                for gx in min_x..=max_x {
+                    if self.state.grid.in_bounds(gx, gy) {
+                        let sx = gx as usize * glyph_w;
+                        let sy = gy as usize * glyph_h;
+
+                        for y in 0..glyph_h {
+                            let buffer_y = sy + y;
+                            let buffer_row_start = (buffer_y * buffer_width + sx) * 4;
+                            for x in 0..glyph_w {
+                                let pixel_idx = buffer_row_start + x * 4;
+                                self.pixel_buffer[pixel_idx] = highlight_color[0];
+                                self.pixel_buffer[pixel_idx + 1] = highlight_color[1];
+                                self.pixel_buffer[pixel_idx + 2] = highlight_color[2];
+                                self.pixel_buffer[pixel_idx + 3] = highlight_color[3];
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // Draw cells from grid
         for (x, y, cell) in self.state.grid.iter_with_coords() {

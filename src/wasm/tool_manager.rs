@@ -65,7 +65,11 @@ pub(crate) fn set_tool_by_id(
     }
 }
 
-pub(crate) fn set_border_style(state: &mut EditorState, style: String) {
+pub(crate) fn set_border_style(
+    state: &mut EditorState,
+    style: String,
+    active_tool: &mut Box<dyn Tool>,
+) {
     let style = match style.to_lowercase().as_str() {
         "single" => BorderStyle::Single,
         "double" => BorderStyle::Double,
@@ -76,6 +80,13 @@ pub(crate) fn set_border_style(state: &mut EditorState, style: String) {
         _ => BorderStyle::Single,
     };
     state.border_style = style;
+
+    // Update freehand tool if active
+    if state.tool == ToolId::Freehand {
+        if let Some(freehand) = active_tool.as_any_mut().downcast_mut::<FreehandTool>() {
+            freehand.set_char(style.freehand_char());
+        }
+    }
 }
 
 pub(crate) fn set_line_direction(
