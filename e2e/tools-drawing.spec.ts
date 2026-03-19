@@ -344,7 +344,7 @@ test.describe('Edge Cases', () => {
         await page.waitForTimeout(200);
         
         const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        expect(ascii).not.toMatch(/^[ \t\r]*(?:\n[ \t\r]*)*$/);
         
         await page.screenshot({ path: 'test-results/edge-single-point.png' });
     });
