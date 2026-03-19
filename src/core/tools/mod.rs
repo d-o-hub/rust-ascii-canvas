@@ -150,13 +150,14 @@ impl BorderStyle {
 
     /// Get character used by the freehand tool for this style.
     pub fn freehand_char(&self) -> char {
+        // Match the horizontal character for each style for visual consistency
         match self {
-            BorderStyle::Single => '·',
-            BorderStyle::Double => '•',
-            BorderStyle::Heavy => '●',
-            BorderStyle::Rounded => '·',
-            BorderStyle::Ascii => '*',
-            BorderStyle::Dotted => '·',
+            BorderStyle::Single => '─',
+            BorderStyle::Double => '═',
+            BorderStyle::Heavy => '━',
+            BorderStyle::Rounded => '─',
+            BorderStyle::Ascii => '-',
+            BorderStyle::Dotted => '*',
         }
     }
 }

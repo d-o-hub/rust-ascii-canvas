@@ -218,9 +218,9 @@ test.describe('Drawing Tools Interaction', () => {
         if (!box) return;
         
         // Click at a known position - grid cell (10, 10)
-        // With default font size ~16px, this should be around x=160, y=160
-        const charWidth = 9.6; // approximate
-        const lineHeight = 19.2;
+        // Using exact metrics from implementation (charWidth=8, lineHeight=20)
+        const charWidth = 8;
+        const lineHeight = 20;
         const gridX = 10;
         const gridY = 10;
         const clickX = box.x + (gridX * charWidth) + (charWidth / 2);
