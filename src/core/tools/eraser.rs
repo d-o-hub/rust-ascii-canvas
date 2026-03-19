@@ -44,17 +44,19 @@ impl EraserTool {
     }
 
     /// Generate clear operations for eraser at position.
-    fn erase_at(&self, x: i32, y: i32) -> Vec<DrawOp> {
+    fn erase_at(&self, x: i32, y: i32, grid_w: usize, grid_h: usize) -> Vec<DrawOp> {
         let mut ops = Vec::new();
+        let gw = grid_w as i32;
+        let gh = grid_h as i32;
 
         for dy in -self.size + 1..self.size {
             for dx in -self.size + 1..self.size {
-                // Optional: make circular eraser
-                // if dx * dx + dy * dy < self.size * self.size {
                 let ex = x + dx;
                 let ey = y + dy;
-                ops.push(DrawOp::new(ex, ey, ' '));
-                // }
+
+                if ex >= 0 && ex < gw && ey >= 0 && ey < gh {
+                    ops.push(DrawOp::new(ex, ey, ' '));
+                }
             }
         }
 
@@ -62,7 +64,7 @@ impl EraserTool {
     }
 
     /// Interpolate erase path.
-    fn interpolate_to(&self, x: i32, y: i32) -> Vec<DrawOp> {
+    fn interpolate_to(&self, x: i32, y: i32, grid_w: usize, grid_h: usize) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
         if let Some((lx, ly)) = self.last_pos {
@@ -77,7 +79,7 @@ impl EraserTool {
             let mut cy = ly;
 
             loop {
-                ops.extend(self.erase_at(cx, cy));
+                ops.extend(self.erase_at(cx, cy, grid_w, grid_h));
 
                 if cx == x && cy == y {
                     break;
@@ -94,7 +96,7 @@ impl EraserTool {
                 }
             }
         } else {
-            ops.extend(self.erase_at(x, y));
+            ops.extend(self.erase_at(x, y, grid_w, grid_h));
         }
 
         ops
@@ -113,7 +115,7 @@ impl Tool for EraserTool {
         self.last_pos = Some((x, y));
         self.ops_buffer.clear();
 
-        let ops = self.erase_at(x, y);
+        let ops = self.erase_at(x, y, ctx.grid_width, ctx.grid_height);
         for op in &ops {
             self.ops_buffer.push(op.clone());
         }
@@ -132,7 +134,7 @@ impl Tool for EraserTool {
             return ToolResult::new();
         }
 
-        let ops = self.interpolate_to(x, y);
+        let ops = self.interpolate_to(x, y, ctx.grid_width, ctx.grid_height);
         self.last_pos = Some((x, y));
 
         for op in &ops {
@@ -181,7 +183,7 @@ mod tests {
     #[test]
     fn test_eraser_at() {
         let tool = EraserTool::new();
-        let ops = tool.erase_at(10, 10);
+        let ops = tool.erase_at(10, 10, 80, 40);
 
         // Size 1 eraser should clear 1 cell
         assert_eq!(ops.len(), 1);
@@ -194,7 +196,7 @@ mod tests {
     fn test_larger_eraser() {
         let mut tool = EraserTool::new();
         tool.set_size(2);
-        let ops = tool.erase_at(10, 10);
+        let ops = tool.erase_at(10, 10, 80, 40);
 
         // Size 2 eraser clears a 3x3 area (from -size+1 to size-1 = -1 to 1)
         // dx: -1, 0, 1 (3 values)

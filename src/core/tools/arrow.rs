@@ -91,8 +91,11 @@ impl ArrowTool {
 
         // Draw line using Bresenham's
         loop {
-            let ch = Self::get_line_char(x, y, x2, y2);
-            ops.push(DrawOp::new(x, y, ch));
+            // Don't draw the line character at the very end, as the arrowhead will go there
+            if x != x2 || y != y2 {
+                let ch = Self::get_line_char(x, y, x2, y2);
+                ops.push(DrawOp::new(x, y, ch));
+            }
 
             if x == x2 && y == y2 {
                 break;

@@ -12,7 +12,7 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 - 📋 **One-Click Copy**: Export trimmed ASCII to clipboard
 - ⌨️ **Keyboard-First**: Full keyboard shortcut support
 - 🌙 **Dark Theme**: Professional Figma-inspired dark UI
-- ⚡ **60 FPS Rendering**: Dirty-rect optimization, zero per-frame allocations
+- ⚡ **60 FPS Rendering**: Dirty-rect optimization, high-performance WASM pixel buffer path
 - 📦 **Offline-First**: No external dependencies, works offline
 
 ## Quick Start
@@ -20,8 +20,8 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (1.75+)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) (0.12.1+)
-- [Node.js](https://nodejs.org/) (18+)
+- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) (0.13.1+)
+- [Node.js](https://nodejs.org/) (22+)
 
 ### Build
 

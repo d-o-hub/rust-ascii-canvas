@@ -44,10 +44,11 @@ impl FontAtlas {
             add_glyph(c as char, &mut data, &mut glyph_indices);
         }
 
-        // Box drawing characters
+        // Box drawing characters and symbols
         let box_chars = [
             '┌', '┐', '└', '┘', '─', '│', '╔', '╗', '╚', '╝', '═', '║', '┏', '┓', '┗', '┛', '━',
-            '┃', '╭', '╮', '╰', '╯', '+', '-', '|', '*', '·', '•', '●',
+            '┃', '╭', '╮', '╰', '╯', '+', '-', '|', '*', '·', '•', '●', '▲', '▼', '◄', '►', '╱',
+            '╲', '◆',
         ];
         for &ch in &box_chars {
             if !glyph_indices.contains_key(&ch) {
@@ -189,10 +190,66 @@ impl FontAtlas {
                 glyph_data[7 * 8 + 5] = 255;
                 glyph_data[8 * 8 + 4] = 255;
             }
-            '●' => {
-                for y in 6..9 {
-                    for x in 3..6 {
+            '●' | '◆' => {
+                for y in 6..14 {
+                    for x in 2..6 {
                         glyph_data[y * 8 + x] = 255;
+                    }
+                }
+            }
+            '▲' => {
+                for y in 5..15 {
+                    let w = (y - 5) / 2;
+                    for x in (4 - w)..(4 + w + 1) {
+                        if x < 8 {
+                            glyph_data[y * 8 + x] = 255;
+                        }
+                    }
+                }
+            }
+            '▼' => {
+                for y in 5..15 {
+                    let w = (14 - y) / 2;
+                    for x in (4 - w)..(4 + w + 1) {
+                        if x < 8 {
+                            glyph_data[y * 8 + x] = 255;
+                        }
+                    }
+                }
+            }
+            '◄' => {
+                for x in 1..7 {
+                    let h = (x - 1) * 3 / 2;
+                    for y in (10 - h)..(10 + h + 1) {
+                        if y < 20 {
+                            glyph_data[y * 8 + x] = 255;
+                        }
+                    }
+                }
+            }
+            '►' => {
+                for x in 1..7 {
+                    let h = (6 - x) * 3 / 2;
+                    for y in (10 - h)..(10 + h + 1) {
+                        if y < 20 {
+                            glyph_data[y * 8 + x] = 255;
+                        }
+                    }
+                }
+            }
+            '╱' => {
+                for i in 0..8 {
+                    let y = 14 - (i * 10 / 8);
+                    if y < 20 {
+                        glyph_data[y * 8 + i] = 255;
+                    }
+                }
+            }
+            '╲' => {
+                for i in 0..8 {
+                    let y = 6 + (i * 10 / 8);
+                    if y < 20 {
+                        glyph_data[y * 8 + i] = 255;
                     }
                 }
             }

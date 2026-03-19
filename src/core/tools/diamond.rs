@@ -20,55 +20,53 @@ impl DiamondTool {
     fn draw_diamond(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
-        let cx = (x1 + x2) / 2;
-        let cy = (y1 + y2) / 2;
-        let half_width = (x2 - x1).abs() / 2;
-        let half_height = (y2 - y1).abs() / 2;
+        let dx = (x2 - x1).abs();
+        let dy = (y2 - y1).abs();
 
-        if half_width == 0 && half_height == 0 {
-            ops.push(DrawOp::new(cx, cy, '◆'));
+        if dx == 0 && dy == 0 {
+            ops.push(DrawOp::new(x1, y1, '◆'));
             return ops;
         }
 
-        // Draw four diagonal lines from center to corners
-        // Top corner
-        ops.append(&mut Self::draw_diagonal_line(
-            cx,
-            cy,
+        let cx = (x1 + x2) / 2;
+        let cy = (y1 + y2) / 2;
+
+        // Ensure minimum size for visibility during drag
+        let half_width = (dx / 2).max(if dx > 0 { 1 } else { 0 });
+        let half_height = (dy / 2).max(if dy > 0 { 1 } else { 0 });
+
+        // Draw the four sides of the diamond
+        // Top-Right
+        ops.append(&mut Self::draw_side(
             cx,
             cy - half_height,
-            '/',
-            '\\',
-        ));
-
-        // Right corner
-        ops.append(&mut Self::draw_diagonal_line(
-            cx,
-            cy,
             cx + half_width,
             cy,
-            '/',
-            '\\',
+            '╲',
         ));
-
-        // Bottom corner
-        ops.append(&mut Self::draw_diagonal_line(
-            cx,
+        // Bottom-Right
+        ops.append(&mut Self::draw_side(
+            cx + half_width,
             cy,
             cx,
             cy + half_height,
-            '\\',
-            '/',
+            '╱',
         ));
-
-        // Left corner
-        ops.append(&mut Self::draw_diagonal_line(
+        // Bottom-Left
+        ops.append(&mut Self::draw_side(
             cx,
-            cy,
+            cy + half_height,
             cx - half_width,
             cy,
-            '\\',
-            '/',
+            '╲',
+        ));
+        // Top-Left
+        ops.append(&mut Self::draw_side(
+            cx - half_width,
+            cy,
+            cx,
+            cy - half_height,
+            '╱',
         ));
 
         // Remove duplicates and reorganize
@@ -78,35 +76,35 @@ impl DiamondTool {
         ops
     }
 
-    /// Draw a diagonal line segment.
-    fn draw_diagonal_line(x1: i32, y1: i32, x2: i32, y2: i32, ch1: char, ch2: char) -> Vec<DrawOp> {
+    /// Draw a side of the diamond.
+    fn draw_side(x1: i32, y1: i32, x2: i32, y2: i32, ch: char) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
+        let dx = (x2 - x1).abs();
+        let dy = (y2 - y1).abs();
         let sx = if x1 < x2 { 1 } else { -1 };
         let sy = if y1 < y2 { 1 } else { -1 };
 
         let mut x = x1;
         let mut y = y1;
 
-        // Use the appropriate character based on direction
-        let ch = if (sx > 0 && sy < 0) || (sx < 0 && sy > 0) {
-            ch1
-        } else {
-            ch2
-        };
+        let steps = dx.max(dy);
 
-        loop {
+        for i in 0..=steps {
             ops.push(DrawOp::new(x, y, ch));
 
-            if x == x2 && y == y2 {
-                break;
-            }
-
-            if x != x2 {
-                x += sx;
-            }
-            if y != y2 {
-                y += sy;
+            if i < steps {
+                if dx >= dy {
+                    x += sx;
+                    if i * dy / dx < (i + 1) * dy / dx {
+                        y += sy;
+                    }
+                } else {
+                    y += sy;
+                    if i * dx / dy < (i + 1) * dx / dy {
+                        x += sx;
+                    }
+                }
             }
         }
 
