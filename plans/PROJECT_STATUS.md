@@ -47,12 +47,12 @@ All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive).
 - **Automation**: Added `.github/workflows/issue-closer.yml` to automatically close issues linked in PRs.
 - **Verification**: ✅ 152 E2E tests pass across all tools and responsive viewports.
 
-### Release v0.1.0 (2026-03-04)
+### Release v0.1.1 (2026-03-20)
 
-- Created GitHub release workflow (`.github/workflows/release.yml`)
-- Created local release script (`scripts/release.sh`)
-- Release uses semantic versioning: `vMAJOR.MINOR.PATCH`
-- Guard-rails: tests, clippy, fmt, WASM build
+- Finalized version 0.1.1 patch release
+- Automated issue-closer.yml for issue lifecycle management
+- Completed Tool Validation Skill checklist for all 8 tools
+- Guard-rails: 152 E2E tests, clippy, fmt, WASM build
 
 ### Previous Fixes (2026-03-04 Morning)
 
@@ -258,7 +258,7 @@ See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package
 - ✅ `.github/workflows/ci.yml` - GitHub Actions CI
 - ✅ rustfmt.toml - Code formatting
 - ✅ clippy.toml - Linter config
-- ✅ Package metadata synced (version 0.1.0, MIT license)
+- ✅ Package metadata synced (version 0.1.1, MIT license)
 - ✅ Repository URLs updated
 - ✅ `.github/dependabot.yml` - Automated dependency updates
 

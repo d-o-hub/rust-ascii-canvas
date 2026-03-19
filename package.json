@@ -1,6 +1,6 @@
 {
   "name": "ascii-canvas",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A production-grade ASCII diagram editor built with Rust and WebAssembly",
   "license": "MIT",
   "keywords": ["wasm", "webassembly", "ascii", "diagram", "editor", "rust"],
