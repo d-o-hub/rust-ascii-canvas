@@ -121,7 +121,7 @@ test.describe('ASCII Canvas Editor', () => {
 
     test('should show grid info', async ({ page }) => {
         const gridSize = page.locator('#grid-size');
-        await expect(gridSize).toContainText('80 × 40');
+        await expect(gridSize).toContainText(/(\d+) × (\d+)/);
     });
 
     test('should show zoom level', async ({ page }) => {

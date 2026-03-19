@@ -77,6 +77,14 @@ impl AsciiEditor {
         }
     }
 
+    /// Resize the grid, preserving existing content within the new bounds.
+    #[wasm_bindgen]
+    pub fn resize(&mut self, new_width: usize, new_height: usize) {
+        self.state.grid.resize(new_width, new_height);
+        self.pixel_buffer = vec![0u8; new_width * 8 * new_height * 20 * 4];
+        self.dirty_tracker.request_full_redraw();
+    }
+
     #[wasm_bindgen(getter)]
     pub fn width(&self) -> usize {
         self.state.grid.width()
