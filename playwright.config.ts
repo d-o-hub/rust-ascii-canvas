@@ -28,6 +28,18 @@ export default defineConfig({
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
     },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
+    },
+    {
+      name: 'mobile-safari',
+      use: { ...devices['iPhone 12'] },
+    },
+    {
+      name: 'tablet-safari',
+      use: { ...devices['iPad Air'] },
+    },
   ],
 
   timeout: 60000,

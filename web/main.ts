@@ -51,6 +51,7 @@ interface AsciiEditorInterface {
     getPixelBufferPtr(): number;
     getPixelBufferLen(): number;
     renderToPixelBuffer(): void;
+    resize(width: number, height: number): void;
     requestRedraw(): void;
     clearDirtyState(): void;
     readonly needsRedraw: boolean;
@@ -114,8 +115,8 @@ let mobileKeyboardProxy: HTMLInputElement;
 let lastTouchDistance: number | null = null;
 
 // Grid dimensions
-const GRID_WIDTH = 80;
-const GRID_HEIGHT = 40;
+const MIN_COLS = 40;
+const MIN_ROWS = 20;
 
 // Rendering configuration
 const USE_PIXEL_BUFFER = true;
@@ -141,6 +142,28 @@ function getElement<T extends HTMLElement>(id: string): T {
         throw new Error(`Required element not found: ${id}`);
     }
     return el as T;
+}
+
+/**
+ * Compute grid dimensions based on viewport
+ */
+function computeGridDimensions(): { width: number; height: number } {
+    if (!canvasContainer) return { width: MIN_COLS, height: MIN_ROWS };
+    const rect = canvasContainer.getBoundingClientRect();
+    const vw = rect.width;
+
+    let maxCols: number, maxRows: number;
+    if (vw < 600) {          // mobile
+        maxCols = 60;  maxRows = 30;
+    } else if (vw < 1024) { // tablet
+        maxCols = 120; maxRows = 50;
+    } else {                 // desktop
+        maxCols = 240; maxRows = 80;
+    }
+    return {
+        width:  Math.min(maxCols, Math.max(MIN_COLS, Math.floor(vw / charWidth))),
+        height: Math.min(maxRows, Math.max(MIN_ROWS, Math.floor(rect.height / lineHeight))),
+    };
 }
 
 /**
@@ -187,15 +210,21 @@ async function initialize() {
         }
         ctx = ctxResult;
 
-        // Set up canvas size
+        // Set up canvas size first to have correct container rect
         resizeCanvas();
 
-        // Create editor
-        editor = new AsciiEditor(GRID_WIDTH, GRID_HEIGHT);
+        // Measure font metrics MUST run before computeGridDimensions()
+        measureFont();
+
+        // Create editor with responsive dimensions
+        const { width, height } = computeGridDimensions();
+        editor = new AsciiEditor(width, height);
         window.editor = editor;
 
-        // Measure font metrics
-        measureFont();
+        // Update editor with font metrics again after creation
+        if (editor) {
+            editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
+        }
 
         // Set up event listeners
         setupEventListeners();
@@ -246,7 +275,9 @@ function measureFont() {
     }
 
     // Update editor with font metrics
-    editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
+    if (editor) {
+        editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
+    }
 
     // Expose for testing
     (window as any).charWidth = charWidth;
@@ -270,8 +301,16 @@ function resizeCanvas() {
     ctx.scale(dpr, dpr);
 
     // Re-measure font after resize
+    measureFont();
+
     if (editor) {
-        measureFont();
+        const { width, height } = computeGridDimensions();
+        if (editor.width !== width || editor.height !== height) {
+            editor.resize(width, height);
+            offscreenCanvas = null; // force offscreen canvas recreation
+            offscreenCtx = null;
+            updateUI();
+        }
         requestRender();
     }
 }
