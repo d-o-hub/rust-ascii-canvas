@@ -17,6 +17,7 @@ This document outlines the core principles and workflows for agents working on t
 - [ ] Build WASM with `npm run build:wasm`
 - [ ] Run TypeScript check: `cd web && npx tsc --noEmit`
 - [ ] Run E2E tests: `npx playwright test`
+- [ ] Validate all 8 tools using the **Tool Verification Checklist** below.
 - [ ] Update ADRs for any new architectural decisions in `plans/ADRs/`
 - [ ] Document technical findings in `plans/TECHNICAL_ANALYSIS.md`
 - [ ] Call `pre_commit_instructions` before submitting.
@@ -30,6 +31,19 @@ This document outlines the core principles and workflows for agents working on t
 ## Proactive Testing
 
 For any code change, attempt to find and run relevant tests. Practice test-driven development when practical. If you encounter failures, diagnose the root cause before attempting environment changes.
+
+## Tool Verification Checklist
+
+| Tool | Core Requirement |
+|------|------------------|
+| **Select** | Visible blue highlight; move & delete work. |
+| **Rect** | Correct border style corners/lines. |
+| **Line** | Continuous lines in all directions. |
+| **Arrow** | Visible arrowhead (▲▼◄►) at end. |
+| **Diamond** | Uses diagonal characters (╱╲). |
+| **Text** | Supports Enter/Backspace/Delete keys. |
+| **Free** | Character syncs with Border Style. |
+| **Erase** | Radius-based clearing; no out-of-bounds. |
 
 ---
 *Last Updated: 2026-03-20*

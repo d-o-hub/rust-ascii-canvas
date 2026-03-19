@@ -56,3 +56,8 @@ Replace unsafe pointer casts with `Any` trait downcasting.
 
 ## Release Workflow (2026-03-04)
 - Use semantic versioning and automated releases with guard-rails (`cargo test`, `clippy`, `fmt`, `wasm-pack`).
+
+---
+
+## WASM Event Handling (2026-03-20)
+- **Text Tool Input**: Browser `keydown` events provide strings like `"Enter"`, `"Backspace"`, or `"Tab"`. These must be explicitly mapped to control characters (e.g., `\n`, `\x08`, `\t`) before being passed to the Rust logic. Alphanumeric keys can be reliably extracted by checking if the `key` string length is exactly 1.
