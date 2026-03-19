@@ -117,14 +117,21 @@ on:
 
 **Problem**: Release build failed at wasm-opt step with `wasm-validator error: all used features should be allowed` on `i32.extend16_s`, `i32.extend8_s`, `i32.trunc_sat_f32_u`.
 
-**Root Cause**: Rustc 1.94.0 (2026-03-02) generates WASM using sign extension and non-trapping float-to-int instructions. `wasm-opt` only had `--enable-simd` and `--enable-bulk-memory`.
+**Root Cause**: Rustc 1.94.0 (2026-03-02) generates WASM using sign extension and non-trapping float-to-int instructions. Ubuntu's `binaryen` package is too old and doesn't support the required flags.
 
-**Fix**: Add required feature flags to `wasm-opt` command in release workflow:
+**Fix**: Download binaryen from GitHub releases and use correct flag names:
 ```yaml
-- run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-extension --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
+- run: |
+    wget -q https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
+    tar xzf binaryen-version_123-x86_64-linux.tar.gz
+    echo "$(pwd)/binaryen-version_123/bin" >> $GITHUB_PATH
+- run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
 ```
 
-**Key Insight**: As Rust/WASM evolves, `wasm-opt` feature flags must match generated instructions. Best practice: include all potentially needed flags or use `--all-features`.
+**Key Insights**:
+1. Flag is `--enable-sign-ext` (NOT `--enable-sign-extension`)
+2. Ubuntu's `apt-get install binaryen` is too old — download from GitHub releases
+3. As Rust/WASM evolves, `wasm-opt` feature flags must match generated instructions
 
 ---
 

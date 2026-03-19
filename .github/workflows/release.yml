@@ -134,10 +134,13 @@ jobs:
         run: wasm-pack build --release --target web --out-dir web/pkg
 
       - name: Install binaryen
-        run: sudo apt-get update && sudo apt-get install -y binaryen
+        run: |
+          wget -q https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
+          tar xzf binaryen-version_123-x86_64-linux.tar.gz
+          echo "$(pwd)/binaryen-version_123/bin" >> $GITHUB_PATH
 
       - name: Optimize WASM with wasm-opt
-        run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-extension --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
+        run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
 
       - name: Upload WASM artifact
         uses: actions/upload-artifact@v4

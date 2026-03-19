@@ -881,16 +881,24 @@ Rustc 1.94.0 (2026-03-02) generates WASM using newer instructions:
 - `i32.extend8_s`, `i32.extend16_s` — Sign extension operations
 - `i32.trunc_sat_f32_u`, `i32.trunc_sat_f64_s` — Non-trapping float-to-int conversions
 
-The `wasm-opt` command only had `--enable-simd` and `--enable-bulk-memory` flags, missing the feature flags required for these instructions.
+Two issues:
+1. `wasm-opt` only had `--enable-simd` and `--enable-bulk-memory` flags
+2. Ubuntu's `apt-get install binaryen` installs an old version that doesn't recognize `--enable-sign-extension` (correct name: `--enable-sign-ext`)
 
 ### Fix
-Added `--enable-sign-extension` and `--enable-nontrapping-float-to-int` to `wasm-opt` in `.github/workflows/release.yml`:
+Download binaryen from GitHub releases and use correct flag names in `.github/workflows/release.yml`:
 ```yaml
+- name: Install binaryen
+  run: |
+    wget -q https://github.com/WebAssembly/binaryen/releases/download/version_123/binaryen-version_123-x86_64-linux.tar.gz
+    tar xzf binaryen-version_123-x86_64-linux.tar.gz
+    echo "$(pwd)/binaryen-version_123/bin" >> $GITHUB_PATH
 - name: Optimize WASM with wasm-opt
-  run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-extension --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
+  run: wasm-opt --enable-simd --enable-bulk-memory --enable-sign-ext --enable-nontrapping-float-to-int -Oz -o web/pkg/ascii_canvas_bg.wasm web/pkg/ascii_canvas_bg.wasm
 ```
 
 ### Lessons Learned
-1. **WASM instruction evolution**: As Rust evolves, newer compiler versions generate WASM using newer instruction sets. `wasm-opt` must have matching feature flags enabled.
-2. **Best practice**: Include all potentially needed feature flags or use `--all-features` on `wasm-opt` to future-proof against new instructions.
-3. **Error diagnosis**: The `wasm-validator error: all used features should be allowed` message is the key indicator of missing feature flags in `wasm-opt`.
+1. **Flag name matters**: `--enable-sign-ext` NOT `--enable-sign-extension`
+2. **Ubuntu binaryen is too old**: Always download from GitHub releases for latest feature support
+3. **WASM instruction evolution**: As Rust evolves, newer compiler versions generate WASM using newer instruction sets. `wasm-opt` must have matching feature flags enabled.
+4. **Error diagnosis**: The `wasm-validator error: all used features should be allowed` message is the key indicator of missing feature flags in `wasm-opt`.
