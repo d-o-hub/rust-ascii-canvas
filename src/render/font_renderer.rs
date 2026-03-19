@@ -17,6 +17,23 @@ pub struct FontAtlas {
     data: Vec<u8>,
 }
 
+impl FontAtlas {
+    /// Update the entire font atlas data.
+    pub fn update_data(&mut self, data: Vec<u8>) {
+        self.data = data;
+    }
+
+    /// Update a specific glyph's bitmap data.
+    pub fn update_glyph(&mut self, ch: char, glyph_data: &[u8]) {
+        if let Some(&idx) = self.glyph_indices.get(&ch) {
+            let offset = idx * self.glyph_width * self.glyph_height;
+            if offset + glyph_data.len() <= self.data.len() {
+                self.data[offset..offset + glyph_data.len()].copy_from_slice(glyph_data);
+            }
+        }
+    }
+}
+
 impl Default for FontAtlas {
     fn default() -> Self {
         Self::new()
@@ -167,18 +184,14 @@ impl FontAtlas {
                 }
             }
             '0'..='9' | 'A'..='Z' | 'a'..='z' => {
-                for x in 2..6 {
-                    glyph_data[4 * 8 + x] = 255;
-                    glyph_data[15 * 8 + x] = 255;
-                }
+                // Minimal I-beam fallback for characters
                 for y in 4..16 {
-                    glyph_data[y * 8 + 2] = 255;
-                    glyph_data[y * 8 + 5] = 255;
+                    glyph_data[y * 8 + 4] = 128;
                 }
-                glyph_data[9 * 8 + 3] = 255;
-                glyph_data[9 * 8 + 4] = 255;
-                glyph_data[10 * 8 + 3] = 255;
-                glyph_data[10 * 8 + 4] = 255;
+                for x in 2..7 {
+                    glyph_data[4 * 8 + x] = 128;
+                    glyph_data[15 * 8 + x] = 128;
+                }
             }
             '·' => {
                 glyph_data[7 * 8 + 4] = 255;

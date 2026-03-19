@@ -61,3 +61,5 @@ Replace unsafe pointer casts with `Any` trait downcasting.
 
 ## WASM Event Handling (2026-03-20)
 - **Text Tool Input**: Browser `keydown` events provide strings like `"Enter"`, `"Backspace"`, or `"Tab"`. These must be explicitly mapped to control characters (e.g., `\n`, `\x08`, `\t`) before being passed to the Rust logic. Alphanumeric keys can be reliably extracted by checking if the `key` string length is exactly 1.
+- **Dynamic Font Atlas**: To ensure perfect character and symbol rendering in the WASM pixel buffer path, glyphs are rasterized on the frontend using a hidden canvas at startup. The resulting alpha mask data is then uploaded to the WASM `FontAtlas`. This bypasses limitations of hardcoded bitmap patterns and allows the editor to use any font loaded in the browser (e.g., JetBrains Mono).
+- **Font Loading Synchronization**: When using a dynamic font atlas, it is critical to wait for `document.fonts.ready` before rasterizing glyphs. Rasterizing before the web font is fully loaded results in fallback "empty" or "blocky" glyphs being cached in the WASM memory.
