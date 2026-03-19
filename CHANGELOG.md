@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.1] - 2026-03-20
+
+### Added
+- **Dynamic Font Atlas**: High-fidelity character rendering using frontend rasterization (JetBrains Mono).
+- **Select Highlight**: Blue background highlight for active selections in the pixel buffer path.
+- **Issue Automation**: GitHub Action for automatic issue closing on PR merge.
+- **Tool Validation Skill**: Standardized verification checklist for all 8 drawing tools.
+
+### Fixed
+- **Text Tool**: Fixed keyboard mapping (Enter/Backspace/Delete) and coordinate drift (8x20 metric alignment).
+- **Arrow Tool**: Prevented endpoint overwriting and added Unicode arrowhead support (▲▼◄►).
+- **Diamond Tool**: Re-implemented with diagonal characters (╱╲) and improved small-drag handling.
+- **Freehand Tool**: Synchronized drawing character with the currently selected Border Style.
+- **Eraser Tool**: Added strict grid boundary checks to prevent out-of-bounds panics.
+- **E2E Tests**: Expanded test suite from 63 to 152 tests, including responsive and cross-browser validation.
+
+### Technical
+- **Version bump**: 0.1.1 patch release for production tool fixes.
+- **WASM Performance**: Refined pixel buffer rendering loop and font atlas mask handling.
+
 ## [0.1.0] - 2026-03-04
 
 ### Added

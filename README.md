@@ -308,7 +308,7 @@ cargo update
 
 ## Version
 
-Current: **v0.1.0**
+Current: **v0.1.1**
 
 ## License
 
