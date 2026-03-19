@@ -207,6 +207,10 @@ jobs:
           VERSION="${{ needs.guard-rails.outputs.version }}"
           TAG_NAME="v$VERSION"
           
+          # Configure git user for tagging
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
           # Create tag
           git tag -a "$TAG_NAME" -m "Release $TAG_NAME"
           
