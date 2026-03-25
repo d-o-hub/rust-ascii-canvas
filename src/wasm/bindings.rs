@@ -476,7 +476,9 @@ impl AsciiEditor {
             for y in min_y..=max_y {
                 for x in min_x..=max_x {
                     if let Some(cell) = self.state.grid.get(x, y) {
-                        cells.push((x - min_x, y - min_y, *cell));
+                        if cell.is_visible() {
+                            cells.push((x - min_x, y - min_y, *cell));
+                        }
                     }
                 }
             }
@@ -600,6 +602,16 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = exportAscii)]
     pub fn export_ascii(&self) -> String {
         export_ascii(&self.state.grid)
+    }
+
+    #[wasm_bindgen(js_name = exportSelection)]
+    pub fn export_selection(&self) -> String {
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            crate::core::ascii_export::export_region(&self.state.grid, min_x, min_y, max_x, max_y)
+        } else {
+            String::new()
+        }
     }
 
     #[wasm_bindgen(js_name = getRenderCommands)]
@@ -1023,5 +1035,24 @@ mod tests {
         // With no selection, fallback to (0,0) is acceptable
         let cell = canvas.state.grid.get(0, 0);
         assert_eq!(cell.map(|c| c.ch), Some('W'));
+    }
+
+    #[test]
+    fn test_copy_selection_only_stores_visible_cells() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        canvas.set_tool_by_id_impl(ToolId::Select);
+
+        // Put an 'A' at (1,1) and leave (2,2) empty
+        canvas.state.grid.set_char(1, 1, 'A');
+
+        // Select (1,1) to (2,2)
+        canvas.set_selection_for_test(1, 1, 2, 2);
+        canvas.copy_selection();
+
+        // Clipboard should only have 1 cell (the 'A'), not the empty space at (2,2)
+        assert_eq!(canvas.clipboard.cells.len(), 1);
+        assert_eq!(canvas.clipboard.cells[0].2.ch, 'A');
+        assert_eq!(canvas.clipboard.cells[0].0, 0); // relative x
+        assert_eq!(canvas.clipboard.cells[0].1, 0); // relative y
     }
 }

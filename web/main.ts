@@ -46,6 +46,7 @@ interface AsciiEditorInterface {
     redo(): boolean;
     clear(): void;
     exportAscii(): string;
+    exportSelection(): string;
     getRenderCommands(): RenderCommand[];
     getDirtyRenderCommands(): RenderCommand[];
     getPixelBufferPtr(): number;
@@ -56,6 +57,7 @@ interface AsciiEditorInterface {
     requestRedraw(): void;
     clearDirtyState(): void;
     readonly needsRedraw: boolean;
+    readonly has_selection: boolean;
     readonly fullRenderCount: number;
     readonly dirtyRenderCount: number;
 }
@@ -938,7 +940,15 @@ function updateUI() {
  */
 async function copyToClipboard() {
     if (!editor) return;
-    const ascii = editor.exportAscii();
+
+    // Use selection-aware copy if a selection exists
+    let ascii: string;
+    if (editor.has_selection) {
+        ascii = editor.exportSelection();
+    } else {
+        ascii = editor.exportAscii();
+    }
+
     const normalized = ascii.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
     try {
         await navigator.clipboard.writeText(normalized);
