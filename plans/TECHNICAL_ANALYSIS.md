@@ -902,3 +902,29 @@ Download binaryen from GitHub releases and use correct flag names in `.github/wo
 2. **Ubuntu binaryen is too old**: Always download from GitHub releases for latest feature support
 3. **WASM instruction evolution**: As Rust evolves, newer compiler versions generate WASM using newer instruction sets. `wasm-opt` must have matching feature flags enabled.
 4. **Error diagnosis**: The `wasm-validator error: all used features should be allowed` message is the key indicator of missing feature flags in `wasm-opt`.
+
+---
+
+## PR #22 Follow-up Investigation: Copy/Export Regression Still Reproducing (2026-03-25)
+
+### Context
+User-reported regression indicates the PR #22 deploy preview still produces broken layout after copy/paste to an external plain-text editor workflow.
+
+### Investigation Notes
+- Direct deploy-preview verification was attempted with `agent-browser` against:
+  - `https://deploy-preview-22---grand-kheer-862c39.netlify.app`
+- Blocked by environment:
+  1. `agent-browser` initially failed due to missing Chrome runtime.
+  2. `agent-browser install` failed downloading Chrome metadata from the Chrome-for-Testing endpoint.
+
+### Technical Risks Identified
+1. **Per-line trimming risk** in ASCII export paths can still collapse rows inconsistently.
+2. **Divergent algorithms** between full-grid export and selection-region export can create mismatch.
+3. **Clipboard transport differences** (`\n` vs `\r\n`) may affect external editor behavior.
+4. **Font dependency** can mimic structural corruption if destination editor is not monospace.
+
+### Proposed Engineering Direction
+- Unify width computation between `export_grid` (trimmed) and `export_region`.
+- Add explicit tests for rectangular structures with sparse interior rows.
+- Verify clipboard normalization path with web tests.
+- Re-run deploy-preview verification with `agent-browser` once Chrome runtime is available.
