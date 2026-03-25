@@ -715,7 +715,8 @@ function handleEventResult(result: EventResult) {
     }
 
     if (result.should_copy && result.ascii) {
-        navigator.clipboard.writeText(result.ascii).then(() => {
+        const normalized = result.ascii.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+        navigator.clipboard.writeText(normalized).then(() => {
             showToast('Copied to clipboard!');
         }).catch(() => {
             showToast('Failed to copy', true);
@@ -938,8 +939,9 @@ function updateUI() {
 async function copyToClipboard() {
     if (!editor) return;
     const ascii = editor.exportAscii();
+    const normalized = ascii.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
     try {
-        await navigator.clipboard.writeText(ascii);
+        await navigator.clipboard.writeText(normalized);
         showToast('Copied to clipboard!');
     } catch {
         showToast('Failed to copy', true);

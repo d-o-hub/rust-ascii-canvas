@@ -343,6 +343,7 @@ impl AsciiEditor {
         }
 
         if ctrl && key.to_lowercase() == "c" {
+            self.copy_selection(); // populate internal clipboard first
             let event_result = self.create_event_result_with_copy(true);
             return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
@@ -531,9 +532,16 @@ impl AsciiEditor {
         let grid_height = self.state.grid.height() as i32;
         let mut ops = Vec::new();
 
+        let (offset_x, offset_y) = if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, _, _) = sel.bounds();
+            (min_x, min_y)
+        } else {
+            (0, 0)
+        };
+
         for (rel_x, rel_y, cell) in &self.clipboard.cells {
-            let x = *rel_x;
-            let y = *rel_y;
+            let x = offset_x + rel_x;
+            let y = offset_y + rel_y;
 
             if x >= 0 && x < grid_width && y >= 0 && y < grid_height {
                 ops.push(DrawOp::new(x, y, cell.ch));
@@ -882,7 +890,18 @@ impl AsciiEditor {
 
     fn create_event_result_with_copy(&self, should_copy: bool) -> EditorEventResult {
         let ascii = if should_copy {
-            Some(self.export_ascii())
+            if let Some(ref sel) = self.current_selection {
+                let (min_x, min_y, max_x, max_y) = sel.bounds();
+                Some(crate::core::ascii_export::export_region(
+                    &self.state.grid,
+                    min_x,
+                    min_y,
+                    max_x,
+                    max_y,
+                ))
+            } else {
+                Some(self.export_ascii())
+            }
         } else {
             None
         };
@@ -893,5 +912,116 @@ impl AsciiEditor {
             self.can_redo(),
             ascii.unwrap_or_default(),
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn make_canvas_with_content() -> AsciiEditor {
+        let mut canvas = AsciiEditor::new(10, 10);
+        // Draw a small box: ┌─┐ / │ │ / └─┘
+        canvas.state.grid.set_char(0, 0, '┌');
+        canvas.state.grid.set_char(1, 0, '─');
+        canvas.state.grid.set_char(2, 0, '┐');
+        canvas.state.grid.set_char(0, 1, '│');
+        canvas.state.grid.set_char(2, 1, '│');
+        canvas.state.grid.set_char(0, 2, '└');
+        canvas.state.grid.set_char(1, 2, '─');
+        canvas.state.grid.set_char(2, 2, '┘');
+        canvas
+    }
+
+    #[wasm_bindgen]
+    impl AsciiEditor {
+        #[wasm_bindgen(js_name = setSelection)]
+        pub fn set_selection_for_test(&mut self, x1: i32, y1: i32, x2: i32, y2: i32) {
+            self.current_selection = Some(Selection::new(x1, y1, x2, y2));
+        }
+    }
+
+    // Bug 3 — copy_selection must populate SelectionClipboard before export
+    #[test]
+    fn test_ctrl_c_with_selection_fills_clipboard() {
+        let mut canvas = make_canvas_with_content();
+        // Must be in Select tool for copy_selection to work
+        canvas.set_tool_by_id_impl(ToolId::Select);
+        // Set a selection over the full box
+        canvas.set_selection_for_test(0, 0, 2, 2);
+        // Trigger copy
+        canvas.copy_selection();
+        // Internal clipboard must be populated
+        assert!(
+            !canvas.clipboard.is_empty(),
+            "SelectionClipboard must be filled after copy_selection()"
+        );
+    }
+
+    #[test]
+    fn test_ctrl_c_without_selection_does_not_panic() {
+        let mut canvas = make_canvas_with_content();
+        canvas.current_selection = None;
+        // Should not panic even with no selection
+        canvas.copy_selection();
+    }
+
+    // Bug 3 — create_event_result_with_copy must export only the selected region
+    #[test]
+    fn test_copy_event_exports_selected_region_only() {
+        let mut canvas = make_canvas_with_content();
+        // Select only the top-left character
+        canvas.set_selection_for_test(0, 0, 0, 0);
+        canvas.copy_selection();
+        let result = canvas.create_event_result_with_copy(true);
+        let ascii = result.ascii.unwrap_or_default();
+        // Must only contain ┌, not the full grid
+        assert_eq!(
+            ascii.trim(),
+            "┌",
+            "Export must be scoped to selection, got: {:?}",
+            ascii
+        );
+    }
+
+    // Bug 4 — paste must offset by selection origin, not always (0,0)
+    #[test]
+    fn test_paste_at_selection_origin() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        // Manually populate internal clipboard with a single cell at relative (0,0)
+        canvas.clipboard.cells = vec![(0, 0, crate::core::cell::Cell::new('Z'))];
+        canvas.clipboard.width = 1;
+        canvas.clipboard.height = 1;
+
+        // Set selection at (5, 5)
+        canvas.set_selection_for_test(5, 5, 5, 5);
+        canvas.paste();
+        // 'Z' must appear at (5, 5), not (0, 0)
+        let cell_at_target = canvas.state.grid.get(5, 5);
+        let cell_at_origin = canvas.state.grid.get(0, 0);
+        assert_eq!(
+            cell_at_target.map(|c| c.ch),
+            Some('Z'),
+            "Pasted cell must be at selection origin (5,5)"
+        );
+        assert_ne!(
+            cell_at_origin.map(|c| c.ch),
+            Some('Z'),
+            "Pasted cell must NOT be at grid origin (0,0)"
+        );
+    }
+
+    #[test]
+    fn test_paste_without_selection_uses_origin() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        canvas.clipboard.cells = vec![(0, 0, crate::core::cell::Cell::new('W'))];
+        canvas.clipboard.width = 1;
+        canvas.clipboard.height = 1;
+
+        canvas.current_selection = None;
+        canvas.paste();
+        // With no selection, fallback to (0,0) is acceptable
+        let cell = canvas.state.grid.get(0, 0);
+        assert_eq!(cell.map(|c| c.ch), Some('W'));
     }
 }

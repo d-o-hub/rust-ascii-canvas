@@ -73,10 +73,6 @@ fn export_trimmed(grid: &Grid, options: &ExportOptions) -> String {
             result.push(ch);
         }
 
-        // Trim trailing spaces from this line
-        let trimmed_end = result.trim_end_matches(' ').len();
-        result.truncate(trimmed_end);
-
         if y < max_y {
             result.push('\n');
         }
@@ -128,23 +124,48 @@ pub fn find_content_bounds(grid: &Grid) -> Option<(i32, i32, i32, i32)> {
 
 /// Export a rectangular region of the grid.
 pub fn export_region(grid: &Grid, x1: i32, y1: i32, x2: i32, y2: i32) -> String {
-    let min_x = x1.min(x2).max(0) as usize;
-    let min_y = y1.min(y2).max(0) as usize;
-    let max_x = (x1.max(x2).min(grid.width() as i32 - 1)) as usize;
-    let max_y = (y1.max(y2).min(grid.height() as i32 - 1)) as usize;
+    let min_x = x1.min(x2).max(0) as i32;
+    let min_y = y1.min(y2).max(0) as i32;
+    let max_x_limit = x1.max(x2).min(grid.width() as i32 - 1) as i32;
+    let max_y_limit = y1.max(y2).min(grid.height() as i32 - 1) as i32;
+
+    // Find the actual rightmost content within this region to allow uniform trimming
+    let mut actual_max_x = -1;
+    let mut actual_min_y = -1;
+    let mut actual_max_y = -1;
+    let mut actual_min_x = -1;
+
+    for y in min_y..=max_y_limit {
+        for x in min_x..=max_x_limit {
+            if let Some(cell) = grid.get(x, y) {
+                if cell.is_visible() {
+                    if actual_min_x == -1 || x < actual_min_x {
+                        actual_min_x = x;
+                    }
+                    if x > actual_max_x {
+                        actual_max_x = x;
+                    }
+                    if actual_min_y == -1 {
+                        actual_min_y = y;
+                    }
+                    actual_max_y = y;
+                }
+            }
+        }
+    }
+
+    if actual_max_x == -1 {
+        return String::new();
+    }
 
     let mut result = String::new();
-
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            let ch = grid.get(x as i32, y as i32).map(|c| c.ch).unwrap_or(' ');
+    for y in actual_min_y..=actual_max_y {
+        for x in actual_min_x..=actual_max_x {
+            let ch = grid.get(x, y).map(|c| c.ch).unwrap_or(' ');
             result.push(ch);
         }
-        // Trim trailing spaces
-        let trimmed = result.trim_end_matches(' ');
-        result.truncate(trimmed.len());
 
-        if y < max_y {
+        if y < actual_max_y {
             result.push('\n');
         }
     }
@@ -205,6 +226,166 @@ mod tests {
 
         assert!(result.contains('A'));
         assert!(result.contains('D'));
+        assert_eq!(result, "AB\nCD");
+    }
+
+    #[test]
+    fn test_export_trimmed_preserves_right_border() {
+        // Simulate a 5×3 rectangle drawn with box-drawing chars:
+        // ┌───┐
+        // │   │
+        // └───┘
+        let mut grid = Grid::new(10, 5);
+        // Top border
+        grid.set_char(0, 0, '┌');
+        grid.set_char(1, 0, '─');
+        grid.set_char(2, 0, '─');
+        grid.set_char(3, 0, '─');
+        grid.set_char(4, 0, '┐');
+        // Middle row — right border only; interior is spaces (empty cells)
+        grid.set_char(0, 1, '│');
+        grid.set_char(4, 1, '│');
+        // Bottom border
+        grid.set_char(0, 2, '└');
+        grid.set_char(1, 2, '─');
+        grid.set_char(2, 2, '─');
+        grid.set_char(3, 2, '─');
+        grid.set_char(4, 2, '┘');
+
+        let options = ExportOptions::default(); // trim_borders: true
+        let result = export_grid(&grid, &options);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 3, "Should have 3 rows");
+        // Top row must end with ┐
+        assert!(
+            lines[0].ends_with('┐'),
+            "Top row must end with ┐, got: {:?}",
+            lines[0]
+        );
+        // Middle row must end with │
+        assert!(
+            lines[1].ends_with('│'),
+            "Middle row must end with │, got: {:?}",
+            lines[1]
+        );
+        // Bottom row must end with ┘
+        assert!(
+            lines[2].ends_with('┘'),
+            "Bottom row must end with ┘, got: {:?}",
+            lines[2]
+        );
+        // All content lines must have the same width (uniform column trimming)
+        let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
+        assert!(
+            widths.windows(2).all(|w| w[0] == w[1]),
+            "All lines must be the same width: {:?}",
+            widths
+        );
+    }
+
+    #[test]
+    fn test_export_region_preserves_right_border() {
+        // Same box, exported via export_region — Bug 5
+        let mut grid = Grid::new(10, 5);
+        grid.set_char(0, 0, '┌');
+        grid.set_char(1, 0, '─');
+        grid.set_char(2, 0, '─');
+        grid.set_char(3, 0, '─');
+        grid.set_char(4, 0, '┐');
+        grid.set_char(0, 1, '│');
+        grid.set_char(4, 1, '│');
+        grid.set_char(0, 2, '└');
+        grid.set_char(1, 2, '─');
+        grid.set_char(2, 2, '─');
+        grid.set_char(3, 2, '─');
+        grid.set_char(4, 2, '┘');
+
+        let result = export_region(&grid, 0, 0, 4, 2);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 3);
+        assert!(lines[0].ends_with('┐'), "Top row must end with ┐");
+        assert!(lines[1].ends_with('│'), "Middle row must end with │");
+        assert!(lines[2].ends_with('┘'), "Bottom row must end with ┘");
+        let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
+        assert!(
+            widths.windows(2).all(|w| w[0] == w[1]),
+            "All lines must be the same width"
+        );
+    }
+
+    #[test]
+    fn test_export_trimmed_trailing_spaces_only_removed_globally() {
+        // Grid with content only in col 0–4; col 5–9 are empty.
+        // After global-column fix, lines should be trimmed to col 4 — not shorter.
+        let mut grid = Grid::new(10, 3);
+        grid.set_char(0, 0, 'A');
+        grid.set_char(4, 0, 'B'); // rightmost content
+        grid.set_char(0, 1, 'C');
+        // Row 2: only col 0 occupied — must be padded to col 4 width by global trim rule
+        grid.set_char(0, 2, 'D');
+        grid.set_char(4, 2, 'E');
+
+        let options = ExportOptions::default();
+        let result = export_grid(&grid, &options);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 3);
+        // Row 1 has content at col 4; all rows must be width 5 (cols 0–4)
+        assert_eq!(lines[0].chars().count(), 5, "Row 0 width");
+        // Row 1 has trailing spaces up to global max col
+        assert_eq!(
+            lines[1].chars().count(),
+            5,
+            "Row 1 must be padded to global width"
+        );
+        assert_eq!(lines[2].chars().count(), 5, "Row 2 width");
+    }
+
+    #[test]
+    fn test_export_region_exact_content() {
+        // export_region result must include AB on row 0 and CD on row 1
+        let mut grid = Grid::new(10, 10);
+        grid.set_char(2, 2, 'A');
+        grid.set_char(3, 2, 'B');
+        grid.set_char(2, 3, 'C');
+        grid.set_char(3, 3, 'D');
+
+        let result = export_region(&grid, 2, 2, 3, 3);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 2);
+        assert_eq!(lines[0], "AB");
+        assert_eq!(lines[1], "CD");
+    }
+
+    #[test]
+    fn test_export_full_no_trim() {
+        // Bug 1 regression: export_full must NOT trim anything
+        let mut grid = Grid::new(5, 2);
+        grid.set_char(0, 0, 'X');
+        // All other cells are empty spaces
+
+        let options = ExportOptions {
+            trim_borders: false,
+            ..Default::default()
+        };
+        let result = export_grid(&grid, &options);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 2, "Must export all rows");
+        assert_eq!(lines[0].len(), 5, "Full row width must be preserved");
+        assert_eq!(lines[1].len(), 5, "Full empty row must be preserved");
+    }
+
+    #[test]
+    fn test_count_content() {
+        let mut grid = Grid::new(10, 10);
+        assert_eq!(count_content(&grid), 0);
+        grid.set_char(1, 1, 'A');
+        grid.set_char(2, 2, 'B');
+        assert_eq!(count_content(&grid), 2);
     }
 
     #[test]
