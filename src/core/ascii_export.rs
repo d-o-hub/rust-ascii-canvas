@@ -124,10 +124,10 @@ pub fn find_content_bounds(grid: &Grid) -> Option<(i32, i32, i32, i32)> {
 
 /// Export a rectangular region of the grid.
 pub fn export_region(grid: &Grid, x1: i32, y1: i32, x2: i32, y2: i32) -> String {
-    let min_x = x1.min(x2).max(0) as i32;
-    let min_y = y1.min(y2).max(0) as i32;
-    let max_x_limit = x1.max(x2).min(grid.width() as i32 - 1) as i32;
-    let max_y_limit = y1.max(y2).min(grid.height() as i32 - 1) as i32;
+    let min_x = x1.min(x2).max(0);
+    let min_y = y1.min(y2).max(0);
+    let max_x_limit = x1.max(x2).min(grid.width() as i32 - 1);
+    let max_y_limit = y1.max(y2).min(grid.height() as i32 - 1);
 
     // Find the actual rightmost content within this region to allow uniform trimming
     let mut actual_max_x = -1;
