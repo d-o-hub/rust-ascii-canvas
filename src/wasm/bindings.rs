@@ -476,6 +476,7 @@ impl AsciiEditor {
             for y in min_y..=max_y {
                 for x in min_x..=max_x {
                     if let Some(cell) = self.state.grid.get(x, y) {
+                        // Only copy visible cells to allow "transparent" paste (merging content)
                         if cell.is_visible() {
                             cells.push((x - min_x, y - min_y, *cell));
                         }
@@ -604,6 +605,8 @@ impl AsciiEditor {
         export_ascii(&self.state.grid)
     }
 
+    /// Export the current selection as an ASCII string.
+    /// If no selection exists, returns an empty string.
     #[wasm_bindgen(js_name = exportSelection)]
     pub fn export_selection(&self) -> String {
         if let Some(ref sel) = self.current_selection {
@@ -612,6 +615,11 @@ impl AsciiEditor {
         } else {
             String::new()
         }
+    }
+
+    #[wasm_bindgen(getter = hasSelection)]
+    pub fn has_selection_js(&self) -> bool {
+        self.current_selection.is_some()
     }
 
     #[wasm_bindgen(js_name = getRenderCommands)]

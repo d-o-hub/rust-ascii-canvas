@@ -123,49 +123,22 @@ pub fn find_content_bounds(grid: &Grid) -> Option<(i32, i32, i32, i32)> {
 }
 
 /// Export a rectangular region of the grid.
+/// This method exports EXACTLY the region specified by the coordinates,
+/// preserving internal spaces and alignment.
 pub fn export_region(grid: &Grid, x1: i32, y1: i32, x2: i32, y2: i32) -> String {
     let min_x = x1.min(x2).max(0);
     let min_y = y1.min(y2).max(0);
-    let max_x_limit = x1.max(x2).min(grid.width() as i32 - 1);
-    let max_y_limit = y1.max(y2).min(grid.height() as i32 - 1);
-
-    // Find the actual rightmost content within this region to allow uniform trimming
-    let mut actual_max_x = -1;
-    let mut actual_min_y = -1;
-    let mut actual_max_y = -1;
-    let mut actual_min_x = -1;
-
-    for y in min_y..=max_y_limit {
-        for x in min_x..=max_x_limit {
-            if let Some(cell) = grid.get(x, y) {
-                if cell.is_visible() {
-                    if actual_min_x == -1 || x < actual_min_x {
-                        actual_min_x = x;
-                    }
-                    if x > actual_max_x {
-                        actual_max_x = x;
-                    }
-                    if actual_min_y == -1 {
-                        actual_min_y = y;
-                    }
-                    actual_max_y = y;
-                }
-            }
-        }
-    }
-
-    if actual_max_x == -1 {
-        return String::new();
-    }
+    let max_x = x1.max(x2).min(grid.width() as i32 - 1);
+    let max_y = y1.max(y2).min(grid.height() as i32 - 1);
 
     let mut result = String::new();
-    for y in actual_min_y..=actual_max_y {
-        for x in actual_min_x..=actual_max_x {
+    for y in min_y..=max_y {
+        for x in min_x..=max_x {
             let ch = grid.get(x, y).map(|c| c.ch).unwrap_or(' ');
             result.push(ch);
         }
 
-        if y < actual_max_y {
+        if y < max_y {
             result.push('\n');
         }
     }
@@ -227,6 +200,16 @@ mod tests {
         assert!(result.contains('A'));
         assert!(result.contains('D'));
         assert_eq!(result, "AB\nCD");
+    }
+
+    #[test]
+    fn test_export_region_with_empty_space() {
+        let mut grid = Grid::new(20, 20);
+        grid.set_char(1, 1, 'X');
+        // Region (0,0) to (2,2) should be 3x3 with 'X' at (1,1)
+        let result = export_region(&grid, 0, 0, 2, 2);
+        let expected = "   \n X \n   ";
+        assert_eq!(result, expected);
     }
 
     #[test]
@@ -301,18 +284,16 @@ mod tests {
         grid.set_char(3, 2, '─');
         grid.set_char(4, 2, '┘');
 
-        let result = export_region(&grid, 0, 0, 4, 2);
+        // Export a slightly larger region (0,0) to (5,2)
+        // Original was 5x3 (cols 0-4), we export 6x3 (cols 0-5)
+        let result = export_region(&grid, 0, 0, 5, 2);
         let lines: Vec<&str> = result.lines().collect();
 
         assert_eq!(lines.len(), 3);
-        assert!(lines[0].ends_with('┐'), "Top row must end with ┐");
-        assert!(lines[1].ends_with('│'), "Middle row must end with │");
-        assert!(lines[2].ends_with('┘'), "Bottom row must end with ┘");
-        let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
-        assert!(
-            widths.windows(2).all(|w| w[0] == w[1]),
-            "All lines must be the same width"
-        );
+        // Each row should be 6 chars long, with a space at the end
+        assert_eq!(lines[0], "┌───┐ ");
+        assert_eq!(lines[1], "│   │ ");
+        assert_eq!(lines[2], "└───┘ ");
     }
 
     #[test]

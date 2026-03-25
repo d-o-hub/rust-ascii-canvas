@@ -57,7 +57,7 @@ interface AsciiEditorInterface {
     requestRedraw(): void;
     clearDirtyState(): void;
     readonly needsRedraw: boolean;
-    readonly has_selection: boolean;
+    readonly hasSelection: boolean;
     readonly fullRenderCount: number;
     readonly dirtyRenderCount: number;
 }
@@ -943,7 +943,7 @@ async function copyToClipboard() {
 
     // Use selection-aware copy if a selection exists
     let ascii: string;
-    if (editor.has_selection) {
+    if (editor.hasSelection) {
         ascii = editor.exportSelection();
     } else {
         ascii = editor.exportAscii();
