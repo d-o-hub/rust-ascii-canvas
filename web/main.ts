@@ -715,11 +715,7 @@ function handleEventResult(result: EventResult) {
     }
 
     if (result.should_copy && result.ascii) {
-        navigator.clipboard.writeText(result.ascii).then(() => {
-            showToast('Copied to clipboard!');
-        }).catch(() => {
-            showToast('Failed to copy', true);
-        });
+        void copyAsciiToClipboard(result.ascii);
     }
 
     updateUI();
@@ -933,17 +929,49 @@ function updateUI() {
 }
 
 /**
+ * Copy ASCII to clipboard with both plain text and HTML formats
+ * to preserve formatting in various editors.
+ */
+async function copyAsciiToClipboard(text: string) {
+    try {
+        const plain = new Blob([text], { type: 'text/plain' });
+
+        // HTML version with specific font stack to preserve monospace layout
+        const escapedText = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        const html = `<pre style="font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace;font-size:14px;line-height:1.25;white-space:pre;">${escapedText}</pre>`;
+        const rich = new Blob([html], { type: 'text/html' });
+
+        await navigator.clipboard.write([
+            new ClipboardItem({
+                'text/plain': plain,
+                'text/html': rich,
+            }),
+        ]);
+
+        showToast('Copied — paste in a monospace editor');
+    } catch (err) {
+        console.error('Failed to copy:', err);
+        // Fallback to simple text copy if ClipboardItem is not supported
+        try {
+            await navigator.clipboard.writeText(text);
+            showToast('Copied — paste in a monospace editor');
+        } catch {
+            showToast('Failed to copy', true);
+        }
+    }
+}
+
+/**
  * Copy ASCII to clipboard
  */
 async function copyToClipboard() {
     if (!editor) return;
     const ascii = editor.exportAscii();
-    try {
-        await navigator.clipboard.writeText(ascii);
-        showToast('Copied to clipboard!');
-    } catch {
-        showToast('Failed to copy', true);
-    }
+    await copyAsciiToClipboard(ascii);
 }
 
 /**
