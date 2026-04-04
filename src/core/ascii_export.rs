@@ -196,7 +196,12 @@ mod tests {
         assert_eq!(lines.len(), 4);
         // Every line should have the same length (3 characters: index 4 to 6)
         for line in &lines {
-            assert_eq!(line.len(), 3, "Line '{}' should be padded to length 3", line);
+            assert_eq!(
+                line.len(),
+                3,
+                "Line '{}' should be padded to length 3",
+                line
+            );
         }
 
         assert_eq!(lines[0], " . ");
