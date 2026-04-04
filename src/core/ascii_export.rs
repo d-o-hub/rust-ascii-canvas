@@ -73,10 +73,6 @@ fn export_trimmed(grid: &Grid, options: &ExportOptions) -> String {
             result.push(ch);
         }
 
-        // Trim trailing spaces from this line
-        let trimmed_end = result.trim_end_matches(' ').len();
-        result.truncate(trimmed_end);
-
         if y < max_y {
             result.push('\n');
         }
@@ -140,10 +136,6 @@ pub fn export_region(grid: &Grid, x1: i32, y1: i32, x2: i32, y2: i32) -> String 
             let ch = grid.get(x as i32, y as i32).map(|c| c.ch).unwrap_or(' ');
             result.push(ch);
         }
-        // Trim trailing spaces
-        let trimmed = result.trim_end_matches(' ');
-        result.truncate(trimmed.len());
-
         if y < max_y {
             result.push('\n');
         }
@@ -180,6 +172,37 @@ mod tests {
         let result = export_grid(&grid, &options);
 
         assert_eq!(result, "Hi");
+    }
+
+    #[test]
+    fn test_export_padding_preserves_geometry() {
+        let mut grid = Grid::new(10, 10);
+        // Create a diamond-like shape
+        //   .
+        //  / \
+        //  \ /
+        //   '
+        grid.set_char(5, 2, '.');
+        grid.set_char(4, 3, '/');
+        grid.set_char(6, 3, '\\');
+        grid.set_char(4, 4, '\\');
+        grid.set_char(6, 4, '/');
+        grid.set_char(5, 5, '\'');
+
+        let options = ExportOptions::default();
+        let result = export_grid(&grid, &options);
+
+        let lines: Vec<&str> = result.lines().collect();
+        assert_eq!(lines.len(), 4);
+        // Every line should have the same length (3 characters: index 4 to 6)
+        for line in &lines {
+            assert_eq!(line.len(), 3, "Line '{}' should be padded to length 3", line);
+        }
+
+        assert_eq!(lines[0], " . ");
+        assert_eq!(lines[1], "/ \\");
+        assert_eq!(lines[2], "\\ /");
+        assert_eq!(lines[3], " ' ");
     }
 
     #[test]
