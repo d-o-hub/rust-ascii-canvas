@@ -942,7 +942,7 @@ async function copyAsciiToClipboard(text: string) {
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
-        const html = `<pre style="font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace;font-size:14px;line-height:1.25;white-space:pre;">${escapedText}</pre>`;
+        const html = `<pre style="font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace;font-size:14px;line-height:1.4;white-space:pre;">${escapedText}</pre>`;
         const rich = new Blob([html], { type: 'text/html' });
 
         await navigator.clipboard.write([

@@ -197,7 +197,7 @@ mod tests {
         // Every line should have the same length (3 characters: index 4 to 6)
         for line in &lines {
             assert_eq!(
-                line.len(),
+                line.chars().count(),
                 3,
                 "Line '{}' should be padded to length 3",
                 line
