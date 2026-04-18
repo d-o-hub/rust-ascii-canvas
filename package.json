@@ -3,7 +3,14 @@
   "version": "0.1.1",
   "description": "A production-grade ASCII diagram editor built with Rust and WebAssembly",
   "license": "MIT",
-  "keywords": ["wasm", "webassembly", "ascii", "diagram", "editor", "rust"],
+  "keywords": [
+    "wasm",
+    "webassembly",
+    "ascii",
+    "diagram",
+    "editor",
+    "rust"
+  ],
   "author": "Anomaly",
   "repository": {
     "type": "git",
@@ -27,7 +34,7 @@
     "check-size": "size=$(stat -c%s web/pkg/ascii_canvas_bg.wasm); if [ $size -gt 1572864 ]; then echo \"WASM size $size exceeds 1.5MB limit\"; exit 1; else echo \"WASM size $size is within budget\"; fi"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
+    "@playwright/test": "^1.59.1",
     "playwright": "^1.58.2"
   }
 }

@@ -17,8 +17,8 @@ test.describe('ASCII Canvas Editor', () => {
         // Wait for the canvas to be visible
         await page.waitForSelector('#canvas', { timeout: 10000 });
         
-        // Small delay to ensure JS is fully loaded
-        await page.waitForTimeout(500);
+        // Wait for toolbar to be ready
+        await expect(page.locator('.toolbar')).toBeVisible();
     });
 
     test('should load the editor', async ({ page }) => {
@@ -46,17 +46,14 @@ test.describe('ASCII Canvas Editor', () => {
         // Click on canvas and release to ensure we start from a clean state
         await page.click('#canvas');
         await page.mouse.up(); // Release any mouse button state
-        await page.waitForTimeout(200);
         
         // Press 'L' for line tool
         await page.keyboard.press('l');
-        await page.waitForTimeout(200);
         const lineButton = page.locator('[data-tool="line"]');
         await expect(lineButton).toHaveClass(/active/);
         
         // Press 'R' for rectangle tool
         await page.keyboard.press('r');
-        await page.waitForTimeout(200);
         const rectButton = page.locator('[data-tool="rectangle"]');
         await expect(rectButton).toHaveClass(/active/);
     });
@@ -106,7 +103,6 @@ test.describe('ASCII Canvas Editor', () => {
         
         if (box) {
             await page.mouse.move(box.x + 100, box.y + 100);
-            await page.waitForTimeout(100);
             await expect(cursorPos).not.toBeEmpty();
         }
     });
@@ -135,7 +131,7 @@ test.describe('Drawing Tools Interaction', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
+        await expect(page.locator('.toolbar')).toBeVisible();
     });
 
     async function drawOnCanvas(page: import('@playwright/test').Page, startX: number, startY: number, endX: number, endY: number) {

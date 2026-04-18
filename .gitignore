@@ -1,49 +1,40 @@
-# Rust
-/target/
-**/*.rs.bk
-Cargo.lock
+```
+# Dependencies
+node_modules/
+target/
 
-# WASM
-/pkg/
-/web/pkg/
+# Cache
+**/__pycache__/
+**/.mypy_cache/
+**/.pytest_cache/
+**/.ruff_cache/
+**/node_modules/
 
-# Node
-/node_modules/
-/web/node_modules/
+# Build artifacts
+**/build/
+**/dist/
+**/*.wasm
+**/*.js.map
 
-# Build output
-/dist/
-/web/dist/
+# Environment
+.env*
+!.env.example
 
 # IDE
-.idea/
 .vscode/
-*.swp
-*.swo
-*~
+.idea/
+**/*.swp
+**/*.swo
+
+# Logs
+**/*.log
 
 # OS
 .DS_Store
 Thumbs.db
 
-# Logs
-*.log
-npm-debug.log*
-
-# Environment
-.env
-.env.local
-.env.*.local
-
-# Test coverage
+# Coverage
 coverage/
-.nyc_output/
-
-# Playwright
-playwright-report/
-test-results/
-
-# Blackbox
-.blackbox/
-.blackboxcli/
-.blackboxcli/settings.json
+htmlcov/
+.coverage
+```
