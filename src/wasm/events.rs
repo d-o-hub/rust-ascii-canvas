@@ -1,21 +1,24 @@
 //! Event handling utilities for WASM.
+//!
+//! These types are reserved for future use with advanced event handling from JavaScript.
 
 use serde::{Deserialize, Serialize};
 
 /// Key modifier state.
-/// Reserved for future use with advanced event handling from JavaScript.
-#[allow(dead_code)]
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct KeyModifiers {
+    /// Ctrl key is pressed
     pub ctrl: bool,
+    /// Shift key is pressed
     pub shift: bool,
+    /// Alt key is pressed
     pub alt: bool,
+    /// Meta/Command key is pressed
     pub meta: bool,
 }
 
 impl KeyModifiers {
-    /// Reserved for future use.
-    #[allow(dead_code)]
+    /// Create a new KeyModifiers instance.
     pub fn new(ctrl: bool, shift: bool, alt: bool, meta: bool) -> Self {
         Self {
             ctrl,
@@ -27,18 +30,18 @@ impl KeyModifiers {
 }
 
 /// Mouse button identifier.
-/// Reserved for future use with advanced event handling from JavaScript.
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum MouseButton {
+    /// Left mouse button
     Left,
+    /// Middle mouse button
     Middle,
+    /// Right mouse button
     Right,
 }
 
 impl MouseButton {
-    /// Reserved for future use.
-    #[allow(dead_code)]
+    /// Convert from numeric button code to MouseButton.
     pub fn from_button(button: i16) -> Option<Self> {
         match button {
             0 => Some(Self::Left),
@@ -50,8 +53,6 @@ impl MouseButton {
 }
 
 /// Pointer event data.
-/// Reserved for future use with advanced event handling from JavaScript.
-#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct PointerEventData {
     /// Screen X coordinate
@@ -71,8 +72,6 @@ pub struct PointerEventData {
 }
 
 /// Keyboard event data.
-/// Reserved for future use with advanced event handling from JavaScript.
-#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct KeyboardEventData {
     /// Key value
@@ -86,8 +85,6 @@ pub struct KeyboardEventData {
 }
 
 /// Wheel event data.
-/// Reserved for future use with advanced event handling from JavaScript.
-#[allow(dead_code)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct WheelEventData {
     /// Screen X coordinate

@@ -35,7 +35,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="rectangle"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 100, 300, 200);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
@@ -48,7 +47,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="line"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 150, 300, 150);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).toContain('─');
@@ -60,7 +58,6 @@ test.describe('Tool Drawing Verification', () => {
         await page.click('[data-tool="line"]');
         
         await drawOnCanvas(page, 200, 100, 200, 300);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).toContain('│');
@@ -73,7 +70,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="arrow"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 150, 300, 150);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
@@ -86,7 +82,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="diamond"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 150, 100, 300, 200);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);

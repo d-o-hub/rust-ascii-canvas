@@ -7,12 +7,12 @@ test.describe('Responsive Grid', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
+        await expect(page.locator('.toolbar')).toBeVisible();
     });
 
     test('should have a smaller grid on mobile viewport', async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 667 });
-        await page.waitForTimeout(500);
+        await expect(page.locator('#grid-size')).toBeVisible();
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
@@ -33,7 +33,7 @@ test.describe('Responsive Grid', () => {
 
     test('should have a medium grid on tablet viewport', async ({ page }) => {
         await page.setViewportSize({ width: 768, height: 1024 });
-        await page.waitForTimeout(500);
+        await expect(page.locator('#grid-size')).toBeVisible();
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
@@ -53,7 +53,7 @@ test.describe('Responsive Grid', () => {
 
     test('should have a large grid on desktop viewport', async ({ page }) => {
         await page.setViewportSize({ width: 1600, height: 1200 });
-        await page.waitForTimeout(500);
+        await expect(page.locator('#grid-size')).toBeVisible();
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
@@ -74,7 +74,7 @@ test.describe('Responsive Grid', () => {
 
     test('should allow drawing at the edges of the responsive grid', async ({ page }) => {
         await page.setViewportSize({ width: 600, height: 600 });
-        await page.waitForTimeout(500);
+        await expect(page.locator('#grid-size')).toBeVisible();
 
         const gridSizeText = await page.locator('#grid-size').textContent();
         const match = gridSizeText?.match(/(\d+) × (\d+)/);
@@ -99,8 +99,6 @@ test.describe('Responsive Grid', () => {
         await page.mouse.down();
         await page.mouse.move(box.x + (cols - 1) * charWidth + 4, box.y + (rows - 1) * lineHeight + 10, { steps: 5 });
         await page.mouse.up();
-
-        await page.waitForTimeout(300);
 
         // Verify drawing at bottom-right corner
         const ascii = await page.evaluate(() => {

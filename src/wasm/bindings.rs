@@ -2,12 +2,13 @@
 
 #![allow(missing_docs)]
 
-use crate::core::commands::{Command, DrawCommand};
+use crate::core::commands::DrawCommand;
 use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolContext, ToolId};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
+use crate::wasm::editor_state::{self, MoveManager};
 use crate::wasm::render_bridge::{
     create_event_result, create_event_result_with_copy, export_ascii, get_dirty_render_commands,
     get_render_commands, get_render_commands_full, needs_redraw, request_full_redraw,
@@ -32,9 +33,8 @@ pub struct AsciiEditor {
     space_held: bool,
     is_panning: bool,
     last_pan_pos: Option<(f64, f64)>,
-    /// Content and position when moving a selection
-    move_clipboard: Option<SelectionClipboard>,
-    move_original_selection: Option<Selection>,
+    /// Manages selection moving operations
+    move_manager: MoveManager,
     /// Track if select tool is currently moving
     is_moving_selection: bool,
     /// Performance: number of full renders
@@ -67,8 +67,7 @@ impl AsciiEditor {
             space_held: false,
             is_panning: false,
             last_pan_pos: None,
-            move_clipboard: None,
-            move_original_selection: None,
+            move_manager: MoveManager::new(),
             is_moving_selection: false,
             full_render_count: 0,
             dirty_render_count: 0,
@@ -764,34 +763,6 @@ impl AsciiEditor {
 }
 
 impl AsciiEditor {
-    fn create_tool_context(&self) -> ToolContext {
-        ToolContext {
-            grid_width: self.state.grid.width(),
-            grid_height: self.state.grid.height(),
-            border_style: self.state.border_style,
-        }
-    }
-
-    fn commit_ops(&mut self, ops: &[DrawOp]) {
-        if ops.is_empty() {
-            return;
-        }
-
-        let mut cmd = DrawCommand::new(ops.to_vec());
-        cmd.apply(&mut self.state.grid);
-        self.history.push(Box::new(cmd));
-
-        for op in ops {
-            self.dirty_tracker.mark_dirty(op.x, op.y);
-        }
-    }
-
-    /// Check if current tool commits incrementally during drag
-    /// (freehand draws points as you move, eraser clears as you move).
-    fn is_incremental_tool(&self) -> bool {
-        matches!(self.tool_id, ToolId::Freehand | ToolId::Eraser)
-    }
-
     /// Check if select tool is currently moving a selection.
     fn is_select_moving(&self) -> bool {
         self.tool_id == ToolId::Select && self.is_moving_selection
@@ -800,62 +771,26 @@ impl AsciiEditor {
     /// Capture the current selection content before starting a move.
     fn start_selection_move(&mut self) {
         if let Some(ref sel) = self.current_selection {
-            let (min_x, min_y, max_x, max_y) = sel.bounds();
-            let width = max_x - min_x + 1;
-            let height = max_y - min_y + 1;
-
-            let mut cells = Vec::new();
-            for y in min_y..=max_y {
-                for x in min_x..=max_x {
-                    if let Some(cell) = self.state.grid.get(x, y) {
-                        cells.push((x - min_x, y - min_y, *cell));
-                    }
-                }
-            }
-
-            self.move_clipboard = Some(SelectionClipboard {
-                cells,
-                width,
-                height,
-            });
-            self.move_original_selection = Some(sel.clone());
+            self.move_manager.start_move(sel, &self.state);
         }
     }
 
     /// Generate preview ops for the current move operation.
     fn generate_move_preview_ops(&self) -> Vec<DrawOp> {
-        let mut ops = Vec::new();
-
-        if let (Some(ref orig_sel), Some(ref curr_sel), Some(ref move_clip)) = (
-            &self.move_original_selection,
+        if let (Some(ref orig_sel), Some(ref curr_sel)) = (
+            &self.move_manager.original_selection,
             &self.current_selection,
-            &self.move_clipboard,
         ) {
-            let (orig_x, orig_y, orig_x2, orig_y2) = orig_sel.bounds();
-            let (curr_x, curr_y, _, _) = curr_sel.bounds();
-
-            // Only generate ops if we've actually moved
-            if orig_x != curr_x || orig_y != curr_y {
-                // Clear original area
-                for y in orig_y..=orig_y2 {
-                    for x in orig_x..=orig_x2 {
-                        ops.push(DrawOp::new(x, y, ' '));
-                    }
-                }
-
-                // Draw at new position
-                for (rel_x, rel_y, cell) in &move_clip.cells {
-                    let new_x = curr_x + rel_x;
-                    let new_y = curr_y + rel_y;
-
-                    if self.state.grid.in_bounds(new_x, new_y) {
-                        ops.push(DrawOp::new(new_x, new_y, cell.ch));
-                    }
-                }
+            if let Some(ref move_clip) = self.move_manager.clipboard {
+                return editor_state::generate_move_preview_ops(
+                    orig_sel,
+                    curr_sel,
+                    move_clip,
+                    &self.state,
+                );
             }
         }
-
-        ops
+        Vec::new()
     }
 
     /// Commit the move operation.
@@ -867,8 +802,7 @@ impl AsciiEditor {
         }
 
         // Clear move state
-        self.move_clipboard = None;
-        self.move_original_selection = None;
+        self.move_manager.clear();
     }
 
     fn create_event_result(&self) -> EditorEventResult {
