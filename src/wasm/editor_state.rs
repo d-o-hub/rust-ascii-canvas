@@ -56,7 +56,7 @@ impl MoveManager {
 
         if let Some(ref move_clip) = self.clipboard {
             let (orig_x, orig_y, orig_x2, orig_y2) = orig_sel.bounds();
-            let (curr_x, curr_y, _, _) = curr_sel.bounds();
+            let (curr_x, curr_y, ..) = curr_sel.bounds();
 
             // Only generate ops if we've actually moved
             if orig_x != curr_x || orig_y != curr_y {
@@ -154,7 +154,7 @@ pub fn generate_move_preview_ops(
     let mut ops = Vec::new();
 
     let (orig_x, orig_y, orig_x2, orig_y2) = orig_sel.bounds();
-    let (curr_x, curr_y, _, _) = curr_sel.bounds();
+    let (curr_x, curr_y, ..) = curr_sel.bounds();
 
     // Only generate ops if we've actually moved
     if orig_x != curr_x || orig_y != curr_y {
