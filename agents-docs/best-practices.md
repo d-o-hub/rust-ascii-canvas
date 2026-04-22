@@ -54,3 +54,14 @@ plans/
 3. **binaryen/wasm-opt**: Download from GitHub releases, not `apt-get`. Ubuntu packages are too old for latest Rust WASM output.
 4. **wasm-opt flags**: Use `--enable-sign-ext` (not `--enable-sign-extension`), `--enable-nontrapping-float-to-int`, `--enable-simd`, `--enable-bulk-memory`.
 5. **Always test CI fixes** — push, trigger, monitor. Fix iteratively until green.
+
+## Rust Testing Architecture
+
+1. **Unit Tests (`src/`)**:
+   - Unit tests **must** live in the same file as the source code they test.
+   - Place them at the bottom of the file within a `#[cfg(test)] mod tests { ... }` block.
+   - This follows standard Rust idiomatic practice, allowing tests to access private functions and variables.
+
+2. **Integration Tests (`tests/`)**:
+   - Only place tests here if they are testing the crate's public API from the outside.
+   - The `tests/` directory is exclusively for integration-level validation.
