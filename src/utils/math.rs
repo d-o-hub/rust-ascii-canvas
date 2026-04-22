@@ -185,6 +185,27 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_abs_diff() {
+        // Test integers (i32)
+        assert_eq!(abs_diff(10, 5), 5);
+        assert_eq!(abs_diff(5, 10), 5);
+        assert_eq!(abs_diff(0, 0), 0);
+        assert_eq!(abs_diff(-5, 5), 10);
+        assert_eq!(abs_diff(5, -5), 10);
+        assert_eq!(abs_diff(-10, -5), 5);
+
+        // Test unsigned integers (usize)
+        assert_eq!(abs_diff(10usize, 5usize), 5usize);
+        assert_eq!(abs_diff(5usize, 10usize), 5usize);
+        assert_eq!(abs_diff(0usize, 0usize), 0usize);
+
+        // Test floats (f64)
+        assert_eq!(abs_diff(10.0, 5.5), 4.5);
+        assert_eq!(abs_diff(5.5, 10.0), 4.5);
+        assert_eq!(abs_diff(-5.5, 5.5), 11.0);
+    }
+
+    #[test]
     fn test_clamp() {
         assert_eq!(clamp(5, 0, 10), 5);
         assert_eq!(clamp(-5, 0, 10), 0);
