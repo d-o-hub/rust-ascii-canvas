@@ -306,10 +306,6 @@ Ensure you're using a modern browser (Chrome 80+, Firefox 75+, Safari 14+, Edge 
 cargo update
 ```
 
-## Version
-
-Current: **v0.1.1**
-
 ## License
 
 MIT License
