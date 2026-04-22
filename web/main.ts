@@ -77,8 +77,6 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
-        charWidth: number;
-        lineHeight: number;
     }
 }
 window.editor = null;
@@ -288,8 +286,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    window.charWidth = charWidth;
-    window.lineHeight = lineHeight;
+    (window as any).charWidth = charWidth;
+    (window as any).lineHeight = lineHeight;
 }
 
 /**
@@ -404,8 +402,8 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor) {
-                editor.setLineDirection(direction);
+            if (editor && (editor as any).setLineDirection) {
+                (editor as any).setLineDirection(direction);
             }
         });
     });
@@ -939,12 +937,14 @@ async function copyAsciiToClipboard(text: string) {
         const plain = new Blob([text], { type: 'text/plain' });
 
         // HTML version with specific font stack to preserve monospace layout
-        const escapedText = text
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-        const html = `<pre style="font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace;font-size:14px;line-height:1.4;white-space:pre;">${escapedText}</pre>`;
+        // Use DOM element to ensure robust sanitization of the ASCII text
+        const pre = document.createElement('pre');
+        pre.style.fontFamily = "'JetBrains Mono','Cascadia Code','Courier New',monospace";
+        pre.style.fontSize = '14px';
+        pre.style.lineHeight = '1.4';
+        pre.style.whiteSpace = 'pre';
+        pre.textContent = text;
+        const html = pre.outerHTML;
         const rich = new Blob([html], { type: 'text/html' });
 
         await navigator.clipboard.write([
