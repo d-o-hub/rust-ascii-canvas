@@ -1,6 +1,6 @@
 //! Arrow tool - draws lines with arrowheads.
 
-use super::{clamp_to_grid, BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use std::any::Any;
 
 /// Arrow drawing tool.
@@ -77,7 +77,7 @@ impl ArrowTool {
     }
 
     /// Draw an arrow line.
-    fn draw_arrow(&self, x1: i32, y1: i32, x2: i32, y2: i32, style: BorderStyle) -> Vec<DrawOp> {
+    fn draw_arrow(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
         let dx = (x2 - x1).abs();
@@ -93,7 +93,7 @@ impl ArrowTool {
         loop {
             // Don't draw the line character at the very end, as the arrowhead will go there
             if x != x2 || y != y2 {
-                let ch = Self::get_line_char(x, y, x2, y2, style);
+                let ch = Self::get_line_char(x, y, x2, y2);
                 ops.push(DrawOp::new(x, y, ch));
             }
 
@@ -120,20 +120,14 @@ impl ArrowTool {
     }
 
     /// Get line character for direction.
-    fn get_line_char(
-        current_x: i32,
-        current_y: i32,
-        target_x: i32,
-        target_y: i32,
-        style: BorderStyle,
-    ) -> char {
+    fn get_line_char(current_x: i32, current_y: i32, target_x: i32, target_y: i32) -> char {
         let dx = target_x - current_x;
         let dy = target_y - current_y;
 
         if dx == 0 {
-            style.vertical()
+            '│'
         } else if dy == 0 {
-            style.horizontal()
+            '─'
         } else {
             let ratio = dx.abs() * 10 / dy.abs().max(1);
             if ratio < 3 {
@@ -162,7 +156,7 @@ impl Tool for ArrowTool {
     fn on_pointer_move(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         if let Some(start) = self.start {
             let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
-            let ops = self.draw_arrow(start.0, start.1, x, y, ctx.border_style);
+            let ops = self.draw_arrow(start.0, start.1, x, y);
             ToolResult::new().with_ops(ops)
         } else {
             ToolResult::new()
@@ -172,7 +166,7 @@ impl Tool for ArrowTool {
     fn on_pointer_up(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         if let Some(start) = self.start {
             let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
-            let ops = self.draw_arrow(start.0, start.1, x, y, ctx.border_style);
+            let ops = self.draw_arrow(start.0, start.1, x, y);
             self.start = None;
             ToolResult::new().with_ops(ops).finish()
         } else {
@@ -206,7 +200,7 @@ mod tests {
     #[test]
     fn test_horizontal_arrow() {
         let tool = ArrowTool::new();
-        let ops = tool.draw_arrow(0, 0, 5, 0, BorderStyle::Single);
+        let ops = tool.draw_arrow(0, 0, 5, 0);
 
         assert!(!ops.is_empty());
         // Last op should be arrowhead
@@ -221,17 +215,5 @@ mod tests {
         assert_eq!(ArrowTool::get_arrowhead(0, 1), '▼'); // down
         assert_eq!(ArrowTool::get_arrowhead(1, 0), '►'); // right
         assert_eq!(ArrowTool::get_arrowhead(-1, 0), '◄'); // left
-    }
-
-    #[test]
-    fn test_arrow_dotted_style() {
-        let tool = ArrowTool::new();
-        let ops = tool.draw_arrow(0, 0, 5, 0, BorderStyle::Dotted);
-
-        // All except last (arrowhead) should be '*'
-        for op in ops.iter().take(ops.len() - 1) {
-            assert_eq!(op.cell.ch, '*');
-        }
-        assert_eq!(ops.last().unwrap().cell.ch, '►');
     }
 }
