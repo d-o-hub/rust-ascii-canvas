@@ -120,7 +120,9 @@ impl Tool for FreehandTool {
         self.last_pos = Some((x, y));
 
         // Store for undo
-        self.ops_buffer.extend(ops.iter().cloned());
+        for op in &ops {
+            self.ops_buffer.push(op.clone());
+        }
 
         ToolResult::new().with_ops(ops)
     }

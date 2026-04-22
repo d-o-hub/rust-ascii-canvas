@@ -77,8 +77,6 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
-        charWidth: number;
-        lineHeight: number;
     }
 }
 window.editor = null;
@@ -288,8 +286,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    window.charWidth = charWidth;
-    window.lineHeight = lineHeight;
+    (window as any).charWidth = charWidth;
+    (window as any).lineHeight = lineHeight;
 }
 
 /**
@@ -404,8 +402,8 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor) {
-                editor.setLineDirection(direction);
+            if (editor && (editor as any).setLineDirection) {
+                (editor as any).setLineDirection(direction);
             }
         });
     });
