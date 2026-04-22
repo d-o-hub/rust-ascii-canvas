@@ -10,8 +10,6 @@ pub struct RectangleTool {
     start: Option<(i32, i32)>,
     /// Current end point during drag
     end: Option<(i32, i32)>,
-    /// Border style for the rectangle
-    border_style: BorderStyle,
 }
 
 impl RectangleTool {
@@ -20,19 +18,15 @@ impl RectangleTool {
         Self::default()
     }
 
-    /// Set the border style for this tool.
-    pub fn with_border_style(mut self, style: BorderStyle) -> Self {
-        self.border_style = style;
-        self
-    }
-
-    /// Update the border style.
-    pub fn set_border_style(&mut self, style: BorderStyle) {
-        self.border_style = style;
-    }
-
     /// Generate draw operations for a rectangle.
-    fn draw_rectangle(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> Vec<DrawOp> {
+    fn draw_rectangle(
+        &self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        style: BorderStyle,
+    ) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
         let (min_x, max_x) = (x1.min(x2), x1.max(x2));
@@ -40,13 +34,13 @@ impl RectangleTool {
 
         // Handle single-point case
         if min_x == max_x && min_y == max_y {
-            ops.push(DrawOp::new(min_x, min_y, self.border_style.corners()[0]));
+            ops.push(DrawOp::new(min_x, min_y, style.corners()[0]));
             return ops;
         }
 
         // Handle single-line horizontal
         if min_y == max_y {
-            let h = self.border_style.horizontal();
+            let h = style.horizontal();
             for x in min_x..=max_x {
                 ops.push(DrawOp::new(x, min_y, h));
             }
@@ -55,16 +49,16 @@ impl RectangleTool {
 
         // Handle single-line vertical
         if min_x == max_x {
-            let v = self.border_style.vertical();
+            let v = style.vertical();
             for y in min_y..=max_y {
                 ops.push(DrawOp::new(min_x, y, v));
             }
             return ops;
         }
 
-        let corners = self.border_style.corners();
-        let h = self.border_style.horizontal();
-        let v = self.border_style.vertical();
+        let corners = style.corners();
+        let h = style.horizontal();
+        let v = style.vertical();
 
         // Draw corners
         ops.push(DrawOp::new(min_x, min_y, corners[0])); // top-left
@@ -103,7 +97,7 @@ impl Tool for RectangleTool {
         if let Some(start) = self.start {
             let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
             self.end = Some((x, y));
-            let ops = self.draw_rectangle(start.0, start.1, x, y);
+            let ops = self.draw_rectangle(start.0, start.1, x, y, ctx.border_style);
             ToolResult::new().with_ops(ops)
         } else {
             ToolResult::new()
@@ -113,7 +107,7 @@ impl Tool for RectangleTool {
     fn on_pointer_up(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         if let Some(start) = self.start {
             let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
-            let ops = self.draw_rectangle(start.0, start.1, x, y);
+            let ops = self.draw_rectangle(start.0, start.1, x, y, ctx.border_style);
             self.start = None;
             self.end = None;
             ToolResult::new().with_ops(ops).finish()
@@ -150,7 +144,7 @@ mod tests {
     #[test]
     fn test_draw_rectangle() {
         let tool = RectangleTool::new();
-        let ops = tool.draw_rectangle(0, 0, 4, 2);
+        let ops = tool.draw_rectangle(0, 0, 4, 2, BorderStyle::Single);
 
         // Check corners
         assert_eq!(
@@ -174,9 +168,19 @@ mod tests {
     #[test]
     fn test_single_point() {
         let tool = RectangleTool::new();
-        let ops = tool.draw_rectangle(5, 5, 5, 5);
+        let ops = tool.draw_rectangle(5, 5, 5, 5, BorderStyle::Single);
         assert_eq!(ops.len(), 1);
         assert_eq!(ops[0].x, 5);
         assert_eq!(ops[0].y, 5);
+    }
+
+    #[test]
+    fn test_rectangle_dotted_style() {
+        let tool = RectangleTool::new();
+        let ops = tool.draw_rectangle(0, 0, 4, 2, BorderStyle::Dotted);
+
+        for op in &ops {
+            assert_eq!(op.cell.ch, '*');
+        }
     }
 }
