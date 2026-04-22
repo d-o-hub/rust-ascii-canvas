@@ -77,6 +77,8 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
+        charWidth: number;
+        lineHeight: number;
     }
 }
 window.editor = null;
@@ -286,8 +288,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    (window as any).charWidth = charWidth;
-    (window as any).lineHeight = lineHeight;
+    window.charWidth = charWidth;
+    window.lineHeight = lineHeight;
 }
 
 /**
@@ -402,8 +404,8 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor && (editor as any).setLineDirection) {
-                (editor as any).setLineDirection(direction);
+            if (editor && typeof (editor as any).setLineDirection === 'function') {
+                editor.setLineDirection(direction);
             }
         });
     });
