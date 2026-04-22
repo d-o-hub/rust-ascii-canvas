@@ -1,6 +1,6 @@
 //! Line tool - draws ASCII lines using Bresenham's algorithm.
 
-use super::{clamp_to_grid, BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use std::any::Any;
 use std::str::FromStr;
 
@@ -63,27 +63,20 @@ impl LineTool {
         self.direction
     }
 
-    /// Get appropriate line character based on line direction and border style.
+    /// Get appropriate line character based on line direction.
     /// sx, sy: direction of line movement (sign of delta)
     /// dx, dy: absolute distances
-    fn get_line_char(
-        sx: i32,
-        sy: i32,
-        dx: i32,
-        dy: i32,
-        forced: LineDirection,
-        style: BorderStyle,
-    ) -> char {
+    fn get_line_char(sx: i32, sy: i32, dx: i32, dy: i32, forced: LineDirection) -> char {
         match forced {
-            LineDirection::Horizontal => style.horizontal(),
-            LineDirection::Vertical => style.vertical(),
+            LineDirection::Horizontal => '─',
+            LineDirection::Vertical => '│',
             LineDirection::Auto => {
                 if dx == 0 {
                     // Pure vertical
-                    style.vertical()
+                    '│'
                 } else if dy == 0 {
                     // Pure horizontal
-                    style.horizontal()
+                    '─'
                 } else {
                     // Diagonal - determine character based on direction
                     if sx > 0 {
@@ -103,7 +96,7 @@ impl LineTool {
     }
 
     /// Draw a line using Bresenham's algorithm.
-    fn draw_line(&self, x1: i32, y1: i32, x2: i32, y2: i32, style: BorderStyle) -> Vec<DrawOp> {
+    fn draw_line(&self, x1: i32, y1: i32, x2: i32, y2: i32) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
         let dx = (x2 - x1).abs();
@@ -112,7 +105,7 @@ impl LineTool {
         let sy = if y1 < y2 { 1 } else { -1 };
 
         // Get the character based on forced direction or auto-detect
-        let ch = Self::get_line_char(sx, sy, dx, dy, self.direction, style);
+        let ch = Self::get_line_char(sx, sy, dx, dy, self.direction);
 
         let mut err = dx - dy;
         let mut x = x1;
@@ -153,7 +146,7 @@ impl Tool for LineTool {
     fn on_pointer_move(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         if let Some(start) = self.start {
             let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
-            let ops = self.draw_line(start.0, start.1, x, y, ctx.border_style);
+            let ops = self.draw_line(start.0, start.1, x, y);
             ToolResult::new().with_ops(ops)
         } else {
             ToolResult::new()
@@ -163,7 +156,7 @@ impl Tool for LineTool {
     fn on_pointer_up(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         if let Some(start) = self.start {
             let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
-            let ops = self.draw_line(start.0, start.1, x, y, ctx.border_style);
+            let ops = self.draw_line(start.0, start.1, x, y);
             self.start = None;
             ToolResult::new().with_ops(ops).finish()
         } else {
@@ -197,7 +190,7 @@ mod tests {
     #[test]
     fn test_horizontal_line() {
         let tool = LineTool::new();
-        let ops = tool.draw_line(0, 0, 5, 0, BorderStyle::Single);
+        let ops = tool.draw_line(0, 0, 5, 0);
 
         assert_eq!(ops.len(), 6);
         for op in &ops {
@@ -208,7 +201,7 @@ mod tests {
     #[test]
     fn test_vertical_line() {
         let tool = LineTool::new();
-        let ops = tool.draw_line(0, 0, 0, 5, BorderStyle::Single);
+        let ops = tool.draw_line(0, 0, 0, 5);
 
         assert_eq!(ops.len(), 6);
         for op in &ops {
@@ -221,32 +214,15 @@ mod tests {
         let tool = LineTool::new();
 
         // Down-right diagonal
-        let ops = tool.draw_line(0, 0, 3, 3, BorderStyle::Single);
+        let ops = tool.draw_line(0, 0, 3, 3);
         for op in &ops {
             assert_eq!(op.cell.ch, '\\');
         }
 
         // Down-left diagonal
-        let ops = tool.draw_line(3, 0, 0, 3, BorderStyle::Single);
+        let ops = tool.draw_line(3, 0, 0, 3);
         for op in &ops {
             assert_eq!(op.cell.ch, '/');
-        }
-    }
-
-    #[test]
-    fn test_line_dotted_style() {
-        let tool = LineTool::new();
-
-        // Horizontal dotted
-        let ops = tool.draw_line(0, 0, 5, 0, BorderStyle::Dotted);
-        for op in &ops {
-            assert_eq!(op.cell.ch, '*');
-        }
-
-        // Vertical dotted
-        let ops = tool.draw_line(0, 0, 0, 5, BorderStyle::Dotted);
-        for op in &ops {
-            assert_eq!(op.cell.ch, '*');
         }
     }
 }
