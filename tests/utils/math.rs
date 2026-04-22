@@ -16,17 +16,17 @@ fn test_signum_f64() {
     assert_eq!(signum(0.0f64), 0, "Zero f64 should return 0");
     assert_eq!(signum(-0.0f64), 0, "Negative zero f64 should return 0");
     assert_eq!(
-        signum(std::f64::INFINITY),
+        signum(f64::INFINITY),
         1,
         "Positive infinity should return 1"
     );
     assert_eq!(
-        signum(std::f64::NEG_INFINITY),
+        signum(f64::NEG_INFINITY),
         -1,
         "Negative infinity should return -1"
     );
     assert_eq!(
-        signum(std::f64::NAN),
+        signum(f64::NAN),
         0,
         "NaN should return 0 based on standard PartialOrd behavior"
     );
