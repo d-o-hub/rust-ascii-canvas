@@ -225,4 +225,24 @@ mod tests {
         assert!(r1.intersects(&r2));
         assert!(!r1.intersects(&r3));
     }
+
+    #[test]
+    fn test_manhattan_distance() {
+        // Origin to positive point
+        assert_eq!(manhattan_distance(0, 0, 3, 4), 7);
+        // Positive to negative point
+        assert_eq!(manhattan_distance(1, 1, -2, -3), 7);
+        // Identical points
+        assert_eq!(manhattan_distance(10, 10, 10, 10), 0);
+    }
+
+    #[test]
+    fn test_chebyshev_distance() {
+        // Origin to positive point
+        assert_eq!(chebyshev_distance(0, 0, 3, 4), 4);
+        // Positive to negative point
+        assert_eq!(chebyshev_distance(1, 1, -2, -3), 4);
+        // Identical points
+        assert_eq!(chebyshev_distance(10, 10, 10, 10), 0);
+    }
 }
