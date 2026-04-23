@@ -95,3 +95,10 @@ Rustc 1.94.0 generates WASM using sign extension (`i32.extend8_s`, `i32.extend16
 - **Coordinate Drift Prevention**: Coordinate mapping between the TS frontend and WASM backend is highly sensitive to the order of font metric initialization. `GLYPH_WIDTH` (8) and `GLYPH_HEIGHT` (20) must be determined from the actual font via `measureFont` *before* the editor is instantiated to avoid offset errors (e.g., text not appearing at the exact click position).
 - **Tool Operation Commitment**: Tools that maintain internal state (like `TextTool`) should return operations that are committed immediately by the `AsciiEditor` during `on_pointer_down` events. This ensures previous sessions (like a finished text input) are saved to the grid before a new operation begins.
 - **Freehand Tool Character Sync**: The `FreehandTool` uses the current `BorderStyle` to determine its drawing character. By returning the `horizontal()` character of the style in `BorderStyle::freehand_char()`, we maintain visual consistency with other drawing tools (e.g., drawing `*` when "Dotted" is selected or `-` when "ASCII" is selected).
+
+## Frontend UX & Accessibility (2026-04-23)
+
+- **Modal Accessibility**: Modals must support `Escape` to close and should automatically focus the primary action (e.g., Close button) upon opening to assist keyboard users.
+- **Interactive State Feedback**: Toggleable elements (like tool buttons) must use `aria-pressed` to communicate their active state to assistive technologies.
+- **State Resilience**: Applications with persistent keyboard-driven states (e.g., Space-drag panning) should use the window `blur` event to reset these states, preventing UI lock-in when users switch tabs or windows.
+- **Visual Icon Clarity**: Destructive actions (like Clear Canvas) should use distinct icons (e.g., `🗑`) to avoid confusion with lighter editing actions (e.g., `⌫` for Eraser).
