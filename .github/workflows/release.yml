@@ -234,6 +234,63 @@ jobs:
             git push origin HEAD
           fi
 
+      - name: Bump versions and update files
+        id: bump
+        run: |
+          VERSION="${{ needs.guard-rails.outputs.version }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "v0.1.1")
+          PREV_VERSION=${PREV_TAG#v}
+
+          # Setup git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Update Cargo.toml
+          sed -i "s/version = \"$PREV_VERSION\"/version = \"$VERSION\"/" Cargo.toml
+
+          # Update package.json (root)
+          sed -i "s/\"version\": \"$PREV_VERSION\"/\"version\": \"$VERSION\"/" package.json
+
+          # Update web/package.json
+          sed -i "s/\"version\": \"$PREV_VERSION\"/\"version\": \"$VERSION\"/" web/package.json
+
+          # Update package-lock.json files
+          npm --no-git-tag-version version $VERSION || true
+          cd web && npm --no-git-tag-version version $VERSION || true && cd ..
+
+          # Update other md files (e.g. plans/PROJECT_STATUS.md)
+          find . -name "*.md" -not -path "*/node_modules/*" -not -name "CHANGELOG.md" -exec sed -i "s/$PREV_VERSION/$VERSION/g" {} +
+
+          # Prepend to CHANGELOG.md
+          TODAY=$(date +%Y-%m-%d)
+          CHANGES=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" 2>/dev/null | grep -v "^$" || git log --pretty=format:"- %s (%h)" -n 20 | grep -v "^$")
+
+          # Create temporary file with new changelog entry
+          cat > new_changelog_entry.md << TEMP_EOF
+          ## [$VERSION] - $TODAY
+
+          ### Changes
+          $CHANGES
+
+          TEMP_EOF
+
+          # Combine changelog
+          awk -v entry="$(cat new_changelog_entry.md)" \
+              '/^## \[/ { if (!inserted) { print entry; print ""; inserted=1 } } { print }' CHANGELOG.md > CHANGELOG.tmp
+          mv CHANGELOG.tmp CHANGELOG.md
+          rm new_changelog_entry.md
+
+          # Commit and push changes
+          git add Cargo.toml package.json package-lock.json web/package.json web/package-lock.json CHANGELOG.md || true
+          # Add md files
+          git add $(find . -name "*.md" -not -path "*/node_modules/*") || true
+          git diff --quiet && git diff --staged --quiet || git commit -a -m "chore: bump version to $VERSION"
+          git remote set-url origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}
+          git push origin HEAD || true
+
+          # Save new tag target to output
+          echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+
       - name: Create Release
         if: needs.guard-rails.outputs.is_dry_run != 'true'
         env:
