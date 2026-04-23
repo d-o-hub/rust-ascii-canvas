@@ -330,6 +330,14 @@ function setupEventListeners() {
     // Window resize
     window.addEventListener('resize', debounce(resizeCanvas, 100));
 
+    // Reset panning state when window loses focus
+    window.addEventListener('blur', () => {
+        if (editor) {
+            editor.onKeyUp(' ');
+        }
+        canvasContainer.classList.remove('panning');
+    });
+
     // Canvas pointer events
     canvas.addEventListener('pointerdown', handlePointerDown);
     canvas.addEventListener('pointermove', handlePointerMove);
@@ -353,6 +361,16 @@ function setupEventListeners() {
     // Keyboard events
     canvas.addEventListener('keydown', handleKeyDown);
     canvas.addEventListener('keyup', handleKeyUp);
+
+    // Global keyboard listener for modal
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('shortcuts-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                hideShortcutsModal();
+            }
+        }
+    });
 
     // Keyboard shortcuts modal
     const shortcutsModal = document.getElementById('shortcuts-modal');
@@ -669,6 +687,11 @@ function handleKeyDown(e: KeyboardEvent) {
     }
 
     const result = editor.onKeyDown(key, ctrl, shift);
+
+    if (key === ' ' && !ctrl && !shift) {
+        canvasContainer.classList.add('panning');
+    }
+
     handleEventResult(result);
 
     // Handle B key - cycle border styles
@@ -693,6 +716,10 @@ function handleKeyDown(e: KeyboardEvent) {
 function handleKeyUp(e: KeyboardEvent) {
     if (!editor) return;
     editor.onKeyUp(e.key);
+
+    if (e.key === ' ') {
+        canvasContainer.classList.remove('panning');
+    }
 }
 
 /**
@@ -905,11 +932,13 @@ function setTool(toolName: string) {
 function updateToolButtons(activeTool: string) {
     toolButtons.forEach(btn => {
         const tool = btn.getAttribute('data-tool');
-        if (tool?.toLowerCase() === activeTool.toLowerCase()) {
+        const isActive = tool?.toLowerCase() === activeTool.toLowerCase();
+        if (isActive) {
             btn.classList.add('active');
         } else {
             btn.classList.remove('active');
         }
+        btn.setAttribute('aria-pressed', isActive.toString());
     });
 }
 
@@ -1040,6 +1069,10 @@ function showShortcutsModal() {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
         modal.classList.remove('hidden');
+        const closeBtn = modal.querySelector('.modal-close') as HTMLElement;
+        if (closeBtn) {
+            closeBtn.focus();
+        }
     }
 }
 
