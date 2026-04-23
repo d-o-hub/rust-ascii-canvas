@@ -3,11 +3,6 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (e.g., 0.1.0 or patch/minor/major)'
-        required: false
-        default: 'patch'
-        type: string
       dry_run:
         description: 'Dry run (no actual release)'
         required: false
@@ -23,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
-      is_dry_run: ${{ github.inputs.dry_run == 'true' }}
+      is_dry_run: ${{ inputs.dry_run }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,71 +45,55 @@ jobs:
       - name: Determine version
         id: version
         run: |
-          INPUT_VERSION="${{ github.inputs.version }}"
-          IS_DRY_RUN="${{ github.inputs.dry_run }}"
-          
-          if [ "$IS_DRY_RUN" == "true" ]; then
-            echo "Dry run mode - using 0.0.0-dryrun"
-            echo "version=0.0.0-dryrun" >> $GITHUB_OUTPUT
-            exit 0
+          if [ ! -f "VERSION" ]; then
+            echo "Error: VERSION file not found"
+            exit 1
           fi
           
-          if [[ "$INPUT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            # Exact version provided
-            echo "version=$INPUT_VERSION" >> $GITHUB_OUTPUT
-          else
-            # Auto-increment
-            case "$INPUT_VERSION" in
-              patch)
-                TAG_TYPE="patch"
-                ;;
-              minor)
-                TAG_TYPE="minor"
-                ;;
-              major)
-                TAG_TYPE="major"
-                ;;
-              *)
-                TAG_TYPE="patch"
-                ;;
-            esac
-            
-            # Get latest tag
-            LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            LAST_VERSION=${LAST_TAG#v}
-            
-            # Parse version
-            IFS='.' read -r MAJOR MINOR PATCH <<< "$LAST_VERSION"
-            MAJOR=${MAJOR:-0}
-            MINOR=${MINOR:-0}
-            PATCH=${PATCH:-0}
-            
-            case "$TAG_TYPE" in
-              major)
-                MAJOR=$((MAJOR + 1))
-                MINOR=0
-                PATCH=0
-                ;;
-              minor)
-                MINOR=$((MINOR + 1))
-                PATCH=0
-                ;;
-              patch)
-                PATCH=$((PATCH + 1))
-                ;;
-            esac
-            
-            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
-            echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          VERSION=$(cat VERSION | tr -d '[:space:]')
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Error: VERSION file must contain a valid semantic version (x.y.z)"
+            exit 1
           fi
           
-          echo "Selected version: ${{ steps.version.outputs.version }}"
+          echo "Found version: $VERSION"
+
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          LAST_VERSION=${LAST_TAG#v}
+          echo "Last tag version: $LAST_VERSION"
+
+          if [ "$VERSION" = "$LAST_VERSION" ]; then
+            echo "Error: Version $VERSION is already the latest tag"
+            exit 1
+          fi
+          
+          IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$VERSION"
+          IFS='.' read -r L_MAJOR L_MINOR L_PATCH <<< "$LAST_VERSION"
+
+          VALID=false
+          if [ "$V_MAJOR" -gt "$L_MAJOR" ] && [ "$V_MINOR" -eq 0 ] && [ "$V_PATCH" -eq 0 ]; then
+            VALID=true
+            echo "Valid major increment"
+          elif [ "$V_MAJOR" -eq "$L_MAJOR" ] && [ "$V_MINOR" -gt "$L_MINOR" ] && [ "$V_PATCH" -eq 0 ]; then
+            VALID=true
+            echo "Valid minor increment"
+          elif [ "$V_MAJOR" -eq "$L_MAJOR" ] && [ "$V_MINOR" -eq "$L_MINOR" ] && [ "$V_PATCH" -gt "$L_PATCH" ]; then
+            VALID=true
+            echo "Valid patch increment"
+          fi
+
+          if [ "$VALID" != "true" ]; then
+            echo "Error: Version $VERSION is not a valid increment over $LAST_VERSION"
+            echo "Must be a valid major, minor, or patch increment."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
   build-wasm:
     name: Build WASM
     needs: guard-rails
     runs-on: ubuntu-latest
-    if: needs.guard-rails.outputs.is_dry_run != 'true'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -153,7 +132,6 @@ jobs:
     name: Create Release
     needs: [guard-rails, build-wasm]
     runs-on: ubuntu-latest
-    if: needs.guard-rails.outputs.is_dry_run != 'true'
     outputs:
       version: ${{ needs.guard-rails.outputs.version }}
     steps:
@@ -168,22 +146,64 @@ jobs:
           name: wasm-pkg
           path: web/pkg
 
-      - name: Generate changelog
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Update Changelog
         id: changelog
         run: |
           VERSION="${{ needs.guard-rails.outputs.version }}"
           TAG_NAME="v$VERSION"
+          DATE=$(date +'%Y-%m-%d')
           
           # Get previous tag for changelog
           PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
           
           if [ -n "$PREV_TAG" ]; then
-            CHANGES=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" 2>/dev/null | grep -v "^$" | head -20)
+            CHANGES=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" 2>/dev/null | grep -v "^$" || true)
           else
-            CHANGES=$(git log --pretty=format:"- %s (%h)" -n 20 | grep -v "^$")
+            CHANGES=$(git log --pretty=format:"- %s (%h)" | grep -v "^$" || true)
           fi
           
-          cat > release_body.md << EOF
+          if [ -z "$CHANGES" ]; then
+            CHANGES="- No notable changes"
+          fi
+
+          # Create temporary file for new changelog entry
+          cat > new_changelog_entry.md << EOT
+          ## [$VERSION] - $DATE
+
+          ### Changes
+          $CHANGES
+
+          EOT
+
+          # Prepend to existing CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # We want to insert the new entry right after the first header (# Changelog or similar)
+            # Find the line number of the first ## [ version ] header
+            FIRST_VERSION_LINE=$(grep -n "^## \[" CHANGELOG.md | head -1 | cut -d: -f1 || echo "")
+
+            if [ -n "$FIRST_VERSION_LINE" ]; then
+              head -n $((FIRST_VERSION_LINE-1)) CHANGELOG.md > temp_changelog.md
+              cat new_changelog_entry.md >> temp_changelog.md
+              tail -n +$FIRST_VERSION_LINE CHANGELOG.md >> temp_changelog.md
+              mv temp_changelog.md CHANGELOG.md
+            else
+              # No version headers found, just prepend
+              cat new_changelog_entry.md CHANGELOG.md > temp_changelog.md
+              mv temp_changelog.md CHANGELOG.md
+            fi
+          else
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            cat new_changelog_entry.md >> CHANGELOG.md
+          fi
+
+          # We still need the release_body.md for the GitHub Release
+          cat > release_body.md << EOT
           ## v$VERSION
           
           ### Changes
@@ -192,16 +212,30 @@ jobs:
           ### Quick Start
           \`\`\`bash
           wasm-pack build --release --target web --out-dir web/pkg
-          cd web && npm run dev
+          cd web && npm run start:dev
           \`\`\`
           
           See CHANGELOG.md for full details.
-          EOF
+          EOT
           
-          cat release_body.md
+          # Replace 'npm run start:dev' with 'npm run dev'
+          sed -i 's/start:dev/dev/g' release_body.md
+
+          rm new_changelog_entry.md
+
+      - name: Commit and Push Changes
+        if: needs.guard-rails.outputs.is_dry_run != 'true'
+        run: |
+          VERSION="${{ needs.guard-rails.outputs.version }}"
+          git add CHANGELOG.md VERSION
+          # Only commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): bump version to $VERSION and update changelog"
+            git push origin HEAD
+          fi
 
       - name: Create Release
-        id: create_release
+        if: needs.guard-rails.outputs.is_dry_run != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -209,11 +243,11 @@ jobs:
           TAG_NAME="v$VERSION"
           
           # gh release create creates the tag and the release in one step
+          # Target is HEAD so it uses the commit we just pushed
           gh release create "$TAG_NAME" \
             --title "$TAG_NAME" \
             --notes-file release_body.md \
-            --target "${{ github.sha }}"
-
+            --target HEAD
   publish-wasm:
     name: Publish WASM
     needs: create-release
