@@ -63,3 +63,7 @@ wasm-opt = false
 [[test]]
 name = "core_tests"
 path = "tests/core/mod.rs"
+
+[[test]]
+name = "utils_tests"
+path = "tests/utils/mod.rs"

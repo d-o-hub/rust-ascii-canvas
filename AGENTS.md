@@ -30,6 +30,13 @@ This document outlines the core principles and workflows for agents working on t
 
 ## Proactive Testing
 
+### Rust Testing Guidelines
+
+1. **Unit Tests**: Place in the same file as the source code, at the bottom, within a `#[cfg(test)] mod tests { ... }` block. This is standard Rust idiomatic practice and allows testing private implementation details.
+2. **Integration Tests**: Place in the `tests/` directory to test the crate's public API from the outside.
+
+
+
 For any code change, attempt to find and run relevant tests. Practice test-driven development when practical. If you encounter failures, diagnose the root cause before attempting environment changes.
 
 ## Tool Verification Checklist
