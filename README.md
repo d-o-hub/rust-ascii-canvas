@@ -26,45 +26,59 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 
 ### Build
 
-```shell
+```bash
 # Clone the repository
 git clone https://github.com/d-o-hub/rust-ascii-canvas.git
 cd rust-ascii-canvas
 
-# Install dependencies and build both WASM and Web
-npm install
-npm run build
+# Build WASM module
+wasm-pack build --release --target web
 
-# Start dev server
-npm run dev &
+# Install dependencies and start dev server
+cd web
+npm install
+npm run dev
 ```
 
-The editor will be available at `http://localhost:3003`.
+The editor will be available at `http://localhost:3000`.
 
 ## Project Structure
 
 ```
 ascii-canvas/
 ├── Cargo.toml              # Rust dependencies
-├── package.json            # Root workspace config
 ├── src/
 │   ├── lib.rs              # Library entry point
 │   ├── core/               # Pure Rust logic (no WASM)
+│   │   ├── cell.rs         # Cell representation
+│   │   ├── grid.rs         # 2D grid model
+│   │   ├── tools/          # Drawing tools
+│   │   ├── commands/       # Command pattern
+│   │   ├── history.rs      # Undo/redo system
+│   │   ├── selection.rs    # Selection model
+│   │   └── ascii_export.rs # Export utilities
 │   ├── render/             # Canvas rendering
+│   │   ├── canvas_renderer.rs
+│   │   ├── metrics.rs      # Font metrics
+│   │   └── dirty_rect.rs   # Dirty region tracking
 │   ├── wasm/               # WASM bindings
+│   │   ├── bindings.rs     # Main editor class
+│   │   ├── events.rs       # Event handling
+│   │   └── clipboard.rs    # Clipboard utilities
 │   ├── ui/                 # UI components
+│   │   ├── shortcuts.rs    # Keyboard shortcuts
+│   │   ├── toolbar.rs      # Toolbar config
+│   │   └── theme.rs        # Theme definitions
 │   └── utils/              # Utilities
 ├── web/
 │   ├── index.html          # HTML template
 │   ├── style.css           # Dark theme styles
-│   ├── main.ts             # TypeScript entry
-│   ├── package.json        # Frontend config
-│   └── vite.config.ts      # Vite build config
-├── tests/                  # Rust integration tests
-├── benches/                # Rust benchmarks
-├── e2e/                    # Playwright E2E tests
-├── playwright.config.ts    # Playwright config
-└── wasm-pack.toml          # wasm-pack config
+│   └── main.ts             # TypeScript entry
+├── tests/
+│   ├── core/               # Core unit tests
+│   └── wasm/               # WASM browser tests
+├── wasm-pack.toml          # wasm-pack config
+└── vite.config.ts          # Vite build config
 ```
 
 ## Select Tool
@@ -79,25 +93,22 @@ The Select tool (V) allows you to:
 
 | Key | Action |
 |-----|--------|
-| `V` | Select tool |
 | `R` | Rectangle tool |
 | `L` | Line tool |
 | `A` | Arrow tool |
 | `D` | Diamond tool |
 | `T` | Text tool |
 | `F` | Freehand tool |
+| `V` | Select tool |
 | `E` | Eraser tool |
-| `B` | Cycle Border Style |
 | `Ctrl+Z` | Undo |
-| `Ctrl+Shift+Z` / `Ctrl+Y` | Redo |
+| `Ctrl+Shift+Z` | Redo |
 | `Ctrl+C` | Copy ASCII |
 | `Ctrl+X` | Cut selected region |
 | `Ctrl+V` | Paste from clipboard |
-| `Ctrl+A` | Select all |
 | `Delete/Backspace` | Delete selected region |
 | `Space+Drag` | Pan canvas |
 | `Scroll` | Zoom |
-| `Escape` | Cancel/Deselect |
 
 ## Architecture
 
@@ -184,26 +195,26 @@ interface EventResult {
 
 ## Testing
 
-### Unit Tests (Rust)
+### Core Tests
 
-```shell
-npm run test:unit
+```bash
+cargo test
 ```
 
-### End-to-End Tests (Playwright)
+### WASM Tests
 
-```shell
-npm run test:e2e
+```bash
+wasm-pack test --headless --firefox
 ```
 
-### Frontend Tests (Vitest)
+## Performance
 
-```shell
-cd web
-npm test
-```
+- **Dirty-Rect Rendering**: Only redraws modified regions
+- **Zero Per-Frame Allocations**: Pre-allocated buffers
+- **SmallVec**: Stack allocation for small collections
+- **Optimized WASM**: LTO, stripping, `opt-level = "z"`
 
-
+Target: < 1.5MB WASM bundle
 
 ## Deployment
 
@@ -220,7 +231,7 @@ This project is configured for one-click deployment to Netlify.
 
 ### Local Production Build
 
-```shell
+```bash
 npm run build
 ```
 The final static assets will be in the `dist/` directory.
@@ -269,8 +280,8 @@ cargo fmt --check
 
 ### Size Check
 
-```shell
-npm run check-size
+```bash
+ls -lh pkg/ascii_canvas_bg.wasm
 ```
 
 ## Troubleshooting
