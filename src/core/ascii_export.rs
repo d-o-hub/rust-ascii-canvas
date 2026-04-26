@@ -60,40 +60,41 @@ fn export_trimmed(grid: &Grid, options: &ExportOptions) -> String {
         None => return String::new(),
     };
 
-    // Build output
-    let mut result = String::new();
+    // Calculate approximate capacity
+    let cols = ((max_x - min_x + 1) as usize).min(if options.max_width > 0 {
+        options.max_width
+    } else {
+        usize::MAX
+    });
+    let rows = (max_y - min_y + 1) as usize;
+    let mut result = String::with_capacity(rows * (cols + 1));
 
     for y in min_y..=max_y {
+        let mut line_chars_count = 0;
+
         if options.line_numbers {
-            result.push_str(&format!("{:4} | ", y + 1));
+            let prefix = format!("{:4} | ", y + 1);
+            for ch in prefix.chars() {
+                if options.max_width > 0 && line_chars_count >= options.max_width {
+                    break;
+                }
+                result.push(ch);
+                line_chars_count += 1;
+            }
         }
 
         for x in min_x..=max_x {
+            if options.max_width > 0 && line_chars_count >= options.max_width {
+                break;
+            }
             let ch = grid.get(x, y).map(|c| c.ch).unwrap_or(' ');
             result.push(ch);
+            line_chars_count += 1;
         }
 
         if y < max_y {
             result.push('\n');
         }
-    }
-
-    // Apply max width if set
-    if options.max_width > 0 {
-        let lines: Vec<&str> = result.lines().collect();
-        let mut limited = String::new();
-        for (i, line) in lines.iter().enumerate() {
-            let line = if line.len() > options.max_width {
-                &line[..options.max_width]
-            } else {
-                line
-            };
-            limited.push_str(line);
-            if i < lines.len() - 1 {
-                limited.push('\n');
-            }
-        }
-        return limited;
     }
 
     result
@@ -250,5 +251,30 @@ mod tests {
         assert_eq!(result.lines().count(), 3);
         // First line should be "X    " (X followed by 4 spaces)
         assert!(result.starts_with('X'));
+    }
+
+    #[test]
+    fn test_export_max_width() {
+        let mut grid = Grid::new(20, 20);
+        grid.fill_rect(0, 0, 9, 0, 'X'); // 10 Xs
+
+        let mut options = ExportOptions::default();
+        options.max_width = 5;
+
+        let result = export_grid(&grid, &options);
+        assert_eq!(result, "XXXXX");
+    }
+
+    #[test]
+    fn test_export_max_width_multibyte() {
+        let mut grid = Grid::new(20, 20);
+        grid.fill_rect(0, 0, 9, 0, '🦀'); // 10 crabs
+
+        let mut options = ExportOptions::default();
+        options.max_width = 3;
+
+        let result = export_grid(&grid, &options);
+        assert_eq!(result.chars().count(), 3);
+        assert_eq!(result, "🦀🦀🦀");
     }
 }
