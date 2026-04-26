@@ -184,7 +184,6 @@ impl Rect {
 mod tests {
     use super::*;
 
-
     #[test]
     fn test_approx_eq() {
         // Exact equality
