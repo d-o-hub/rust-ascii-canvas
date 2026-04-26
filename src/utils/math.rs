@@ -184,6 +184,36 @@ impl Rect {
 mod tests {
     use super::*;
 
+
+    #[test]
+    fn test_approx_eq() {
+        // Exact equality
+        assert!(approx_eq(1.0, 1.0, 1e-6));
+        assert!(approx_eq(0.0, 0.0, 1e-6));
+        assert!(approx_eq(-5.5, -5.5, 1e-6));
+
+        // Within epsilon
+        assert!(approx_eq(1.0, 1.0000001, 1e-6));
+        assert!(approx_eq(1.0, 0.9999999, 1e-6));
+        assert!(approx_eq(-1.0, -1.0000001, 1e-6));
+        assert!(approx_eq(-1.0, -0.9999999, 1e-6));
+
+        // Outside epsilon
+        assert!(!approx_eq(1.0, 1.000002, 1e-6));
+        assert!(!approx_eq(1.0, 0.999998, 1e-6));
+        assert!(!approx_eq(-1.0, -1.000002, 1e-6));
+        assert!(!approx_eq(-1.0, -0.999998, 1e-6));
+
+        // Edge cases with 0.0 and -0.0
+        assert!(approx_eq(0.0, -0.0, 1e-6));
+
+        // Special float values (NaN, Infinity)
+        // Note: INFINITY - INFINITY is NaN, and NaN < epsilon is false.
+        assert!(!approx_eq(f64::INFINITY, f64::INFINITY, 1e-6));
+        assert!(!approx_eq(f64::NEG_INFINITY, f64::NEG_INFINITY, 1e-6));
+        assert!(!approx_eq(f64::NAN, f64::NAN, 1e-6));
+    }
+
     #[test]
     fn test_abs_diff() {
         // Test integers (i32)
