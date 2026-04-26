@@ -258,8 +258,10 @@ mod tests {
         let mut grid = Grid::new(20, 20);
         grid.fill_rect(0, 0, 9, 0, 'X'); // 10 Xs
 
-        let mut options = ExportOptions::default();
-        options.max_width = 5;
+        let options = ExportOptions {
+            max_width: 5,
+            ..Default::default()
+        };
 
         let result = export_grid(&grid, &options);
         assert_eq!(result, "XXXXX");
@@ -270,8 +272,10 @@ mod tests {
         let mut grid = Grid::new(20, 20);
         grid.fill_rect(0, 0, 9, 0, '🦀'); // 10 crabs
 
-        let mut options = ExportOptions::default();
-        options.max_width = 3;
+        let options = ExportOptions {
+            max_width: 3,
+            ..Default::default()
+        };
 
         let result = export_grid(&grid, &options);
         assert_eq!(result.chars().count(), 3);

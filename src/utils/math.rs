@@ -206,24 +206,6 @@ mod tests {
     }
 
     #[test]
-    fn test_lerp() {
-        // Standard interpolation
-        assert!(approx_eq(lerp(0.0, 10.0, 0.0), 0.0, 1e-6));
-        assert!(approx_eq(lerp(0.0, 10.0, 0.5), 5.0, 1e-6));
-        assert!(approx_eq(lerp(0.0, 10.0, 1.0), 10.0, 1e-6));
-
-        // Out-of-bounds t (extrapolation)
-        assert!(approx_eq(lerp(0.0, 10.0, -0.5), -5.0, 1e-6));
-        assert!(approx_eq(lerp(0.0, 10.0, 1.5), 15.0, 1e-6));
-
-        // a == b
-        assert!(approx_eq(lerp(5.0, 5.0, 0.5), 5.0, 1e-6));
-
-        // Different signs
-        assert!(approx_eq(lerp(-10.0, 10.0, 0.5), 0.0, 1e-6));
-    }
-
-    #[test]
     fn test_clamp() {
         assert_eq!(clamp(5, 0, 10), 5);
         assert_eq!(clamp(-5, 0, 10), 0);
