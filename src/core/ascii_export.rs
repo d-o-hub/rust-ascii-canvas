@@ -83,12 +83,11 @@ fn export_trimmed(grid: &Grid, options: &ExportOptions) -> String {
         let lines: Vec<&str> = result.lines().collect();
         let mut limited = String::new();
         for (i, line) in lines.iter().enumerate() {
-            let line = if line.len() > options.max_width {
-                &line[..options.max_width]
+            if line.chars().count() > options.max_width {
+                limited.extend(line.chars().take(options.max_width));
             } else {
-                line
-            };
-            limited.push_str(line);
+                limited.push_str(line);
+            }
             if i < lines.len() - 1 {
                 limited.push('\n');
             }
