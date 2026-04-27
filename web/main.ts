@@ -64,8 +64,8 @@ interface AsciiEditorInterface {
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let wasmMemory: any = null;
+
+let wasmMemory: WebAssembly.Memory | null = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let offscreenCanvas: HTMLCanvasElement | null = null;
@@ -79,6 +79,8 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
+        charWidth?: number;
+        lineHeight?: number;
     }
 }
 window.editor = null;
