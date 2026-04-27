@@ -5,6 +5,8 @@
  */
 
 import init, { AsciiEditor } from './pkg/ascii_canvas.js';
+import { logger } from './logger.js';
+
 
 // Type definitions
 interface EventResult {
@@ -252,9 +254,9 @@ async function initialize() {
         // Set initial active tool button
         updateToolButtons('rectangle');
 
-        console.log('ASCII Canvas Editor initialized');
+        logger.info('ASCII Canvas Editor initialized');
     } catch (error) {
-        console.error('Failed to initialize:', error);
+        logger.error('Failed to initialize:', error);
         if (statusMessageEl) {
             statusMessageEl.textContent = `Failed to initialize: ${error}`;
         }
@@ -906,7 +908,7 @@ function updateCursorIndicator(gridX: number, gridY: number) {
  */
 function setTool(toolName: string) {
     if (!editor) {
-        console.error('Editor not initialized');
+        logger.error('Editor not initialized');
         return;
     }
     try {
@@ -922,7 +924,7 @@ function setTool(toolName: string) {
         
         statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
     } catch (error) {
-        console.error('Failed to set tool:', error);
+        logger.error('Failed to set tool:', error);
     }
 }
 
@@ -953,7 +955,7 @@ function updateUI() {
         gridSizeEl.textContent = `${editor.width} × ${editor.height}`;
         statusToolEl.textContent = `Tool: ${capitalize(editor.tool)}`;
     } catch (error) {
-        console.error('Failed to update UI:', error);
+        logger.error('Failed to update UI:', error);
     }
 }
 
@@ -985,7 +987,7 @@ async function copyAsciiToClipboard(text: string) {
 
         showToast('Copied — paste in a monospace editor');
     } catch (err) {
-        console.error('Failed to copy:', err);
+        logger.error('Failed to copy:', err);
         // Fallback to simple text copy if ClipboardItem is not supported
         try {
             await navigator.clipboard.writeText(text);
@@ -1131,13 +1133,13 @@ function uploadFontAtlas() {
         }
 
         if (!hasContent && char !== ' ') {
-            console.warn(`Glyph for '${char}' (${char.charCodeAt(0)}) rasterized empty. Font might not be loaded.`);
+            logger.warn(`Glyph for '${char}' (${char.charCodeAt(0)}) rasterized empty. Font might not be loaded.`);
         }
 
         editor.updateFontAtlasGlyph(char.charCodeAt(0), alphaData);
     }
 
-    console.log(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
+    logger.debug(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
     editor.requestRedraw();
 }
 
