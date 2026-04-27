@@ -1,6 +1,6 @@
 //! Line tool - draws ASCII lines using Bresenham's algorithm.
 
-use super::{clamp_to_grid, BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use std::any::Any;
 use std::str::FromStr;
 
@@ -41,8 +41,6 @@ impl FromStr for LineDirection {
 /// Line drawing tool using Bresenham's algorithm with ASCII characters.
 #[derive(Default)]
 pub struct LineTool {
-    /// Border style for the line
-    border_style: BorderStyle,
     /// Start point of drag
     start: Option<(i32, i32)>,
     /// Forced direction
@@ -68,24 +66,17 @@ impl LineTool {
     /// Get appropriate line character based on line direction.
     /// sx, sy: direction of line movement (sign of delta)
     /// dx, dy: absolute distances
-    fn get_line_char(
-        sx: i32,
-        sy: i32,
-        dx: i32,
-        dy: i32,
-        forced: LineDirection,
-        border_style: BorderStyle,
-    ) -> char {
+    fn get_line_char(sx: i32, sy: i32, dx: i32, dy: i32, forced: LineDirection) -> char {
         match forced {
-            LineDirection::Horizontal => border_style.horizontal(),
-            LineDirection::Vertical => border_style.vertical(),
+            LineDirection::Horizontal => '─',
+            LineDirection::Vertical => '│',
             LineDirection::Auto => {
                 if dx == 0 {
                     // Pure vertical
-                    border_style.vertical()
+                    '│'
                 } else if dy == 0 {
                     // Pure horizontal
-                    border_style.horizontal()
+                    '─'
                 } else {
                     // Diagonal - determine character based on direction
                     if sx > 0 {
@@ -114,7 +105,7 @@ impl LineTool {
         let sy = if y1 < y2 { 1 } else { -1 };
 
         // Get the character based on forced direction or auto-detect
-        let ch = Self::get_line_char(sx, sy, dx, dy, self.direction, self.border_style);
+        let ch = Self::get_line_char(sx, sy, dx, dy, self.direction);
 
         let mut err = dx - dy;
         let mut x = x1;
@@ -147,9 +138,8 @@ impl Tool for LineTool {
         ToolId::Line
     }
 
-    fn on_pointer_down(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
+    fn on_pointer_down(&mut self, x: i32, y: i32, _ctx: &ToolContext) -> ToolResult {
         self.start = Some((x, y));
-        self.border_style = ctx.border_style;
         ToolResult::new()
     }
 

@@ -1,13 +1,11 @@
 //! Arrow tool - draws lines with arrowheads.
 
-use super::{clamp_to_grid, BorderStyle, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
 use std::any::Any;
 
 /// Arrow drawing tool.
 #[derive(Default)]
 pub struct ArrowTool {
-    /// Border style for the arrow body
-    border_style: BorderStyle,
     /// Start point of drag
     start: Option<(i32, i32)>,
 }
@@ -150,9 +148,8 @@ impl Tool for ArrowTool {
         ToolId::Arrow
     }
 
-    fn on_pointer_down(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
+    fn on_pointer_down(&mut self, x: i32, y: i32, _ctx: &ToolContext) -> ToolResult {
         self.start = Some((x, y));
-        self.border_style = ctx.border_style;
         ToolResult::new()
     }
 
