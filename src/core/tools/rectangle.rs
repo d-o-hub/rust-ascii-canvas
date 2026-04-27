@@ -93,9 +93,10 @@ impl Tool for RectangleTool {
         ToolId::Rectangle
     }
 
-    fn on_pointer_down(&mut self, x: i32, y: i32, _ctx: &ToolContext) -> ToolResult {
+    fn on_pointer_down(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
         self.start = Some((x, y));
         self.end = Some((x, y));
+        self.border_style = ctx.border_style;
         ToolResult::new()
     }
 
