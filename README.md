@@ -26,21 +26,20 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 
 ### Build
 
-```bash
+```shell
 # Clone the repository
 git clone https://github.com/d-o-hub/rust-ascii-canvas.git
 cd rust-ascii-canvas
 
-# Build WASM module
-wasm-pack build --release --target web
-
-# Install dependencies and start dev server
-cd web
+# Install dependencies and build both WASM and Web
 npm install
-npm run dev
+npm run build
+
+# Start dev server
+npm run dev &
 ```
 
-The editor will be available at `http://localhost:3000`.
+The editor will be available at `http://localhost:3003`.
 
 ## Project Structure
 
@@ -280,8 +279,8 @@ cargo fmt --check
 
 ### Size Check
 
-```bash
-ls -lh pkg/ascii_canvas_bg.wasm
+```shell
+npm run check-size
 ```
 
 ## Troubleshooting
