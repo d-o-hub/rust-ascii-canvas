@@ -858,7 +858,7 @@ function executeRenderCommand(cmd: RenderCommand) {
             ctx.fillRect(cmd.x as number, cmd.y as number, cmd.width as number, cmd.height as number);
             break;
 
-        case 'DrawGrid':
+        case 'DrawGrid': {
             ctx.strokeStyle = cmd.color as string || '#333333';
             ctx.lineWidth = 0.5;
             ctx.beginPath();
@@ -882,6 +882,7 @@ function executeRenderCommand(cmd: RenderCommand) {
             
             ctx.stroke();
             break;
+        }
     }
 }
 

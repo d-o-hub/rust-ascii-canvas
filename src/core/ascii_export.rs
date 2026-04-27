@@ -252,4 +252,33 @@ mod tests {
         // First line should be "X    " (X followed by 4 spaces)
         assert!(result.starts_with('X'));
     }
+
+    #[test]
+    fn test_export_max_width() {
+        let mut grid = Grid::new(20, 20);
+        grid.fill_rect(0, 0, 9, 0, 'X'); // 10 Xs
+
+        let options = ExportOptions {
+            max_width: 5,
+            ..Default::default()
+        };
+
+        let result = export_grid(&grid, &options);
+        assert_eq!(result, "XXXXX");
+    }
+
+    #[test]
+    fn test_export_max_width_multibyte() {
+        let mut grid = Grid::new(20, 20);
+        grid.fill_rect(0, 0, 9, 0, '🦀'); // 10 crabs
+
+        let options = ExportOptions {
+            max_width: 3,
+            ..Default::default()
+        };
+
+        let result = export_grid(&grid, &options);
+        assert_eq!(result.chars().count(), 3);
+        assert_eq!(result, "🦀🦀🦀");
+    }
 }

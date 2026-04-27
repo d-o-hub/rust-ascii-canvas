@@ -34,7 +34,12 @@
     "check-size": "size=$(stat -c%s web/pkg/ascii_canvas_bg.wasm); if [ $size -gt 1572864 ]; then echo \"WASM size $size exceeds 1.5MB limit\"; exit 1; else echo \"WASM size $size is within budget\"; fi"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
-    "playwright": "^1.58.2"
+    "@typescript-eslint/eslint-plugin": "^8.59.0",
+    "@typescript-eslint/parser": "^8.59.0",
+    "eslint": "^10.2.1",
+    "playwright": "^1.58.2",
+    "typescript-eslint": "^8.59.0"
   }
 }
