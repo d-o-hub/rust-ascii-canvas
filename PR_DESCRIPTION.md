@@ -15,3 +15,5 @@ The new test suite covers the following scenarios for floating point comparisons
 The reliability and coverage of mathematical float comparison in the editor's utility module has been significantly increased. We are now protected against regressions related to subtle floating-point errors.
 
 This PR also includes a fix for `ascii_export.rs` to correctly handle `max_width` limits with multi-byte unicode characters, replacing byte slicing with `.chars().take()`.
+
+Additionally, restored the correct `npm run build` instructions in the `README.md` to avoid missing the critical post-processing steps.
