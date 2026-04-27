@@ -1,9 +1,9 @@
 //! Line tool - draws ASCII lines using Bresenham's algorithm.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use crate::core::BorderStyle;
 use std::any::Any;
 use std::str::FromStr;
-use crate::core::BorderStyle;
 
 /// Line direction mode
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -104,7 +104,14 @@ impl LineTool {
     }
 
     /// Draw a line using Bresenham's algorithm.
-    fn draw_line(&self, x1: i32, y1: i32, x2: i32, y2: i32, border_style: BorderStyle) -> Vec<DrawOp> {
+    fn draw_line(
+        &self,
+        x1: i32,
+        y1: i32,
+        x2: i32,
+        y2: i32,
+        border_style: BorderStyle,
+    ) -> Vec<DrawOp> {
         let mut ops = Vec::new();
 
         let dx = (x2 - x1).abs();

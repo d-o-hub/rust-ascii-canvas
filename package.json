@@ -24,7 +24,7 @@
     "build:wasm": "cargo build --target wasm32-unknown-unknown --release && wasm-bindgen target/wasm32-unknown-unknown/release/ascii_canvas.wasm --out-dir web/pkg --target web && wasm-opt --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext -O3 web/pkg/ascii_canvas_bg.wasm -o web/pkg/ascii_canvas_bg.wasm",
     "build:web": "cd web && npm run build",
     "build": "npm run build:wasm && npm run build:web",
-    "netlify:build": "curl -fsSL https://mise.run | /usr/bin/env bash && export PATH=$HOME/.local/bin:$PATH && mise trust && mise install && npm ci && cd web && npm ci && cd .. && mise exec -- npm run build && npm run check-size",
+    "netlify:build": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli --version 0.2.118 && npm i -g wasm-opt && npm ci && cd web && npm ci && cd .. && npm run build && npm run check-size",
     "dev": "cd web && npm run dev",
     "test": "cargo test && npx playwright test --project=chromium",
     "test:unit": "cargo test",

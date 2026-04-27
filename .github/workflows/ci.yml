@@ -20,11 +20,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup mise
-        uses: jdx/mise-action@v2
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
 
-      - name: Add WASM target
-        run: rustup target add wasm32-unknown-unknown
+      - name: Install wasm tools
+        run: |
+          cargo install wasm-bindgen-cli --version 0.2.118
+          npm i -g wasm-opt
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
