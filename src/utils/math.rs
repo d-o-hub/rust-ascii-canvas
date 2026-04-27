@@ -246,4 +246,40 @@ mod tests {
         assert!(r1.intersects(&r2));
         assert!(!r1.intersects(&r3));
     }
+
+    #[test]
+    fn test_floor_to_multiple() {
+        let epsilon = 1e-9;
+
+        // Positive numbers
+        assert!(approx_eq(floor_to_multiple(10.0, 5.0), 10.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(12.0, 5.0), 10.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(14.9, 5.0), 10.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(15.0, 5.0), 15.0, epsilon));
+
+        // Zero
+        assert!(approx_eq(floor_to_multiple(0.0, 5.0), 0.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(0.0, 8.0), 0.0, epsilon));
+
+        // Negative numbers
+        assert!(approx_eq(floor_to_multiple(-10.0, 5.0), -10.0, epsilon));
+        // -12.0 / 5.0 = -2.4. floor(-2.4) = -3.0. -3.0 * 5.0 = -15.0
+        assert!(approx_eq(floor_to_multiple(-12.0, 5.0), -15.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(-14.9, 5.0), -15.0, epsilon));
+
+        // Sub-multiple values
+        assert!(approx_eq(floor_to_multiple(3.0, 5.0), 0.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(-3.0, 5.0), -5.0, epsilon));
+
+        // Testing fractions (e.g. 0.5)
+        assert!(approx_eq(floor_to_multiple(1.2, 0.5), 1.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(1.4, 0.5), 1.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(1.6, 0.5), 1.5, epsilon));
+
+        // Use cases from grid (e.g., 8x20 grid)
+        assert!(approx_eq(floor_to_multiple(15.0, 8.0), 8.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(24.0, 8.0), 24.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(25.0, 20.0), 20.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(39.9, 20.0), 20.0, epsilon));
+    }
 }
