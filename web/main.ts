@@ -62,8 +62,8 @@ interface AsciiEditorInterface {
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let wasmMemory: any = null;
+
+let wasmMemory: WebAssembly.Memory | null = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let offscreenCanvas: HTMLCanvasElement | null = null;
@@ -77,6 +77,8 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
+        charWidth?: number;
+        lineHeight?: number;
     }
 }
 window.editor = null;
@@ -286,8 +288,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    (window as any).charWidth = charWidth;
-    (window as any).lineHeight = lineHeight;
+    window.charWidth = charWidth;
+    window.lineHeight = lineHeight;
 }
 
 /**
@@ -420,8 +422,8 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor && (editor as any).setLineDirection) {
-                (editor as any).setLineDirection(direction);
+            if (editor && editor.setLineDirection) {
+                editor.setLineDirection(direction);
             }
         });
     });
