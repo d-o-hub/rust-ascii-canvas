@@ -420,8 +420,8 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor && (editor as any).setLineDirection) {
-                (editor as any).setLineDirection(direction);
+            if (editor && editor.setLineDirection) {
+                editor.setLineDirection(direction);
             }
         });
     });
