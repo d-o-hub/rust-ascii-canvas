@@ -34,9 +34,12 @@ cd rust-ascii-canvas
 # Install dependencies and build both WASM and Web
 npm install
 npm run build
+
+# Start dev server
+npm run dev &
 ```
 
-The editor will be available at `http://localhost:3000`.
+The editor will be available at `http://localhost:3003`.
 
 ## Project Structure
 
@@ -276,8 +279,8 @@ cargo fmt --check
 
 ### Size Check
 
-```bash
-ls -lh pkg/ascii_canvas_bg.wasm
+```shell
+npm run check-size
 ```
 
 ## Troubleshooting
