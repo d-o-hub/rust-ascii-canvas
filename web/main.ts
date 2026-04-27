@@ -288,8 +288,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    (window as any).charWidth = charWidth;
-    (window as any).lineHeight = lineHeight;
+    (window as unknown as { charWidth: number, lineHeight: number }).charWidth = charWidth;
+    (window as unknown as { charWidth: number, lineHeight: number }).lineHeight = lineHeight;
 }
 
 /**
@@ -422,8 +422,9 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor && (editor as any).setLineDirection) {
-                (editor as any).setLineDirection(direction);
+            const extEditor = editor as unknown as { setLineDirection?: (dir: string) => void };
+            if (extEditor && extEditor.setLineDirection) {
+                extEditor.setLineDirection(direction);
             }
         });
     });

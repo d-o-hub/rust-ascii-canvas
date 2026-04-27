@@ -34,25 +34,25 @@ class Logger {
         return this.prefix ? `[${this.prefix}] ${message}` : message;
     }
 
-    public debug(message: string, ...args: any[]) {
+    public debug(message: string, ...args: unknown[]) {
         if (this.level <= LogLevel.DEBUG) {
             console.debug(this.formatMessage(message), ...args);
         }
     }
 
-    public info(message: string, ...args: any[]) {
+    public info(message: string, ...args: unknown[]) {
         if (this.level <= LogLevel.INFO) {
             console.info(this.formatMessage(message), ...args);
         }
     }
 
-    public warn(message: string, ...args: any[]) {
+    public warn(message: string, ...args: unknown[]) {
         if (this.level <= LogLevel.WARN) {
             console.warn(this.formatMessage(message), ...args);
         }
     }
 
-    public error(message: string, ...args: any[]) {
+    public error(message: string, ...args: unknown[]) {
         if (this.level <= LogLevel.ERROR) {
             console.error(this.formatMessage(message), ...args);
         }
