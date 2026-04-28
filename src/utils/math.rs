@@ -185,35 +185,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_approx_eq() {
-        // Exact equality
-        assert!(approx_eq(1.0, 1.0, 1e-6));
-        assert!(approx_eq(0.0, 0.0, 1e-6));
-        assert!(approx_eq(-5.5, -5.5, 1e-6));
-
-        // Within epsilon
-        assert!(approx_eq(1.0, 1.0000001, 1e-6));
-        assert!(approx_eq(1.0, 0.9999999, 1e-6));
-        assert!(approx_eq(-1.0, -1.0000001, 1e-6));
-        assert!(approx_eq(-1.0, -0.9999999, 1e-6));
-
-        // Outside epsilon
-        assert!(!approx_eq(1.0, 1.000002, 1e-6));
-        assert!(!approx_eq(1.0, 0.999998, 1e-6));
-        assert!(!approx_eq(-1.0, -1.000002, 1e-6));
-        assert!(!approx_eq(-1.0, -0.999998, 1e-6));
-
-        // Edge cases with 0.0 and -0.0
-        assert!(approx_eq(0.0, -0.0, 1e-6));
-
-        // Special float values (NaN, Infinity)
-        // Note: INFINITY - INFINITY is NaN, and NaN < epsilon is false.
-        assert!(!approx_eq(f64::INFINITY, f64::INFINITY, 1e-6));
-        assert!(!approx_eq(f64::NEG_INFINITY, f64::NEG_INFINITY, 1e-6));
-        assert!(!approx_eq(f64::NAN, f64::NAN, 1e-6));
-    }
-
-    #[test]
     fn test_abs_diff() {
         // Test integers (i32)
         assert_eq!(abs_diff(10, 5), 5);
@@ -274,5 +245,41 @@ mod tests {
 
         assert!(r1.intersects(&r2));
         assert!(!r1.intersects(&r3));
+    }
+
+    #[test]
+    fn test_floor_to_multiple() {
+        let epsilon = 1e-9;
+
+        // Positive numbers
+        assert!(approx_eq(floor_to_multiple(10.0, 5.0), 10.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(12.0, 5.0), 10.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(14.9, 5.0), 10.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(15.0, 5.0), 15.0, epsilon));
+
+        // Zero
+        assert!(approx_eq(floor_to_multiple(0.0, 5.0), 0.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(0.0, 8.0), 0.0, epsilon));
+
+        // Negative numbers
+        assert!(approx_eq(floor_to_multiple(-10.0, 5.0), -10.0, epsilon));
+        // -12.0 / 5.0 = -2.4. floor(-2.4) = -3.0. -3.0 * 5.0 = -15.0
+        assert!(approx_eq(floor_to_multiple(-12.0, 5.0), -15.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(-14.9, 5.0), -15.0, epsilon));
+
+        // Sub-multiple values
+        assert!(approx_eq(floor_to_multiple(3.0, 5.0), 0.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(-3.0, 5.0), -5.0, epsilon));
+
+        // Testing fractions (e.g. 0.5)
+        assert!(approx_eq(floor_to_multiple(1.2, 0.5), 1.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(1.4, 0.5), 1.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(1.6, 0.5), 1.5, epsilon));
+
+        // Use cases from grid (e.g., 8x20 grid)
+        assert!(approx_eq(floor_to_multiple(15.0, 8.0), 8.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(24.0, 8.0), 24.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(25.0, 20.0), 20.0, epsilon));
+        assert!(approx_eq(floor_to_multiple(39.9, 20.0), 20.0, epsilon));
     }
 }

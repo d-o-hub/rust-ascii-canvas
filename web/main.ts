@@ -5,6 +5,8 @@
  */
 
 import init, { AsciiEditor } from './pkg/ascii_canvas.js';
+import { logger } from './logger.js';
+
 
 // Type definitions
 interface EventResult {
@@ -62,8 +64,8 @@ interface AsciiEditorInterface {
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
-
-let wasmMemory: WebAssembly.Memory | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let wasmMemory: any = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let offscreenCanvas: HTMLCanvasElement | null = null;
@@ -77,8 +79,6 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
-        charWidth?: number;
-        lineHeight?: number;
     }
 }
 window.editor = null;
@@ -254,9 +254,9 @@ async function initialize() {
         // Set initial active tool button
         updateToolButtons('rectangle');
 
-        console.log('ASCII Canvas Editor initialized');
+        logger.info('ASCII Canvas Editor initialized');
     } catch (error) {
-        console.error('Failed to initialize:', error);
+        logger.error('Failed to initialize:', error);
         if (statusMessageEl) {
             statusMessageEl.textContent = `Failed to initialize: ${error}`;
         }
@@ -288,8 +288,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    window.charWidth = charWidth;
-    window.lineHeight = lineHeight;
+    (window as unknown as { charWidth: number, lineHeight: number }).charWidth = charWidth;
+    (window as unknown as { charWidth: number, lineHeight: number }).lineHeight = lineHeight;
 }
 
 /**
@@ -422,8 +422,9 @@ function setupEventListeners() {
             btn.classList.add('active');
             
             // Call WASM to set line direction (if supported)
-            if (editor && editor.setLineDirection) {
-                editor.setLineDirection(direction);
+            const extEditor = editor as unknown as { setLineDirection?: (dir: string) => void };
+            if (extEditor && extEditor.setLineDirection) {
+                extEditor.setLineDirection(direction);
             }
         });
     });
@@ -858,7 +859,7 @@ function executeRenderCommand(cmd: RenderCommand) {
             ctx.fillRect(cmd.x as number, cmd.y as number, cmd.width as number, cmd.height as number);
             break;
 
-        case 'DrawGrid':
+        case 'DrawGrid': {
             ctx.strokeStyle = cmd.color as string || '#333333';
             ctx.lineWidth = 0.5;
             ctx.beginPath();
@@ -882,6 +883,7 @@ function executeRenderCommand(cmd: RenderCommand) {
             
             ctx.stroke();
             break;
+        }
     }
 }
 
@@ -908,7 +910,7 @@ function updateCursorIndicator(gridX: number, gridY: number) {
  */
 function setTool(toolName: string) {
     if (!editor) {
-        console.error('Editor not initialized');
+        logger.error('Editor not initialized');
         return;
     }
     try {
@@ -924,7 +926,7 @@ function setTool(toolName: string) {
         
         statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
     } catch (error) {
-        console.error('Failed to set tool:', error);
+        logger.error('Failed to set tool:', error);
     }
 }
 
@@ -955,7 +957,7 @@ function updateUI() {
         gridSizeEl.textContent = `${editor.width} × ${editor.height}`;
         statusToolEl.textContent = `Tool: ${capitalize(editor.tool)}`;
     } catch (error) {
-        console.error('Failed to update UI:', error);
+        logger.error('Failed to update UI:', error);
     }
 }
 
@@ -987,7 +989,7 @@ async function copyAsciiToClipboard(text: string) {
 
         showToast('Copied — paste in a monospace editor');
     } catch (err) {
-        console.error('Failed to copy:', err);
+        logger.error('Failed to copy:', err);
         // Fallback to simple text copy if ClipboardItem is not supported
         try {
             await navigator.clipboard.writeText(text);
@@ -1133,13 +1135,13 @@ function uploadFontAtlas() {
         }
 
         if (!hasContent && char !== ' ') {
-            console.warn(`Glyph for '${char}' (${char.charCodeAt(0)}) rasterized empty. Font might not be loaded.`);
+            logger.warn(`Glyph for '${char}' (${char.charCodeAt(0)}) rasterized empty. Font might not be loaded.`);
         }
 
         editor.updateFontAtlasGlyph(char.charCodeAt(0), alphaData);
     }
 
-    console.log(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
+    logger.debug(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
     editor.requestRedraw();
 }
 
