@@ -16,7 +16,7 @@ homepage = "https://github.com/anomalyco/ascii-canvas"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-wasm-bindgen = "0.2"
+wasm-bindgen = "=0.2.118"
 wasm-bindgen-futures = "0.4"
 serde-wasm-bindgen = "0.6"
 console_error_panic_hook = "0.1"
