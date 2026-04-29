@@ -116,9 +116,7 @@ impl Tool for EraserTool {
         self.ops_buffer.clear();
 
         let ops = self.erase_at(x, y, ctx.grid_width, ctx.grid_height);
-        for op in &ops {
-            self.ops_buffer.push(op.clone());
-        }
+        self.ops_buffer.extend(ops.iter().cloned());
 
         ToolResult::new().with_ops(ops)
     }
@@ -137,9 +135,7 @@ impl Tool for EraserTool {
         let ops = self.interpolate_to(x, y, ctx.grid_width, ctx.grid_height);
         self.last_pos = Some((x, y));
 
-        for op in &ops {
-            self.ops_buffer.push(op.clone());
-        }
+        self.ops_buffer.extend(ops.iter().cloned());
 
         ToolResult::new().with_ops(ops)
     }
