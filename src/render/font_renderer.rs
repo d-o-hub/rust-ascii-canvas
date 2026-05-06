@@ -97,6 +97,7 @@ impl FontAtlas {
             .or_else(|| self.glyph_indices.get(&'?'))
         {
             let glyph_offset = idx * self.glyph_width * self.glyph_height;
+            let color_f = [color[0] as f32, color[1] as f32, color[2] as f32];
 
             for gy in 0..self.glyph_height {
                 let buffer_y = y + gy;
@@ -109,11 +110,15 @@ impl FontAtlas {
                         let pixel_idx = buffer_row_start + gx * 4;
 
                         if pixel_idx + 3 < buffer.len() {
-                            let alpha = mask as f32 / 255.0;
-                            for i in 0..3 {
-                                buffer[pixel_idx + i] = ((color[i] as f32 * alpha)
-                                    + (buffer[pixel_idx + i] as f32 * (1.0 - alpha)))
-                                    as u8;
+                            if mask == 255 {
+                                buffer[pixel_idx..pixel_idx + 3].copy_from_slice(&color[0..3]);
+                            } else {
+                                let alpha = mask as f32 / 255.0;
+                                let inv_alpha = 1.0 - alpha;
+
+                                buffer[pixel_idx] = (color_f[0] * alpha + buffer[pixel_idx] as f32 * inv_alpha) as u8;
+                                buffer[pixel_idx + 1] = (color_f[1] * alpha + buffer[pixel_idx + 1] as f32 * inv_alpha) as u8;
+                                buffer[pixel_idx + 2] = (color_f[2] * alpha + buffer[pixel_idx + 2] as f32 * inv_alpha) as u8;
                             }
                             buffer[pixel_idx + 3] = 255;
                         }
@@ -132,55 +137,41 @@ impl FontAtlas {
                 }
             }
             '-' | '─' | '━' | '═' => {
-                for x in 0..8 {
-                    glyph_data[10 * 8 + x] = 255;
-                }
+                glyph_data[10 * 8..10 * 8 + 8].fill(255);
             }
             '+' => {
                 for y in 0..20 {
                     glyph_data[y * 8 + 4] = 255;
                 }
-                for x in 0..8 {
-                    glyph_data[10 * 8 + x] = 255;
-                }
+                glyph_data[10 * 8..10 * 8 + 8].fill(255);
             }
             '┌' | '┏' | '╔' | '╭' => {
-                for x in 4..8 {
-                    glyph_data[10 * 8 + x] = 255;
-                }
+                glyph_data[10 * 8 + 4..10 * 8 + 8].fill(255);
                 for y in 10..20 {
                     glyph_data[y * 8 + 4] = 255;
                 }
             }
             '┐' | '┓' | '╗' | '╮' => {
-                for x in 0..4 {
-                    glyph_data[10 * 8 + x] = 255;
-                }
+                glyph_data[10 * 8..10 * 8 + 4].fill(255);
                 for y in 10..20 {
                     glyph_data[y * 8 + 4] = 255;
                 }
             }
             '└' | '┗' | '╚' | '╰' => {
-                for x in 4..8 {
-                    glyph_data[10 * 8 + x] = 255;
-                }
+                glyph_data[10 * 8 + 4..10 * 8 + 8].fill(255);
                 for y in 0..10 {
                     glyph_data[y * 8 + 4] = 255;
                 }
             }
             '┘' | '┛' | '╝' | '╯' => {
-                for x in 0..4 {
-                    glyph_data[10 * 8 + x] = 255;
-                }
+                glyph_data[10 * 8..10 * 8 + 4].fill(255);
                 for y in 0..10 {
                     glyph_data[y * 8 + 4] = 255;
                 }
             }
             '#' => {
                 for y in 4..16 {
-                    for x in 1..7 {
-                        glyph_data[y * 8 + x] = 255;
-                    }
+                    glyph_data[y * 8 + 1..y * 8 + 7].fill(255);
                 }
             }
             '0'..='9' | 'A'..='Z' | 'a'..='z' => {
@@ -188,65 +179,59 @@ impl FontAtlas {
                 for y in 4..16 {
                     glyph_data[y * 8 + 4] = 128;
                 }
-                for x in 2..7 {
-                    glyph_data[4 * 8 + x] = 128;
-                    glyph_data[15 * 8 + x] = 128;
-                }
+                glyph_data[4 * 8 + 2..4 * 8 + 7].fill(128);
+                glyph_data[15 * 8 + 2..15 * 8 + 7].fill(128);
             }
             '·' => {
                 glyph_data[7 * 8 + 4] = 255;
             }
             '•' => {
                 glyph_data[6 * 8 + 4] = 255;
-                glyph_data[7 * 8 + 3] = 255;
-                glyph_data[7 * 8 + 4] = 255;
-                glyph_data[7 * 8 + 5] = 255;
+                glyph_data[7 * 8 + 3..7 * 8 + 6].fill(255);
                 glyph_data[8 * 8 + 4] = 255;
             }
             '●' | '◆' => {
                 for y in 6..14 {
-                    for x in 2..6 {
-                        glyph_data[y * 8 + x] = 255;
-                    }
+                    glyph_data[y * 8 + 2..y * 8 + 6].fill(255);
                 }
             }
             '▲' => {
                 for y in 5..15 {
                     let w = (y - 5) / 2;
-                    for x in (4 - w)..(4 + w + 1) {
-                        if x < 8 {
-                            glyph_data[y * 8 + x] = 255;
-                        }
+                    let start = 4 - w;
+                    let end = (4 + w + 1).min(8);
+                    if start < end {
+                        glyph_data[y * 8 + start..y * 8 + end].fill(255);
                     }
                 }
             }
             '▼' => {
                 for y in 5..15 {
                     let w = (14 - y) / 2;
-                    for x in (4 - w)..(4 + w + 1) {
-                        if x < 8 {
-                            glyph_data[y * 8 + x] = 255;
-                        }
+                    let start = 4 - w;
+                    let end = (4 + w + 1).min(8);
+                    if start < end {
+                        glyph_data[y * 8 + start..y * 8 + end].fill(255);
                     }
                 }
             }
             '◄' => {
                 for x in 1..7 {
                     let h = (x - 1) * 3 / 2;
-                    for y in (10 - h)..(10 + h + 1) {
-                        if y < 20 {
-                            glyph_data[y * 8 + x] = 255;
-                        }
+                    let start = 10 - h;
+                    let end = (10 + h + 1).min(20);
+                    for y in start..end {
+                        glyph_data[y * 8 + x] = 255;
                     }
                 }
             }
             '►' => {
                 for x in 1..7 {
                     let h = (6 - x) * 3 / 2;
-                    for y in (10 - h)..(10 + h + 1) {
-                        if y < 20 {
-                            glyph_data[y * 8 + x] = 255;
-                        }
+                    let start = 10 - h;
+                    let end = (10 + h + 1).min(20);
+                    for y in start..end {
+                        glyph_data[y * 8 + x] = 255;
                     }
                 }
             }
@@ -268,15 +253,45 @@ impl FontAtlas {
             }
             _ => {
                 if !ch.is_whitespace() {
-                    for x in 1..7 {
-                        glyph_data[8 + x] = 128;
-                        glyph_data[12 * 8 + x] = 128;
-                    }
+                    glyph_data[8 + 1..8 + 7].fill(128);
+                    glyph_data[12 * 8 + 1..12 * 8 + 7].fill(128);
                     for y in 1..13 {
                         glyph_data[y * 8 + 1] = 128;
                         glyph_data[y * 8 + 6] = 128;
                     }
                 }
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_font_atlas_new() {
+        let atlas = FontAtlas::new();
+        assert_eq!(atlas.glyph_width, 8);
+        assert_eq!(atlas.glyph_height, 20);
+        assert!(atlas.glyph_indices.contains_key(&'A'));
+        assert!(atlas.glyph_indices.contains_key(&'┌'));
+    }
+
+    #[test]
+    fn test_render_glyph_placeholder() {
+        let mut glyph_data = vec![0u8; 8 * 20];
+        FontAtlas::render_glyph_placeholder(&mut glyph_data, '-');
+        // Row 10 should be filled with 255
+        for x in 0..8 {
+            assert_eq!(glyph_data[10 * 8 + x], 255);
+        }
+
+        glyph_data.fill(0);
+        FontAtlas::render_glyph_placeholder(&mut glyph_data, '#');
+        for y in 4..16 {
+            for x in 1..7 {
+                assert_eq!(glyph_data[y * 8 + x], 255);
             }
         }
     }
