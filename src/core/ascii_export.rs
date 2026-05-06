@@ -33,20 +33,19 @@ pub fn export_grid(grid: &Grid, options: &ExportOptions) -> String {
 }
 
 /// Export the full grid without trimming.
-fn export_full(grid: &Grid, _options: &ExportOptions) -> String {
-    let mut result = String::with_capacity(grid.len());
-
-    for y in 0..grid.height() {
-        for x in 0..grid.width() {
-            let ch = grid.get(x as i32, y as i32).map(|c| c.ch).unwrap_or(' ');
-            result.push(ch);
-        }
-        if y < grid.height() - 1 {
-            result.push('\n');
-        }
+fn export_full(grid: &Grid, options: &ExportOptions) -> String {
+    if grid.is_empty() {
+        return String::new();
     }
 
-    result
+    export_in_bounds(
+        grid,
+        options,
+        0,
+        0,
+        grid.width() as i32 - 1,
+        grid.height() as i32 - 1,
+    )
 }
 
 /// Export with trimmed empty borders.
@@ -60,14 +59,33 @@ fn export_trimmed(grid: &Grid, options: &ExportOptions) -> String {
         None => return String::new(),
     };
 
+    export_in_bounds(grid, options, min_x, min_y, max_x, max_y)
+}
+
+/// Common implementation for exporting a specific range with options.
+fn export_in_bounds(
+    grid: &Grid,
+    options: &ExportOptions,
+    min_x: i32,
+    min_y: i32,
+    max_x: i32,
+    max_y: i32,
+) -> String {
     // Calculate approximate capacity
-    let cols = ((max_x - min_x + 1) as usize).min(if options.max_width > 0 {
+    let width = (max_x - min_x + 1).max(0) as usize;
+    let height = (max_y - min_y + 1).max(0) as usize;
+
+    let mut line_prefix_len = 0;
+    if options.line_numbers {
+        line_prefix_len = 7; // Estimated: " 1234 | "
+    }
+
+    let cols = width.min(if options.max_width > 0 {
         options.max_width
     } else {
         usize::MAX
     });
-    let rows = (max_y - min_y + 1) as usize;
-    let mut result = String::with_capacity(rows * (cols + 1));
+    let mut result = String::with_capacity(height * (line_prefix_len + cols + 1));
 
     for y in min_y..=max_y {
         let mut line_chars_count = 0;
@@ -125,16 +143,24 @@ pub fn find_content_bounds(grid: &Grid) -> Option<(i32, i32, i32, i32)> {
 
 /// Export a rectangular region of the grid.
 pub fn export_region(grid: &Grid, x1: i32, y1: i32, x2: i32, y2: i32) -> String {
-    let min_x = x1.min(x2).max(0) as usize;
-    let min_y = y1.min(y2).max(0) as usize;
-    let max_x = (x1.max(x2).min(grid.width() as i32 - 1)) as usize;
-    let max_y = (y1.max(y2).min(grid.height() as i32 - 1)) as usize;
+    let min_x = x1.min(x2);
+    let min_y = y1.min(y2);
+    let max_x = x1.max(x2);
+    let max_y = y1.max(y2);
 
-    let mut result = String::new();
+    // If the region is entirely outside the grid, return empty string or empty grid shape?
+    // Current behavior for export_trimmed/full is to return content.
+    // For a specific region request, we should probably return the requested size,
+    // but clamped to grid boundaries for actual content.
+    // Actually, export_region is often used for copy-paste where we want exactly the region.
+
+    let mut result = String::with_capacity(
+        ((max_y - min_y + 1).max(0) as usize) * ((max_x - min_x + 1).max(0) as usize + 1),
+    );
 
     for y in min_y..=max_y {
         for x in min_x..=max_x {
-            let ch = grid.get(x as i32, y as i32).map(|c| c.ch).unwrap_or(' ');
+            let ch = grid.get(x, y).map(|c| c.ch).unwrap_or(' ');
             result.push(ch);
         }
         if y < max_y {
@@ -232,8 +258,21 @@ mod tests {
 
         let result = export_region(&grid, 5, 5, 6, 6);
 
-        assert!(result.contains('A'));
-        assert!(result.contains('D'));
+        assert_eq!(result, "AB\nCD");
+    }
+
+    #[test]
+    fn test_export_region_out_of_bounds() {
+        let mut grid = Grid::new(10, 10);
+        grid.set_char(0, 0, 'X');
+
+        // Region partially outside (top-left)
+        let result = export_region(&grid, -1, -1, 1, 1);
+        assert_eq!(result, "   \n X \n   ");
+
+        // Region entirely outside
+        let result = export_region(&grid, 20, 20, 21, 21);
+        assert_eq!(result, "  \n  ");
     }
 
     #[test]
@@ -251,6 +290,22 @@ mod tests {
         assert_eq!(result.lines().count(), 3);
         // First line should be "X    " (X followed by 4 spaces)
         assert!(result.starts_with('X'));
+        assert_eq!(result.lines().next().unwrap(), "X    ");
+    }
+
+    #[test]
+    fn test_export_full_max_width() {
+        let mut grid = Grid::new(10, 2);
+        grid.fill_rect(0, 0, 9, 1, 'X');
+
+        let options = ExportOptions {
+            trim_borders: false,
+            max_width: 5,
+            ..Default::default()
+        };
+
+        let result = export_grid(&grid, &options);
+        assert_eq!(result, "XXXXX\nXXXXX");
     }
 
     #[test]
@@ -265,6 +320,11 @@ mod tests {
 
         let result = export_grid(&grid, &options);
         assert_eq!(result, "XXXXX");
+
+        // Multi-line max width
+        grid.fill_rect(0, 1, 9, 1, 'Y');
+        let result = export_grid(&grid, &options);
+        assert_eq!(result, "XXXXX\nYYYYY");
     }
 
     #[test]
@@ -280,5 +340,21 @@ mod tests {
         let result = export_grid(&grid, &options);
         assert_eq!(result.chars().count(), 3);
         assert_eq!(result, "🦀🦀🦀");
+    }
+
+    #[test]
+    fn test_export_line_numbers_max_width() {
+        let mut grid = Grid::new(20, 20);
+        grid.set_char(0, 0, 'A');
+
+        let options = ExportOptions {
+            line_numbers: true,
+            max_width: 5,
+            ..Default::default()
+        };
+
+        let result = export_grid(&grid, &options);
+        // "   1 | A" is 8 chars, max_width 5 should truncate it
+        assert_eq!(result, "   1 ");
     }
 }
