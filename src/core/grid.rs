@@ -297,4 +297,27 @@ mod tests {
         assert!(grid.get(1, 2).unwrap().is_empty());
         assert!(grid.get(6, 2).unwrap().is_empty());
     }
+
+    #[test]
+    fn test_grid_indexing_out_of_bounds() {
+        let grid = Grid::new(10, 10);
+
+        // index_of with out-of-bounds coordinates
+        // The function does not check bounds, it just performs the math.
+        assert_eq!(grid.index_of(10, 10), 110);
+        assert_eq!(grid.index_of(0, 10), 100);
+        assert_eq!(grid.index_of(10, 0), 10);
+
+        // coords_of with out-of-bounds index
+        // Again, just math without bounds check.
+        assert_eq!(grid.coords_of(100), (0, 10));
+        assert_eq!(grid.coords_of(105), (5, 10));
+        assert_eq!(grid.coords_of(110), (0, 11));
+
+        // Very large index
+        let large_index = usize::MAX;
+        let (x, y) = grid.coords_of(large_index);
+        assert_eq!(x, large_index % 10);
+        assert_eq!(y, large_index / 10);
+    }
 }
