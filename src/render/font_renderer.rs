@@ -116,9 +116,15 @@ impl FontAtlas {
                                 let alpha = mask as f32 / 255.0;
                                 let inv_alpha = 1.0 - alpha;
 
-                                buffer[pixel_idx] = (color_f[0] * alpha + buffer[pixel_idx] as f32 * inv_alpha) as u8;
-                                buffer[pixel_idx + 1] = (color_f[1] * alpha + buffer[pixel_idx + 1] as f32 * inv_alpha) as u8;
-                                buffer[pixel_idx + 2] = (color_f[2] * alpha + buffer[pixel_idx + 2] as f32 * inv_alpha) as u8;
+                                buffer[pixel_idx] = (color_f[0] * alpha
+                                    + buffer[pixel_idx] as f32 * inv_alpha)
+                                    as u8;
+                                buffer[pixel_idx + 1] = (color_f[1] * alpha
+                                    + buffer[pixel_idx + 1] as f32 * inv_alpha)
+                                    as u8;
+                                buffer[pixel_idx + 2] = (color_f[2] * alpha
+                                    + buffer[pixel_idx + 2] as f32 * inv_alpha)
+                                    as u8;
                             }
                             buffer[pixel_idx + 3] = 255;
                         }

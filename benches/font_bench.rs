@@ -33,5 +33,8 @@ fn benchmark_font_atlas_render() {
     }
 
     let duration = start.elapsed();
-    println!("FontAtlas::render_glyph (800x600 screen x 100 iterations): {:?}", duration);
+    println!(
+        "FontAtlas::render_glyph (800x600 screen x 100 iterations): {:?}",
+        duration
+    );
 }
