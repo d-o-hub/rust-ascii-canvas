@@ -114,6 +114,7 @@ Example real scripts from other skills:
 - pdf/scripts/convert_pdf_to_images.py - Converts PDF pages to images
 """
 
+import sys
 import argparse
 from pathlib import Path
 
@@ -126,8 +127,12 @@ def main():
 
     target_path = Path(args.path)
     if not target_path.exists():
-        print(f"Error: Path '{{target_path}}' does not exist.")
-        return
+        print(f"Error: Path '{{target_path}}' does not exist.", file=sys.stderr)
+        sys.exit(1)
+
+    if not target_path.is_dir():
+        print(f"Error: Path '{{target_path}}' is not a directory.", file=sys.stderr)
+        sys.exit(1)
 
     print(f"Listing contents of '{{target_path.absolute()}}':")
     for item in target_path.iterdir():
