@@ -1,4 +1,5 @@
 use ascii_canvas::render::FontAtlas;
+use std::hint::black_box;
 use std::time::Instant;
 
 fn main() {
@@ -12,7 +13,7 @@ fn benchmark_font_atlas_new() {
     let start = Instant::now();
 
     for _ in 0..1000 {
-        let _ = FontAtlas::new();
+        black_box(FontAtlas::new());
     }
 
     let duration = start.elapsed();
@@ -27,7 +28,7 @@ fn benchmark_font_atlas_render() {
     for _ in 0..100 {
         for y in (0..600).step_by(20) {
             for x in (0..800).step_by(8) {
-                atlas.render_glyph(&mut buffer, 800, x, y, 'A', [255, 255, 255, 255]);
+                atlas.render_glyph(black_box(&mut buffer), 800, x, y, 'A', [255, 255, 255, 255]);
             }
         }
     }
@@ -37,4 +38,5 @@ fn benchmark_font_atlas_render() {
         "FontAtlas::render_glyph (800x600 screen x 100 iterations): {:?}",
         duration
     );
+    black_box(&buffer);
 }
