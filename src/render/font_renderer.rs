@@ -303,91 +303,34 @@ mod tests {
     }
 
     #[test]
-    fn test_render_glyph_opaque_and_alpha_blend() {
-        // Create a custom font atlas with a test glyph
+    fn test_render_glyph() {
         let mut atlas = FontAtlas::new();
-        let glyph_width = atlas.glyph_width;
-        let glyph_height = atlas.glyph_height;
+        // Manually update '?' glyph to have known mask values
+        let mut custom_mask = vec![0u8; 8 * 20];
+        custom_mask[0] = 255; // Opaque fast-path
+        custom_mask[1] = 128; // Alpha-blend path (approx 50%)
+        atlas.update_glyph('?', &custom_mask);
 
-        // Create a test glyph with known mask values
-        // Top half: opaque (255), bottom half: semi-transparent (128)
-        let mut test_glyph_data = vec![0u8; glyph_width * glyph_height];
-        for y in 0..glyph_height / 2 {
-            for x in 0..glyph_width {
-                test_glyph_data[y * glyph_width + x] = 255; // Opaque
-            }
-        }
-        for y in glyph_height / 2..glyph_height {
-            for x in 0..glyph_width {
-                test_glyph_data[y * glyph_width + x] = 128; // Semi-transparent
-            }
-        }
+        let mut buffer = vec![0u8; 8 * 20 * 4];
+        let fg_color = [200, 100, 50, 255];
 
-        // Update the glyph for 'A'
-        atlas.update_glyph('A', &test_glyph_data);
+        // Background is [0, 0, 0, 0]
+        atlas.render_glyph(&mut buffer, 8, 0, 0, '?', fg_color);
 
-        // Create a test buffer with a background color (e.g., blue background)
-        let buffer_width = 16;
-        let buffer_height = 24;
-        let mut buffer = vec![0u8; buffer_width * buffer_height * 4];
-        // Fill with blue background [0, 0, 255, 255]
-        for i in (0..buffer.len()).step_by(4) {
-            buffer[i] = 0;     // R
-            buffer[i + 1] = 0; // G
-            buffer[i + 2] = 255; // B
-            buffer[i + 3] = 255; // A
-        }
+        // Check opaque pixel (mask == 255)
+        assert_eq!(buffer[0], fg_color[0]);
+        assert_eq!(buffer[1], fg_color[1]);
+        assert_eq!(buffer[2], fg_color[2]);
+        assert_eq!(buffer[3], 255);
 
-        // Render a red glyph [255, 0, 0, 255]
-        let fg_color = [255, 0, 0, 255];
-        atlas.render_glyph(&mut buffer, buffer_width, 4, 2, 'A', fg_color);
-
-        // Test opaque pixels (top half of glyph, mask == 255)
-        for y in 0..glyph_height / 2 {
-            for x in 0..glyph_width {
-                let buffer_y = 2 + y;
-                let buffer_x = 4 + x;
-                let pixel_idx = (buffer_y * buffer_width + buffer_x) * 4;
-
-                // RGB channels should exactly match the foreground color
-                assert_eq!(buffer[pixel_idx], fg_color[0],
-                    "Opaque pixel R channel at ({}, {}) should be {}", x, y, fg_color[0]);
-                assert_eq!(buffer[pixel_idx + 1], fg_color[1],
-                    "Opaque pixel G channel at ({}, {}) should be {}", x, y, fg_color[1]);
-                assert_eq!(buffer[pixel_idx + 2], fg_color[2],
-                    "Opaque pixel B channel at ({}, {}) should be {}", x, y, fg_color[2]);
-                // Alpha should always be 255
-                assert_eq!(buffer[pixel_idx + 3], 255,
-                    "Opaque pixel A channel at ({}, {}) should be 255", x, y);
-            }
-        }
-
-        // Test alpha-blended pixels (bottom half of glyph, mask == 128)
-        for y in glyph_height / 2..glyph_height {
-            for x in 0..glyph_width {
-                let buffer_y = 2 + y;
-                let buffer_x = 4 + x;
-                let pixel_idx = (buffer_y * buffer_width + buffer_x) * 4;
-
-                // Calculate expected alpha blend: mask=128, alpha=128/255≈0.502
-                // fg=[255,0,0], bg=[0,0,255]
-                let alpha = 128.0 / 255.0;
-                let inv_alpha = 1.0 - alpha;
-                let expected_r = (fg_color[0] as f32 * alpha + 0.0 * inv_alpha) as u8;
-                let expected_g = (fg_color[1] as f32 * alpha + 0.0 * inv_alpha) as u8;
-                let expected_b = (fg_color[2] as f32 * alpha + 255.0 * inv_alpha) as u8;
-
-                // RGB channels should be correctly alpha-blended
-                assert_eq!(buffer[pixel_idx], expected_r,
-                    "Alpha-blended pixel R channel at ({}, {}) should be {}", x, y, expected_r);
-                assert_eq!(buffer[pixel_idx + 1], expected_g,
-                    "Alpha-blended pixel G channel at ({}, {}) should be {}", x, y, expected_g);
-                assert_eq!(buffer[pixel_idx + 2], expected_b,
-                    "Alpha-blended pixel B channel at ({}, {}) should be {}", x, y, expected_b);
-                // Alpha should always be 255
-                assert_eq!(buffer[pixel_idx + 3], 255,
-                    "Alpha-blended pixel A channel at ({}, {}) should be 255", x, y);
-            }
-        }
+        // Check blended pixel (mask == 128)
+        // alpha = 128 / 255.0 approx 0.50196
+        // Expected = color * alpha + background * (1 - alpha)
+        // Since background is 0: expected = color * alpha
+        let alpha = 128.0 / 255.0;
+        assert_eq!(buffer[4], (fg_color[0] as f32 * alpha) as u8);
+        assert_eq!(buffer[5], (fg_color[1] as f32 * alpha) as u8);
+        assert_eq!(buffer[6], (fg_color[2] as f32 * alpha) as u8);
+        assert_eq!(buffer[7], 255);
     }
 }

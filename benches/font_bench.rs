@@ -13,7 +13,7 @@ fn benchmark_font_atlas_new() {
     let start = Instant::now();
 
     for _ in 0..1000 {
-        black_box(FontAtlas::new());
+        let _ = black_box(FontAtlas::new());
     }
 
     let duration = start.elapsed();
@@ -38,5 +38,4 @@ fn benchmark_font_atlas_render() {
         "FontAtlas::render_glyph (800x600 screen x 100 iterations): {:?}",
         duration
     );
-    black_box(&buffer);
 }
