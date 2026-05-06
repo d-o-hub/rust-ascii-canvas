@@ -83,3 +83,27 @@ fn test_grid_indexing() {
     let idx = grid.index_of(5, 3);
     assert_eq!(grid[idx].ch, 'A');
 }
+
+#[test]
+fn test_grid_indexing_behavior() {
+    let grid = Grid::new(10, 10);
+
+    // Test coords_of/index_of symmetry
+    for y in 0..10 {
+        for x in 0..10 {
+            let idx = grid.index_of(x, y);
+            assert_eq!(grid.coords_of(idx), (x, y));
+        }
+    }
+
+    // Test out-of-bounds behavior (should be consistent math)
+    assert_eq!(grid.index_of(10, 10), 110);
+    assert_eq!(grid.coords_of(110), (0, 11));
+
+    // High index test
+    let max_idx = 1000;
+    let (x, y) = grid.coords_of(max_idx);
+    assert_eq!(x, 0);
+    assert_eq!(y, 100);
+    assert_eq!(grid.index_of(x, y), max_idx);
+}
