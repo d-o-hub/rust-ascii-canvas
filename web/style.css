@@ -231,6 +231,11 @@ body {
     border-color: var(--hover);
 }
 
+#clear-btn:hover:not(:disabled) {
+    color: var(--error);
+    border-color: var(--error);
+}
+
 .action-btn:disabled {
     opacity: 0.4;
     cursor: not-allowed;

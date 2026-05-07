@@ -87,19 +87,23 @@
 
             <div class="toolbar-right">
                 <!-- Actions -->
-                <button id="undo-btn" class="action-btn" title="Undo (Ctrl+Z)" aria-label="Undo" disabled>
+                <button id="undo-btn" class="action-btn" title="Undo (Ctrl+Z)" aria-label="Undo" aria-keyshortcuts="Control+Z" disabled>
                     <span class="action-icon">↶</span>
                 </button>
-                <button id="redo-btn" class="action-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" disabled>
+                <button id="redo-btn" class="action-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z" disabled>
                     <span class="action-icon">↷</span>
                 </button>
                 <div class="tool-separator"></div>
-                <button id="copy-btn" class="action-btn primary" title="Copy ASCII (Ctrl+C)" aria-label="Copy ASCII">
+                <button id="copy-btn" class="action-btn primary" title="Copy ASCII (Ctrl+C)" aria-label="Copy ASCII" aria-keyshortcuts="Control+C">
                     <span class="action-icon">⎘</span>
                     <span class="action-label">Copy</span>
                 </button>
                 <button id="clear-btn" class="action-btn" title="Clear Canvas" aria-label="Clear canvas">
                     <span class="action-icon">🗑</span>
+                </button>
+                <div class="tool-separator"></div>
+                <button id="help-btn" class="action-btn" title="Keyboard Shortcuts (?)" aria-label="Show help" aria-keyshortcuts="?">
+                    <span class="action-icon">?</span>
                 </button>
             </div>
         </header>
@@ -143,10 +147,10 @@
                         </div>
                     </div>
                     <div class="zoom-controls">
-                        <button class="zoom-btn" id="zoom-fit" title="Fit to View">Fit</button>
-                        <button class="zoom-btn" id="zoom-reset" title="Reset Zoom (100%)">1:1</button>
-                        <button class="zoom-btn" id="zoom-out" title="Zoom Out (-)">-</button>
-                        <button class="zoom-btn" id="zoom-in" title="Zoom In (+)">+</button>
+                        <button class="zoom-btn" id="zoom-fit" title="Fit to View" aria-label="Fit to view">Fit</button>
+                        <button class="zoom-btn" id="zoom-reset" title="Reset Zoom (100%)" aria-label="Reset zoom to 100%">1:1</button>
+                        <button class="zoom-btn" id="zoom-out" title="Zoom Out (-)" aria-label="Zoom out" aria-keyshortcuts="-">-</button>
+                        <button class="zoom-btn" id="zoom-in" title="Zoom In (+)" aria-label="Zoom in" aria-keyshortcuts="+">+</button>
                     </div>
                 </section>
 
