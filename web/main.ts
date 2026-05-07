@@ -104,6 +104,7 @@ let undoBtn: HTMLButtonElement;
 let redoBtn: HTMLButtonElement;
 let copyBtn: HTMLButtonElement;
 let clearBtn: HTMLButtonElement;
+let helpBtn: HTMLButtonElement;
 let borderStyleSelect: HTMLSelectElement;
 let toolButtons: NodeListOf<Element>;
 let zoomFitBtn: HTMLButtonElement;
@@ -194,6 +195,7 @@ async function initialize() {
         redoBtn = getElement<HTMLButtonElement>('redo-btn');
         copyBtn = getElement<HTMLButtonElement>('copy-btn');
         clearBtn = getElement<HTMLButtonElement>('clear-btn');
+        helpBtn = getElement<HTMLButtonElement>('help-btn');
         borderStyleSelect = getElement<HTMLSelectElement>('border-style');
         toolButtons = document.querySelectorAll('.tool-btn');
         zoomFitBtn = getElement<HTMLButtonElement>('zoom-fit');
@@ -459,6 +461,9 @@ function setupEventListeners() {
             showToast('Canvas cleared');
         }
     });
+
+    helpBtn.addEventListener('mousedown', (e) => e.preventDefault());
+    helpBtn.addEventListener('click', showShortcutsModal);
 
     // Zoom buttons
     zoomFitBtn.addEventListener('mousedown', (e) => e.preventDefault());
@@ -1066,12 +1071,16 @@ function cycleBorderStyle() {
     showToast(`Border: ${style}`);
 }
 
+// Modal accessibility state
+let lastFocusedElement: HTMLElement | null = null;
+
 /**
  * Show keyboard shortcuts modal
  */
 function showShortcutsModal() {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
+        lastFocusedElement = document.activeElement as HTMLElement;
         modal.classList.remove('hidden');
         const closeBtn = modal.querySelector('.modal-close') as HTMLElement;
         if (closeBtn) {
@@ -1087,6 +1096,10 @@ function hideShortcutsModal() {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
         modal.classList.add('hidden');
+        if (lastFocusedElement) {
+            lastFocusedElement.focus();
+            lastFocusedElement = null;
+        }
     }
 }
 
