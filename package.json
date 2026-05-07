@@ -36,10 +36,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
-    "@typescript-eslint/eslint-plugin": "^8.59.0",
-    "@typescript-eslint/parser": "^8.59.0",
-    "eslint": "^10.2.1",
+    "eslint": "^10.3.0",
     "playwright": "^1.58.2",
-    "typescript-eslint": "^8.59.0"
+    "typescript-eslint": "^8.59.2"
   }
 }
