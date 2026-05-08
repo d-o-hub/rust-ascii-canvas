@@ -180,6 +180,52 @@ impl Rect {
     }
 }
 
+/// Draw a line using a Bresenham-like algorithm that guarantees identical
+/// behavior to the legacy integer division approach.
+///
+/// Calls the provided `draw` closure for each point along the line.
+pub fn bresenham_line(x1: i32, y1: i32, x2: i32, y2: i32, mut draw: impl FnMut(i32, i32)) {
+    let dx = (x2 - x1).abs();
+    let dy = (y2 - y1).abs();
+    let sx = if x1 < x2 { 1 } else { -1 };
+    let sy = if y1 < y2 { 1 } else { -1 };
+
+    let mut x = x1;
+    let mut y = y1;
+
+    if dx == 0 && dy == 0 {
+        draw(x, y);
+        return;
+    }
+
+    if dx >= dy {
+        let mut rem = 0;
+        for i in 0..=dx {
+            draw(x, y);
+            if i < dx {
+                x += sx;
+                rem += dy;
+                if rem >= dx {
+                    y += sy;
+                    rem -= dx;
+                }
+            }
+        }
+    } else {
+        let mut rem = 0;
+        for i in 0..=dy {
+            draw(x, y);
+            if i < dy {
+                y += sy;
+                rem += dx;
+                if rem >= dy {
+                    x += sx;
+                    rem -= dy;
+                }
+            }
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
