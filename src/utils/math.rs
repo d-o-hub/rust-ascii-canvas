@@ -328,4 +328,39 @@ mod tests {
         assert!(approx_eq(floor_to_multiple(25.0, 20.0), 20.0, epsilon));
         assert!(approx_eq(floor_to_multiple(39.9, 20.0), 20.0, epsilon));
     }
+
+    #[test]
+    fn test_bresenham_line() {
+        let mut pts = Vec::new();
+
+        // Single point
+        pts.clear();
+        bresenham_line(0, 0, 0, 0, |x, y| pts.push((x, y)));
+        assert_eq!(pts, vec![(0, 0)]);
+
+        // Horizontal
+        pts.clear();
+        bresenham_line(0, 0, 3, 0, |x, y| pts.push((x, y)));
+        assert_eq!(pts, vec![(0, 0), (1, 0), (2, 0), (3, 0)]);
+
+        // Vertical
+        pts.clear();
+        bresenham_line(0, 0, 0, 3, |x, y| pts.push((x, y)));
+        assert_eq!(pts, vec![(0, 0), (0, 1), (0, 2), (0, 3)]);
+
+        // Shallow
+        pts.clear();
+        bresenham_line(0, 0, 3, 1, |x, y| pts.push((x, y)));
+        assert_eq!(pts, vec![(0, 0), (1, 0), (2, 0), (3, 1)]);
+
+        // Steep
+        pts.clear();
+        bresenham_line(0, 0, 1, 3, |x, y| pts.push((x, y)));
+        assert_eq!(pts, vec![(0, 0), (0, 1), (0, 2), (1, 3)]);
+
+        // Shallow reverse
+        pts.clear();
+        bresenham_line(3, 1, 0, 0, |x, y| pts.push((x, y)));
+        assert_eq!(pts, vec![(3, 1), (2, 1), (1, 1), (0, 0)]);
+    }
 }

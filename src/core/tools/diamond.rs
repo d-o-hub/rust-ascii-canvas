@@ -119,4 +119,32 @@ mod tests {
         assert_eq!(ops.len(), 1);
         assert_eq!(ops[0].cell.ch, '◆');
     }
+
+    #[test]
+    fn test_large_diamond() {
+        let tool = DiamondTool::new();
+        // 0, 0 to 10, 10
+        let ops = tool.draw_diamond(0, 0, 10, 10);
+
+        // Assert multiple points
+        assert!(ops.len() > 1);
+
+        // Assert deduplicated coordinates
+        let mut coords: Vec<(i32, i32)> = ops.iter().map(|op| (op.x, op.y)).collect();
+        let orig_len = coords.len();
+        coords.sort();
+        coords.dedup();
+        assert_eq!(orig_len, coords.len());
+
+        // Assert corners
+        let cx = 5;
+        let cy = 5;
+        let half_width = 5;
+        let half_height = 5;
+
+        assert!(coords.contains(&(cx, cy - half_height))); // Top
+        assert!(coords.contains(&(cx + half_width, cy))); // Right
+        assert!(coords.contains(&(cx, cy + half_height))); // Bottom
+        assert!(coords.contains(&(cx - half_width, cy))); // Left
+    }
 }
