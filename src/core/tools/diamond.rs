@@ -1,6 +1,7 @@
 //! Diamond tool - draws diamond/rhombus shapes.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
+use crate::utils::math::bresenham_line;
 use std::any::Any;
 
 /// Diamond drawing tool.
@@ -36,77 +37,22 @@ impl DiamondTool {
         let half_height = (dy / 2).max(if dy > 0 { 1 } else { 0 });
 
         // Draw the four sides of the diamond
-        // Top-Right
-        ops.append(&mut Self::draw_side(
-            cx,
-            cy - half_height,
-            cx + half_width,
-            cy,
-            '╲',
-        ));
-        // Bottom-Right
-        ops.append(&mut Self::draw_side(
-            cx + half_width,
-            cy,
-            cx,
-            cy + half_height,
-            '╱',
-        ));
-        // Bottom-Left
-        ops.append(&mut Self::draw_side(
-            cx,
-            cy + half_height,
-            cx - half_width,
-            cy,
-            '╲',
-        ));
-        // Top-Left
-        ops.append(&mut Self::draw_side(
-            cx - half_width,
-            cy,
-            cx,
-            cy - half_height,
-            '╱',
-        ));
+        let sides = [
+            (cx, cy - half_height, cx + half_width, cy, '╲'), // Top-Right
+            (cx + half_width, cy, cx, cy + half_height, '╱'), // Bottom-Right
+            (cx, cy + half_height, cx - half_width, cy, '╲'), // Bottom-Left
+            (cx - half_width, cy, cx, cy - half_height, '╱'), // Top-Left
+        ];
+
+        for (px1, py1, px2, py2, ch) in sides {
+            bresenham_line(px1, py1, px2, py2, |x, y| {
+                ops.push(DrawOp::new(x, y, ch));
+            });
+        }
 
         // Remove duplicates and reorganize
         ops.sort_by_key(|op| (op.y, op.x));
         ops.dedup_by_key(|op| (op.x, op.y));
-
-        ops
-    }
-
-    /// Draw a side of the diamond.
-    fn draw_side(x1: i32, y1: i32, x2: i32, y2: i32, ch: char) -> Vec<DrawOp> {
-        let mut ops = Vec::new();
-
-        let dx = (x2 - x1).abs();
-        let dy = (y2 - y1).abs();
-        let sx = if x1 < x2 { 1 } else { -1 };
-        let sy = if y1 < y2 { 1 } else { -1 };
-
-        let mut x = x1;
-        let mut y = y1;
-
-        let steps = dx.max(dy);
-
-        for i in 0..=steps {
-            ops.push(DrawOp::new(x, y, ch));
-
-            if i < steps {
-                if dx >= dy {
-                    x += sx;
-                    if i * dy / dx < (i + 1) * dy / dx {
-                        y += sy;
-                    }
-                } else {
-                    y += sy;
-                    if i * dx / dy < (i + 1) * dx / dy {
-                        x += sx;
-                    }
-                }
-            }
-        }
 
         ops
     }
@@ -172,5 +118,33 @@ mod tests {
         let ops = tool.draw_diamond(5, 5, 5, 5);
         assert_eq!(ops.len(), 1);
         assert_eq!(ops[0].cell.ch, '◆');
+    }
+
+    #[test]
+    fn test_large_diamond() {
+        let tool = DiamondTool::new();
+        // 0, 0 to 10, 10
+        let ops = tool.draw_diamond(0, 0, 10, 10);
+
+        // Assert multiple points
+        assert!(ops.len() > 1);
+
+        // Assert deduplicated coordinates
+        let mut coords: Vec<(i32, i32)> = ops.iter().map(|op| (op.x, op.y)).collect();
+        let orig_len = coords.len();
+        coords.sort();
+        coords.dedup();
+        assert_eq!(orig_len, coords.len());
+
+        // Assert corners
+        let cx = 5;
+        let cy = 5;
+        let half_width = 5;
+        let half_height = 5;
+
+        assert!(coords.contains(&(cx, cy - half_height))); // Top
+        assert!(coords.contains(&(cx + half_width, cy))); // Right
+        assert!(coords.contains(&(cx, cy + half_height))); // Bottom
+        assert!(coords.contains(&(cx - half_width, cy))); // Left
     }
 }
