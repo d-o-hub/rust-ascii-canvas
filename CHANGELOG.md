@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2026-04-24
+
+### Added
+
+- **Select All (Ctrl+A)**: Global select-all command that selects the entire canvas and switches to the Select tool.
+- **Contextual Cursors**: Dynamic cursor feedback (move, text, crosshair) based on active tool and selection status.
+- **Accessibility**: Added ARIA labels to toolbar components for improved screen reader support.
+
+### Fixed
+
+- **Interaction Recovery**: Enhanced Escape key to reliably clear selections and reset editor state.
+- **State Sync**: Fixed synchronization between WASM internal tool changes and the frontend UI toolbar.
+- **CI Build**: Restored `rust-toolchain.toml` to ensure consistent environment resolution in CI.
+
 ## [0.1.1] - 2026-03-20
 
 ### Added
