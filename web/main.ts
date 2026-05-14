@@ -47,6 +47,8 @@ interface AsciiEditorInterface {
     undo(): boolean;
     redo(): boolean;
     clear(): void;
+    selectAll(): void;
+    isPointInSelection(x: number, y: number): boolean;
     exportAscii(): string;
     getRenderCommands(): RenderCommand[];
     getDirtyRenderCommands(): RenderCommand[];
@@ -525,6 +527,15 @@ function handlePointerMove(e: PointerEvent) {
     const gridY = Math.floor((y - pan[1]) / editor.zoom / lineHeight);
     cursorPosEl.textContent = `${gridX}, ${gridY}`;
 
+    // Update contextual cursor
+    if (editor.tool === 'select' && editor.isPointInSelection(x, y)) {
+        canvasContainer.style.cursor = 'move';
+    } else if (editor.tool === 'text') {
+        canvasContainer.style.cursor = 'text';
+    } else {
+        canvasContainer.style.cursor = 'crosshair';
+    }
+
     // Update cursor indicator
     updateCursorIndicator(gridX, gridY);
 
@@ -690,7 +701,7 @@ function handleKeyDown(e: KeyboardEvent) {
     if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', 'b', ' ', 'escape', '?'].includes(key.toLowerCase()) && !ctrl) {
         e.preventDefault();
     }
-    if (ctrl && ['z', 'y', 'c'].includes(key.toLowerCase())) {
+    if (ctrl && ['z', 'y', 'c', 'a'].includes(key.toLowerCase())) {
         e.preventDefault();
     }
 
