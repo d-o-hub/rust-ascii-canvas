@@ -27,7 +27,7 @@ interface RenderCommand {
 interface AsciiEditorInterface {
     width: number;
     height: number;
-    tool: string;
+    readonly tool: string;
     zoom: number;
     pan: number[] | Float64Array;
     can_undo: boolean;
@@ -747,6 +747,11 @@ function handleKeyUp(e: KeyboardEvent) {
 function handleEventResult(result: EventResult) {
     if (result.needs_redraw) {
         requestRender();
+    }
+
+    // Sync tool buttons if tool changed (e.g. via Ctrl+A or Escape)
+    if (result.tool) {
+        updateToolButtons(result.tool);
     }
 
     // Handle mobile keyboard proxy
