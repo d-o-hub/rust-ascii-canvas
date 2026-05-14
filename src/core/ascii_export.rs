@@ -71,6 +71,8 @@ fn export_in_bounds(
     max_x: i32,
     max_y: i32,
 ) -> String {
+    use std::fmt::Write;
+
     // Calculate approximate capacity
     let width = (max_x - min_x + 1).max(0) as usize;
     let height = (max_y - min_y + 1).max(0) as usize;
@@ -86,13 +88,15 @@ fn export_in_bounds(
         usize::MAX
     });
     let mut result = String::with_capacity(height * (line_prefix_len + cols + 1));
+    let mut line_num_buf = String::with_capacity(16);
 
     for y in min_y..=max_y {
         let mut line_chars_count = 0;
 
         if options.line_numbers {
-            let prefix = format!("{:4} | ", y + 1);
-            for ch in prefix.chars() {
+            line_num_buf.clear();
+            let _ = write!(line_num_buf, "{:4} | ", y + 1);
+            for ch in line_num_buf.chars() {
                 if options.max_width > 0 && line_chars_count >= options.max_width {
                     break;
                 }
