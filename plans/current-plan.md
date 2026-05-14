@@ -26,7 +26,7 @@
 | bindings_rs_loc | 722 (exceeds 500 LOC guideline) |
 | waitForTimeout_calls | 85 in E2E tests |
 | select_tool_field | Duplicate/unused Rc<RefCell> pattern |
-| vitest_tests | ✅ Tests exist and passing |
+| vitest_tests | 0 (dependency installed, no tests) |
 | cross_browser_e2e | chromium only |
 | duplicate_adr_numbering | ADR-005 used twice |
 | stale_vite_config | Root vite.config.ts (port 3000) vs web/ (port 3003) |
@@ -34,9 +34,9 @@
 | duplicate_event_result | EventResult vs EditorEventResult |
 | doc_warnings | ~52 (missing docs on public items) |
 | typescript_strict_issues | Non-null assertions, missing WASM types |
-| selection_copy_paste | ✅ Implemented (ADR-009) |
-| enhanced_text_tool | ✅ Implemented (ADR-010) |
-| preview_rendering | ✅ Implemented (ADR-011) |
+| selection_copy_paste | NOT implemented (ADR-009) |
+| enhanced_text_tool | NOT implemented (ADR-010) |
+| preview_rendering | NOT implemented (ADR-011) |
 | grid_customization | NOT implemented (ADR-012) |
 | export_formats | ASCII only (no PNG/SVG) |
 | accessibility | Partial (missing ARIA on some elements) |
@@ -275,13 +275,6 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 - ✅ **1.6**: Removed empty web/postcss.config.js
 - ✅ **1.7**: Renamed ADR-005 to ADR-005a and ADR-005b
 
-### UX Enhancements (2026-04-24)
-
-- ✅ **Select All (Ctrl+A)**: Implemented global selection and tool switching.
-- ✅ **Contextual Cursors**: Added `move` and `text` cursor feedback.
-- ✅ **State Sync**: Fixed WASM-to-Frontend tool state synchronization.
-- ✅ **A11y**: Added `aria-label` to toolbar components.
-
 ### Critical Bug Fixes (2026-03-04)
 
 #### Tool Switching Bug
@@ -316,7 +309,23 @@ Phase 8 (Documentation) ──> Runs in parallel with all phases
 
 ---
 
-## Known Issues (2026-04-24)
+## Known Issues (2026-03-04 Evening)
+
+### 🔴 Select Tool: Move Functionality Not Implemented
+
+**Status**: Feature stub exists but not wired up
+
+**Description**: Select tool creates selection highlight but doesn't support drag-to-move. The infrastructure exists (`moving` flag, `move_offset`, `original_content` buffers) but `on_pointer_move` returns empty ToolResult when moving.
+
+**Expected**: Click inside selection → drag → content moves to new location
+**Actual**: Click inside selection → drag → nothing happens (comment at `select.rs:110` says "Moving is handled by the editor state" but it isn't)
+
+**Fix Required**: Implement cut/paste logic in SelectTool:
+1. On drag start (when `moving=true`): copy selected cells to buffer, generate ops to clear original
+2. During drag: calculate new position from drag delta, generate preview ops showing content at new location
+3. On pointer_up: commit move as single undo operation
+
+**Estimated Effort**: 2-3 hours
 
 ### ⚠️ Eraser Tool: Possibly Working as Designed
 

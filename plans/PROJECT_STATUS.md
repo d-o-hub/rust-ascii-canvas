@@ -33,20 +33,6 @@ test result: ok. 44 passed; 0 failed; 0 ignored
 
 All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive).
 
-### Recent Fixes (2026-04-24)
-
-#### UX Enhancements & Keyboard Productivity (#64)
-
-- **Features**:
-  1. **Select All (Ctrl+A)**: Implemented global select-all functionality that automatically switches to the Select tool, allowing users to quickly manipulate the entire canvas.
-  2. **Contextual Cursors**: Added responsive cursor feedback:
-     - `move` cursor when hovering over an active selection.
-     - `text` cursor when the Text tool is active.
-     - Standard `crosshair` for other drawing tools.
-  3. **Improved Interaction Recovery**: Enhanced the `Escape` key to explicitly clear current selections and reset state, providing a reliable "reset" interaction.
-- **Accessibility**: Added `aria-label` to the border style dropdown to improve screen reader support.
-- **Infrastructure**: Fixed CI build regressions by restoring `rust-toolchain.toml` and ensuring proper tool state synchronization between WASM and Frontend.
-
 ### Recent Fixes (2026-03-20)
 
 #### Comprehensive Tool Malfunction & Rendering Fix (#18, #19)

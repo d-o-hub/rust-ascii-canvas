@@ -5,7 +5,7 @@
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
-use crate::core::tools::{DrawOp, RectangleTool, SelectTool, Tool, ToolContext, ToolId};
+use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolContext, ToolId};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
 use crate::wasm::render_bridge::{
@@ -170,35 +170,6 @@ impl AsciiEditor {
         self.dirty_tracker.request_full_redraw();
     }
 
-    #[wasm_bindgen(js_name = selectAll)]
-    pub fn select_all(&mut self) {
-        let w = self.state.grid.width() as i32;
-        let h = self.state.grid.height() as i32;
-
-        if w > 0 && h > 0 {
-            let selection = Selection::new(0, 0, w - 1, h - 1);
-            self.current_selection = Some(selection.clone());
-
-            // Switch to select tool when selecting all
-            self.set_tool_by_id_impl(ToolId::Select);
-            if let Some(select_tool) = self.active_tool.as_any_mut().downcast_mut::<SelectTool>() {
-                select_tool.set_selection(Some(selection));
-            }
-
-            self.dirty_tracker.request_full_redraw();
-        }
-    }
-
-    #[wasm_bindgen(js_name = isPointInSelection)]
-    pub fn is_point_in_selection(&self, screen_x: f64, screen_y: f64) -> bool {
-        if let Some(ref sel) = self.current_selection {
-            let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
-            sel.contains(x, y)
-        } else {
-            false
-        }
-    }
-
     #[wasm_bindgen(js_name = onPointerDown)]
     pub fn on_pointer_down(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.space_held {
@@ -217,11 +188,8 @@ impl AsciiEditor {
             self.commit_ops(&result.ops);
         }
 
-        // Sync selection state if select tool (it might have cleared it or started a new one)
+        // If select tool and clicking inside selection, start moving
         if self.tool_id == ToolId::Select {
-            self.update_select_tool_selection();
-
-            // If clicking inside existing selection, start moving
             if let Some(ref sel) = self.current_selection {
                 if sel.contains(x, y) {
                     self.is_moving_selection = true;
@@ -352,15 +320,6 @@ impl AsciiEditor {
         if key == "Escape" {
             self.active_tool.reset();
             self.preview_ops.clear();
-            self.current_selection = None;
-            if self.tool_id == ToolId::Select {
-                if let Some(select_tool) =
-                    self.active_tool.as_any_mut().downcast_mut::<SelectTool>()
-                {
-                    select_tool.clear_selection();
-                }
-            }
-            self.dirty_tracker.request_full_redraw();
             let event_result = self.create_event_result();
             return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
@@ -385,12 +344,6 @@ impl AsciiEditor {
 
         if ctrl && key.to_lowercase() == "c" {
             let event_result = self.create_event_result_with_copy(true);
-            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
-        }
-
-        if ctrl && key.to_lowercase() == "a" {
-            self.select_all();
-            let event_result = self.create_event_result();
             return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 

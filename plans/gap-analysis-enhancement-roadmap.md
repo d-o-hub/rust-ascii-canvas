@@ -29,20 +29,18 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 ### 1. CRITICAL: Missing Core Features
 
 #### 1.1 Selection Copy/Paste Operations
-**Gap**: Select tool can select and move regions but cannot copy/paste. (PARTIALLY RESOLVED)
+**Gap**: Select tool can select and move regions but cannot copy/paste.
 
 **Current State**: `src/core/tools/select.rs` supports:
 - Selection creation (drag)
 - Selection moving (drag inside selection)
 - Selection clearing (Escape)
+
+**Missing**:
 - Copy selection to internal clipboard (Ctrl+C with selection)
 - Paste from internal clipboard (Ctrl+V)
 - Cut selection (Ctrl+X)
 - Delete selection (Delete/Backspace)
-- Select All (Ctrl+A)
-
-**Missing**:
-- Multiple selection support
 
 **Impact**: Users cannot duplicate shapes or move content between areas efficiently.
 
@@ -91,13 +89,16 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 **Impact**: Users cannot see what they're drawing before committing.
 
 #### 2.2 Selection Move Implementation
-**Gap**: Selection moving state tracked but not fully implemented. (PARTIALLY RESOLVED)
+**Gap**: Selection moving state tracked but not fully implemented.
 
-**Current State**: `src/core/tools/select.rs` and `bindings.rs` correctly handle selection movement with visual feedback and atomic undo/redo.
+**Current State**: `src/core/tools/select.rs:83-85` sets `moving = true` but `on_pointer_move` returns empty result.
 
 **Missing**:
-- Rotation of selected content
-- Scaling/resizing of selections
+- Actual content movement during drag
+- Visual feedback of moved content
+- Bounds checking during move
+
+**Impact**: Select tool's move functionality doesn't work end-to-end.
 
 #### 2.3 Eraser Tool Size
 **Gap**: Eraser clears single cells only.
