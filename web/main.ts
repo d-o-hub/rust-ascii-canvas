@@ -79,6 +79,8 @@ void isInitialized; // Suppress unused variable warning
 declare global {
     interface Window {
         editor: AsciiEditorInterface | null;
+        charWidth: number;
+        lineHeight: number;
     }
 }
 window.editor = null;
@@ -290,8 +292,8 @@ function measureFont() {
     }
 
     // Expose for testing
-    (window as unknown as { charWidth: number, lineHeight: number }).charWidth = charWidth;
-    (window as unknown as { charWidth: number, lineHeight: number }).lineHeight = lineHeight;
+    window.charWidth = charWidth;
+    window.lineHeight = lineHeight;
 }
 
 /**
@@ -423,10 +425,9 @@ function setupEventListeners() {
             directionBtns.forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             
-            // Call WASM to set line direction (if supported)
-            const extEditor = editor as unknown as { setLineDirection?: (dir: string) => void };
-            if (extEditor && extEditor.setLineDirection) {
-                extEditor.setLineDirection(direction);
+            // Call WASM to set line direction
+            if (editor) {
+                editor.setLineDirection(direction);
             }
         });
     });
