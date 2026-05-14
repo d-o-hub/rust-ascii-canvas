@@ -29,7 +29,7 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 ### 1. CRITICAL: Missing Core Features
 
 #### 1.1 Selection Copy/Paste Operations
-**Gap**: Select tool can select and move regions but cannot copy/paste. (RESOLVED)
+**Gap**: Select tool can select and move regions but cannot copy/paste. (PARTIALLY RESOLVED)
 
 **Current State**: `src/core/tools/select.rs` supports:
 - Selection creation (drag)
@@ -91,7 +91,7 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 **Impact**: Users cannot see what they're drawing before committing.
 
 #### 2.2 Selection Move Implementation
-**Gap**: Selection moving state tracked but not fully implemented. (RESOLVED)
+**Gap**: Selection moving state tracked but not fully implemented. (PARTIALLY RESOLVED)
 
 **Current State**: `src/core/tools/select.rs` and `bindings.rs` correctly handle selection movement with visual feedback and atomic undo/redo.
 

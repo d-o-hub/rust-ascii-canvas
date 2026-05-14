@@ -36,6 +36,7 @@ All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive).
 ### Recent Fixes (2026-04-24)
 
 #### UX Enhancements & Keyboard Productivity (#64)
+
 - **Features**:
   1. **Select All (Ctrl+A)**: Implemented global select-all functionality that automatically switches to the Select tool, allowing users to quickly manipulate the entire canvas.
   2. **Contextual Cursors**: Added responsive cursor feedback:

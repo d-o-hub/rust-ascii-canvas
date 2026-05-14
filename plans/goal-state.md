@@ -1,13 +1,13 @@
 # Goal State: Codebase Improvement & Feature Roadmap 2026
 
 ## Status: ACTIVE
-**Updated**: 2026-03-03
+**Updated**: 2026-04-24
 
 ---
 
 ## GOAP World State Model
 
-### Current State (Verified 2026-03-03)
+### Current State (Verified 2026-04-24)
 
 ```yaml
 code_quality:
@@ -20,20 +20,20 @@ code_quality:
   stale_configs: []
 
 tests:
-  rust_unit: 79/79
-  rust_integration: 44/44
+  rust_unit: 92/92
+  rust_integration: 45/45
   rust_doc: 2/2
-  e2e_chromium: 35+
+  e2e_chromium: 152+
   e2e_firefox: 0                 # not configured
   e2e_webkit: 0                  # not configured
-  vitest_frontend: 0             # dependency exists, no tests
+  vitest_frontend: 2             # 2 tests passing
   flaky_patterns: 85             # waitForTimeout calls
   page_object_model: false
 
 error_handling:
   unwrap_in_prod: ~4             # unwrap() calls outside test code
-  boundary_bugs: 3               # SelectTool, ArrowTool, TextTool
-  select_tool_duplicate: true    # Rc<RefCell<SelectTool>> never synced
+  boundary_bugs: 0               # SelectTool, ArrowTool, TextTool FIXED
+  select_tool_duplicate: false   # RESOLVED
 
 features:
   drawing_tools: 8
@@ -46,13 +46,13 @@ features:
   file_persistence: false
   png_svg_export: false
   grid_customization: false
-  preview_rendering: false
+  preview_rendering: true
   ux_improvements: true          # Contextual cursors, Ctrl+A, Escape reset
 
 documentation:
-  adr_count: 22                  # 001-021 + duplicate 005
-  stale_adrs: 4                  # Proposed but actually implemented
-  test_count_contradictions: 5+
+  adr_count: 35
+  stale_adrs: 0                  # ALL statuses correct
+  test_count_contradictions: 0   # ALL reconciled
   doc_warnings: ~52
 ```
 
@@ -69,12 +69,12 @@ code_quality:
   stale_configs: []              # REMOVED
 
 tests:
-  rust_unit: 85+                 # new tests for layers, persistence
+  rust_unit: 95+                 # new tests for layers, persistence
   rust_integration: 50+          # new integration tests
   rust_doc: 5+                   # more doc tests
-  e2e_chromium: 40+
-  e2e_firefox: 40+               # ENABLED
-  e2e_webkit: 40+                # ENABLED
+  e2e_chromium: 160+
+  e2e_firefox: 160+              # ENABLED
+  e2e_webkit: 160+               # ENABLED
   vitest_frontend: 20+           # NEW
   flaky_patterns: 0              # ALL waitForTimeout REMOVED
   page_object_model: true        # IMPLEMENTED
@@ -94,10 +94,10 @@ features:
   file_persistence: true         # NEW
   png_svg_export: false          # DEFERRED (P2)
   grid_customization: false      # DEFERRED (P1)
-  preview_rendering: false       # DEFERRED (P1)
+  preview_rendering: true
 
 documentation:
-  adr_count: 30                  # 8 new ADRs (022-029)
+  adr_count: 35
   stale_adrs: 0                  # ALL statuses correct
   test_count_contradictions: 0   # ALL reconciled
   doc_warnings: 0                # ALL documented
@@ -112,10 +112,10 @@ documentation:
 - [ ] `cargo clippy --all-targets --all-features -- -D warnings` — 0 errors, 0 warnings
 - [ ] No `#![allow(dead_code)]` at crate level
 - [ ] All source files < 500 LOC
-- [ ] No unused dependencies in Cargo.toml
-- [ ] No duplicate type definitions
-- [ ] No stale configuration files
-- [ ] `cargo test` — 100% passing
+- [x] No unused dependencies in Cargo.toml
+- [x] No duplicate type definitions
+- [x] No stale configuration files
+- [x] `cargo test` — 100% passing
 - [ ] `cargo doc` — 0 warnings
 
 ### Tier 2: Test Reliability (Must Have)
@@ -129,8 +129,8 @@ documentation:
 ### Tier 3: Robustness (Must Have)
 
 - [ ] 0 `unwrap()` outside `#[cfg(test)]` blocks
-- [ ] All known bugs fixed (SelectTool boundary, ArrowTool Bresenham, TextTool position)
-- [ ] No duplicate tool instances
+- [x] All known bugs fixed (SelectTool boundary, ArrowTool Bresenham, TextTool position)
+- [x] No duplicate tool instances
 
 ### Tier 4: New Features (Should Have)
 
@@ -160,12 +160,12 @@ documentation:
 |--------|---------|--------|----------|
 | Clippy issues | 0 | 0 | Maintain |
 | Source files > 500 LOC | 1 | 0 | High |
-| Unused deps | 2 | 0 | High |
+| Unused deps | 0 | 0 | High |
 | `unwrap()` in prod | ~4 | 0 | High |
 | `waitForTimeout` calls | 85 | 0 | High |
 | Cross-browser E2E | 1/3 | 3/3 | High |
-| Vitest tests | 0 | 20+ | Medium |
+| Vitest tests | 2 | 20+ | Medium |
 | Layers support | No | Yes | Medium |
 | File persistence | No | Yes | Medium |
 | Doc warnings | ~52 | 0 | Medium |
-| Stale ADR statuses | 4 | 0 | Medium |
+| Stale ADR statuses | 0 | 0 | Medium |

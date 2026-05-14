@@ -153,6 +153,7 @@
 - Repository structure is sound
 
 ### 2026-04-24 - UX Enhancements & Keyboard Productivity (#64)
+
 - Implemented global 'Select All' (Ctrl+A) in WASM and Frontend.
 - Added contextual cursors (`move` for selections, `text` for Text tool).
 - Enhanced `Escape` key to clear selection highlight and reset state.
