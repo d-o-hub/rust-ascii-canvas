@@ -14,10 +14,10 @@ code_quality:
   clippy_errors: 0
   clippy_warnings: 0
   dead_code_allow: true          # crate-level #![allow(dead_code)]
-  unused_deps: [thiserror, anyhow]
-  duplicate_types: true          # EventResult vs EditorEventResult
-  max_file_loc: 722              # bindings.rs exceeds 500 LOC guideline
-  stale_configs: [root vite.config.ts, web/postcss.config.js]
+  unused_deps: []
+  duplicate_types: false
+  max_file_loc: 510              # bindings.rs improved from 722
+  stale_configs: []
 
 tests:
   rust_unit: 79/79
@@ -41,11 +41,13 @@ features:
   undo_redo: true
   zoom_pan: true
   clipboard_export: true
+  selection_ops: true            # Copy/Cut/Paste/SelectAll
   layers: false
   file_persistence: false
   png_svg_export: false
   grid_customization: false
   preview_rendering: false
+  ux_improvements: true          # Contextual cursors, Ctrl+A, Escape reset
 
 documentation:
   adr_count: 22                  # 001-021 + duplicate 005
@@ -121,7 +123,7 @@ documentation:
 - [ ] 0 `waitForTimeout` calls in E2E tests
 - [ ] Page Object Model in `e2e/pages/`
 - [ ] Cross-browser: Chromium + Firefox + WebKit
-- [ ] Vitest unit tests for frontend TypeScript
+- [x] Vitest unit tests for frontend TypeScript
 - [ ] ASCII output verification in E2E (draw → export → assert)
 
 ### Tier 3: Robustness (Must Have)
