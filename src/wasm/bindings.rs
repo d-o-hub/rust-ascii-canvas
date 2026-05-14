@@ -217,8 +217,11 @@ impl AsciiEditor {
             self.commit_ops(&result.ops);
         }
 
-        // If select tool and clicking inside selection, start moving
+        // Sync selection state if select tool (it might have cleared it or started a new one)
         if self.tool_id == ToolId::Select {
+            self.update_select_tool_selection();
+
+            // If clicking inside existing selection, start moving
             if let Some(ref sel) = self.current_selection {
                 if sel.contains(x, y) {
                     self.is_moving_selection = true;
@@ -351,7 +354,8 @@ impl AsciiEditor {
             self.preview_ops.clear();
             self.current_selection = None;
             if self.tool_id == ToolId::Select {
-                if let Some(select_tool) = self.active_tool.as_any_mut().downcast_mut::<SelectTool>()
+                if let Some(select_tool) =
+                    self.active_tool.as_any_mut().downcast_mut::<SelectTool>()
                 {
                     select_tool.clear_selection();
                 }
