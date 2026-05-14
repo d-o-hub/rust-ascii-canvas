@@ -152,6 +152,14 @@
 - All Rust/clippy issues resolved
 - Repository structure is sound
 
+### 2026-04-24 - UX Enhancements & Keyboard Productivity (#64)
+- Implemented global 'Select All' (Ctrl+A) in WASM and Frontend.
+- Added contextual cursors (`move` for selections, `text` for Text tool).
+- Enhanced `Escape` key to clear selection highlight and reset state.
+- Fixed state synchronization between WASM internal tool changes and Frontend UI.
+- Restored `rust-toolchain.toml` and fixed Rust formatting issues in `bindings.rs`.
+- Added accessibility labels to toolbar components.
+
 ### 2026-03-20 - Multi-Tool Malfunction Fix (#18, #19)
 - Fixed Select tool visual feedback in pixel buffer path.
 - Resolved Arrow tool arrowhead overwriting issue.
