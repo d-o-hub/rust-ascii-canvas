@@ -49,7 +49,7 @@ jobs:
           WASM_BINDGEN_TEST_ONLY_NODE: 1
 
       - name: Upload WASM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm pkg
           path: web/pkg
