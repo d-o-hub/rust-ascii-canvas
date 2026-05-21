@@ -321,6 +321,7 @@ impl AsciiEditor {
             self.active_tool.reset();
             self.current_selection = None;
             self.preview_ops.clear();
+            self.dirty_tracker.request_full_redraw();
             let event_result = self.create_event_result();
             return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
