@@ -38,15 +38,16 @@ interface AsciiEditorInterface {
     setZoom(zoom: number): void;
     setPan(x: number, y: number): void;
     setFontMetrics(charWidth: number, lineHeight: number, fontSize: number): void;
-    onPointerDown(x: number, y: number): EventResult;
-    onPointerMove(x: number, y: number): EventResult;
-    onPointerUp(x: number, y: number): EventResult;
-    onKeyDown(key: string, ctrl: boolean, shift: boolean): EventResult;
+    onPointerDown(x: number, y: number): EventResult | null;
+    onPointerMove(x: number, y: number): EventResult | null;
+    onPointerUp(x: number, y: number): EventResult | null;
+    onKeyDown(key: string, ctrl: boolean, shift: boolean): EventResult | null;
     onKeyUp(key: string): void;
-    onWheel(delta: number, x: number, y: number): EventResult;
+    onWheel(delta: number, x: number, y: number): EventResult | null;
     undo(): boolean;
     redo(): boolean;
     clear(): void;
+    selectAll(): void;
     exportAscii(): string;
     getRenderCommands(): RenderCommand[];
     getDirtyRenderCommands(): RenderCommand[];
@@ -732,7 +733,9 @@ function handleKeyUp(e: KeyboardEvent) {
 /**
  * Handle event result from WASM
  */
-function handleEventResult(result: EventResult) {
+function handleEventResult(result: EventResult | null) {
+    if (!result) return;
+
     if (result.needs_redraw) {
         requestRender();
     }
