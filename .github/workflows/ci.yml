@@ -37,8 +37,15 @@ jobs:
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
       - name: Build WASM
-        run: pnpm run build:wasm
+        run: |
+          npm install -g wasm-opt
+          pnpm run build:wasm
 
       - name: Run tests (Native)
         run: cargo test --all
