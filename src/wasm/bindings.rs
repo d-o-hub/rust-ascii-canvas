@@ -319,6 +319,7 @@ impl AsciiEditor {
 
         if key == "Escape" {
             self.active_tool.reset();
+            self.current_selection = None;
             self.preview_ops.clear();
             let event_result = self.create_event_result();
             return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
@@ -344,6 +345,12 @@ impl AsciiEditor {
 
         if ctrl && key.to_lowercase() == "c" {
             let event_result = self.create_event_result_with_copy(true);
+            return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
+        }
+
+        if ctrl && key.to_lowercase() == "a" {
+            self.select_all();
+            let event_result = self.create_event_result();
             return serde_wasm_bindgen::to_value(&event_result).unwrap_or(JsValue::NULL);
         }
 
@@ -450,6 +457,21 @@ impl AsciiEditor {
     #[wasm_bindgen(getter)]
     pub fn can_redo(&self) -> bool {
         self.history.can_redo()
+    }
+
+    #[wasm_bindgen(js_name = selectAll)]
+    pub fn select_all(&mut self) {
+        let width = self.state.grid.width() as i32;
+        let height = self.state.grid.height() as i32;
+
+        self.set_tool_by_id_impl(ToolId::Select);
+
+        if let Some(select_tool) = self.active_tool.as_any_mut().downcast_mut::<SelectTool>() {
+            let selection = Selection::new(0, 0, width - 1, height - 1);
+            select_tool.set_selection(selection.clone());
+            self.current_selection = Some(selection);
+            self.dirty_tracker.request_full_redraw();
+        }
     }
 
     #[wasm_bindgen]

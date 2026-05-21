@@ -49,6 +49,11 @@ impl SelectTool {
         self.selection.clone()
     }
 
+    /// Set the current selection.
+    pub fn set_selection(&mut self, selection: Selection) {
+        self.selection = Some(selection);
+    }
+
     /// Clear the current selection.
     pub fn clear_selection(&mut self) {
         self.selection = None;

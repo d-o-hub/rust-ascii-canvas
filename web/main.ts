@@ -693,7 +693,7 @@ function handleKeyDown(e: KeyboardEvent) {
     if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', 'b', ' ', 'escape', '?'].includes(key.toLowerCase()) && !ctrl) {
         e.preventDefault();
     }
-    if (ctrl && ['z', 'y', 'c'].includes(key.toLowerCase())) {
+    if (ctrl && ['z', 'y', 'c', 'a', 'x', 'v'].includes(key.toLowerCase())) {
         e.preventDefault();
     }
 
@@ -715,10 +715,6 @@ function handleKeyDown(e: KeyboardEvent) {
         showShortcutsModal();
     }
 
-    // Update active tool button
-    if (result && result.tool) {
-        updateToolButtons(result.tool);
-    }
 }
 
 /**
@@ -739,6 +735,10 @@ function handleKeyUp(e: KeyboardEvent) {
 function handleEventResult(result: EventResult) {
     if (result.needs_redraw) {
         requestRender();
+    }
+
+    if (result.tool) {
+        updateToolButtons(result.tool);
     }
 
     // Handle mobile keyboard proxy
