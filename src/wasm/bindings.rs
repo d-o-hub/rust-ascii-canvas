@@ -5,7 +5,7 @@
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
-use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolContext, ToolId};
+use crate::core::tools::{DrawOp, RectangleTool, SelectTool, Tool, ToolContext, ToolId};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
 use crate::wasm::render_bridge::{
