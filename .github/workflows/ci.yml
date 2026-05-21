@@ -38,7 +38,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
       - name: Build WASM
-        run: npm run build:wasm
+        run: pnpm run build:wasm
 
       - name: Run tests (Native)
         run: cargo test --all
@@ -69,18 +69,23 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Cache npm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Cache pnpm
         uses: actions/cache@v5
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-node-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-node-
 
       - name: Install dependencies
         run: |
-          npm ci
-          cd web && npm ci
+          pnpm install --frozen-lockfile
+          cd web && pnpm install --frozen-lockfile
 
       - name: Install Playwright
         run: npx playwright install chromium
@@ -94,7 +99,7 @@ jobs:
       - name: Run E2E tests
         run: |
           cd web
-          nohup npm run dev > /tmp/vite.log 2>&1 &
+          nohup pnpm run dev > /tmp/vite.log 2>&1 &
           echo "Waiting for dev server..."
           for i in {1..60}; do
             if curl -s http://localhost:3003 > /dev/null 2>&1; then
