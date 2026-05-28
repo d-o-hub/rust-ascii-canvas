@@ -1219,11 +1219,16 @@ function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: numbe
 }
 
 // Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-} else {
-    initialize();
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        // Only initialize if we're not in a test environment or if explicitly called
+        if (!process.env.VITEST) {
+            initialize();
+        }
+    }
 }
 
 // Export for testing
-export { editor, canvas, ctx, charWidth, lineHeight };
+export { editor, canvas, ctx, charWidth, lineHeight, TOOL_INFO, setTool, updateToolButtons };
