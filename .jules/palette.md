@@ -1,3 +1,7 @@
 ## 2026-04-23 - [Modal and State Resilience]
 **Learning:** Modals require explicit focus management (focusing the close button) and standard keyboard shortcuts (Escape) to be fully accessible. Additionally, long-running keyboard-driven states (like Space-drag panning) should be reset on window blur to prevent "stuck" UI states when users switch context.
 **Action:** Always implement focus traps or focus management for modals and use the window blur event to clean up persistent keyboard-driven interactions.
+
+## 2026-04-24 - [Contextual Cursors and Tool Instructions]
+**Learning:** Providing immediate visual (cursor) and textual (status bar instructions) feedback when switching tools significantly reduces the cognitive load for new users. Monospace diagrams can be complex to edit; simple "how-to" snippets in the status bar provide just-in-time guidance.
+**Action:** Implement tool-specific cursors and status bar hints to guide user interactions without cluttering the main UI.
