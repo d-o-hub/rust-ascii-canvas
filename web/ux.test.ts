@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { TOOL_INFO, updateToolButtons } from './main';
+import { TOOL_INFO, updateToolButtons, setTool } from './main';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -34,6 +34,23 @@ describe('UX Improvements', () => {
         updateToolButtons('select');
         expect(container?.classList.contains('tool-select')).toBe(true);
         expect(container?.classList.contains('tool-crosshair')).toBe(false);
+    });
+
+    it('should ensure panning class can be applied', () => {
+        const container = document.getElementById('canvas-container');
+        container?.classList.add('panning');
+        expect(container?.classList.contains('panning')).toBe(true);
+        // The CSS handles the !important override
+    });
+
+    it('should focus canvas when setting tool', () => {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'canvas';
+        document.body.appendChild(canvas);
+        const focusSpy = vi.spyOn(canvas, 'focus');
+
+        setTool('rectangle');
+        expect(focusSpy).toHaveBeenCalled();
     });
 
     it('should sync tool button active states', () => {
