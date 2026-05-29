@@ -314,11 +314,23 @@ body {
 }
 
 .canvas-container.panning {
-    cursor: grab;
+    cursor: grab !important;
 }
 
 .canvas-container.panning:active {
-    cursor: grabbing;
+    cursor: grabbing !important;
+}
+
+.canvas-container.tool-text {
+    cursor: text;
+}
+
+.canvas-container.tool-select {
+    cursor: default;
+}
+
+.canvas-container.tool-crosshair {
+    cursor: crosshair;
 }
 
 #canvas {
