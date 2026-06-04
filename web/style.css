@@ -14,7 +14,7 @@
     --border: #3c3c3c;
     --hover: #3c3c3c;
     --active: rgba(13, 153, 255, 0.2);
-    --muted: #6b6b6b;
+    --muted: #949494;
     --success: #14ae5c;
     --error: #f24822;
     --warning: #ffcd29;
@@ -160,6 +160,11 @@ body {
     background-color: var(--hover);
 }
 
+.tool-btn:active {
+    background-color: var(--active);
+    transform: translateY(1px);
+}
+
 .tool-btn.active {
     background-color: var(--active);
     color: var(--accent);
@@ -229,6 +234,11 @@ body {
 .action-btn:hover:not(:disabled) {
     background-color: var(--hover);
     border-color: var(--hover);
+}
+
+.action-btn:active:not(:disabled) {
+    background-color: var(--active);
+    transform: translateY(1px);
 }
 
 #clear-btn:hover:not(:disabled) {

@@ -75,7 +75,7 @@
 
                 <!-- Border Style -->
                 <div class="tool-group" role="group" aria-label="Border Style">
-                    <select id="border-style" class="select-input" title="Border Style">
+                    <select id="border-style" class="select-input" title="Border Style (B)">
                         <option value="single">Single (─)</option>
                         <option value="double">Double (═)</option>
                         <option value="heavy">Heavy (━)</option>
@@ -209,10 +209,10 @@
                 <span id="status-tool" class="status-item">Tool: Rectangle</span>
             </div>
             <div class="status-center">
-                <span id="status-message" class="status-message"></span>
+                <span id="status-message" class="status-message" aria-live="polite"></span>
             </div>
             <div class="status-right">
-                <span id="status-toast" class="status-toast hidden"></span>
+                <span id="status-toast" class="status-toast hidden" aria-live="polite"></span>
             </div>
         </footer>
     </div>

@@ -131,15 +131,15 @@ const GLYPH_WIDTH = 8;
 const GLYPH_HEIGHT = 20;
 
 // Tool information for UX
-const TOOL_INFO: Record<string, { instruction: string; cursor: string }> = {
-    'select': { instruction: 'Click to select, drag selection to move, or Del to erase', cursor: 'default' },
-    'rectangle': { instruction: 'Drag to draw a rectangle', cursor: 'crosshair' },
-    'line': { instruction: 'Drag to draw a line', cursor: 'crosshair' },
-    'arrow': { instruction: 'Drag to draw an arrow', cursor: 'crosshair' },
-    'diamond': { instruction: 'Drag to draw a diamond', cursor: 'crosshair' },
-    'text': { instruction: 'Click to place cursor, then type', cursor: 'text' },
-    'freehand': { instruction: 'Drag to draw freely', cursor: 'crosshair' },
-    'eraser': { instruction: 'Drag to erase areas', cursor: 'crosshair' },
+const TOOL_INFO: Record<string, { instruction: string; cursor: string; shortcut: string }> = {
+    'select': { instruction: 'Click to select, drag selection to move, or Del to erase', cursor: 'default', shortcut: 'V' },
+    'rectangle': { instruction: 'Drag to draw a rectangle', cursor: 'crosshair', shortcut: 'R' },
+    'line': { instruction: 'Drag to draw a line', cursor: 'crosshair', shortcut: 'L' },
+    'arrow': { instruction: 'Drag to draw an arrow', cursor: 'crosshair', shortcut: 'A' },
+    'diamond': { instruction: 'Drag to draw a diamond', cursor: 'crosshair', shortcut: 'D' },
+    'text': { instruction: 'Click to place cursor, then type', cursor: 'text', shortcut: 'T' },
+    'freehand': { instruction: 'Drag to draw freely', cursor: 'crosshair', shortcut: 'F' },
+    'eraser': { instruction: 'Drag to erase areas', cursor: 'crosshair', shortcut: 'E' },
 };
 
 // Border styles for cycling
@@ -728,6 +728,14 @@ function handleKeyDown(e: KeyboardEvent) {
         showShortcutsModal();
     }
 
+    // Handle tool shortcuts
+    const lowerKey = key.toLowerCase();
+    for (const [toolName, info] of Object.entries(TOOL_INFO)) {
+        if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
+            setTool(toolName);
+            break;
+        }
+    }
 }
 
 /**
@@ -976,7 +984,7 @@ function updateToolButtons(activeTool: string) {
     // Update instruction message
     const info = TOOL_INFO[normalizedTool];
     if (info && statusMessageEl) {
-        statusMessageEl.textContent = info.instruction;
+        statusMessageEl.textContent = `[${info.shortcut}] ${info.instruction}`;
     }
 
     // Update cursor
