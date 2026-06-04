@@ -14,10 +14,11 @@ describe('UX Improvements', () => {
         `;
     });
 
-    it('should update status message with tool instruction', () => {
+    it('should update status message with tool instruction and shortcut', () => {
         updateToolButtons('rectangle');
         const statusMessage = document.getElementById('status-message');
-        expect(statusMessage?.textContent).toBe(TOOL_INFO['rectangle'].instruction);
+        const info = TOOL_INFO['rectangle'];
+        expect(statusMessage?.textContent).toBe(`[${info.shortcut}] ${info.instruction}`);
     });
 
     it('should apply correct cursor class to canvas container', () => {
