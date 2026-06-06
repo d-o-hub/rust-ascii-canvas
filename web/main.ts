@@ -130,6 +130,18 @@ const USE_PIXEL_BUFFER = true;
 const GLYPH_WIDTH = 8;
 const GLYPH_HEIGHT = 20;
 
+// Tool information for UX
+const TOOL_INFO: Record<string, { instruction: string; cursor: string; shortcut: string }> = {
+    'select': { instruction: 'Click to select, drag selection to move, or Del to erase', cursor: 'default', shortcut: 'V' },
+    'rectangle': { instruction: 'Drag to draw a rectangle', cursor: 'crosshair', shortcut: 'R' },
+    'line': { instruction: 'Drag to draw a line', cursor: 'crosshair', shortcut: 'L' },
+    'arrow': { instruction: 'Drag to draw an arrow', cursor: 'crosshair', shortcut: 'A' },
+    'diamond': { instruction: 'Drag to draw a diamond', cursor: 'crosshair', shortcut: 'D' },
+    'text': { instruction: 'Click to place cursor, then type', cursor: 'text', shortcut: 'T' },
+    'freehand': { instruction: 'Drag to draw freely', cursor: 'crosshair', shortcut: 'F' },
+    'eraser': { instruction: 'Drag to erase areas', cursor: 'crosshair', shortcut: 'E' },
+};
+
 // Border styles for cycling
 const BORDER_STYLES = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
 let currentBorderStyleIndex = 0;
@@ -716,6 +728,14 @@ function handleKeyDown(e: KeyboardEvent) {
         showShortcutsModal();
     }
 
+    // Handle tool shortcuts
+    const lowerKey = key.toLowerCase();
+    for (const [toolName, info] of Object.entries(TOOL_INFO)) {
+        if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
+            setTool(toolName);
+            break;
+        }
+    }
 }
 
 /**
@@ -936,6 +956,9 @@ function setTool(toolName: string) {
         }
         
         statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
+
+        // Ensure canvas keeps focus for keyboard shortcuts
+        if (canvas) canvas.focus();
     } catch (error) {
         logger.error('Failed to set tool:', error);
     }
@@ -945,9 +968,11 @@ function setTool(toolName: string) {
  * Update tool button states
  */
 function updateToolButtons(activeTool: string) {
+    const normalizedTool = activeTool.toLowerCase();
+
     toolButtons.forEach(btn => {
         const tool = btn.getAttribute('data-tool');
-        const isActive = tool?.toLowerCase() === activeTool.toLowerCase();
+        const isActive = tool?.toLowerCase() === normalizedTool;
         if (isActive) {
             btn.classList.add('active');
         } else {
@@ -955,6 +980,25 @@ function updateToolButtons(activeTool: string) {
         }
         btn.setAttribute('aria-pressed', isActive.toString());
     });
+
+    // Update instruction message
+    const info = TOOL_INFO[normalizedTool];
+    if (info && statusMessageEl) {
+        statusMessageEl.textContent = `[${info.shortcut}] ${info.instruction}`;
+    }
+
+    // Update cursor
+    if (canvasContainer && info) {
+        // Clear previous tool classes
+        canvasContainer.classList.remove('tool-text', 'tool-select', 'tool-crosshair');
+        if (info.cursor === 'text') {
+            canvasContainer.classList.add('tool-text');
+        } else if (info.cursor === 'crosshair') {
+            canvasContainer.classList.add('tool-crosshair');
+        } else if (normalizedTool === 'select') {
+            canvasContainer.classList.add('tool-select');
+        }
+    }
 }
 
 /**
@@ -1183,11 +1227,16 @@ function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: numbe
 }
 
 // Initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initialize);
-} else {
-    initialize();
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        // Only initialize if we're not in a test environment or if explicitly called
+        if (!process.env.VITEST) {
+            initialize();
+        }
+    }
 }
 
 // Export for testing
-export { editor, canvas, ctx, charWidth, lineHeight };
+export { editor, canvas, ctx, charWidth, lineHeight, TOOL_INFO, setTool, updateToolButtons };
