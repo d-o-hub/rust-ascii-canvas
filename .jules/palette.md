@@ -5,3 +5,7 @@
 ## 2026-04-24 - [Contextual Cursors and Tool Instructions]
 **Learning:** Providing immediate visual (cursor) and textual (status bar instructions) feedback when switching tools significantly reduces the cognitive load for new users. Monospace diagrams can be complex to edit; simple "how-to" snippets in the status bar provide just-in-time guidance.
 **Action:** Implement tool-specific cursors and status bar hints to guide user interactions without cluttering the main UI.
+
+## 2026-05-28 - [Contextual Feedback and Navigation]
+**Learning:** Contextual visual feedback for specialized tools (like Eraser or Selection) reduces user error and increases confidence. Providing a dedicated "Reset Zoom" shortcut (and documenting it) improves navigation in large diagrams.
+**Action:** Always consider tool-specific cursor indicators and "escape hatches" like zoom reset for canvas-based interfaces.
