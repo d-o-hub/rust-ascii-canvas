@@ -726,9 +726,7 @@ function handleKeyDown(e: KeyboardEvent) {
     // Handle 0 key - reset zoom
     if (key === '0' && !ctrl && !shift) {
         setZoom(1.0);
-        if (editor) {
-            editor.setPan(0, 0);
-        }
+        editor.setPan(0, 0);
         showToast('Zoom reset to 100%');
     }
 
