@@ -723,6 +723,13 @@ function handleKeyDown(e: KeyboardEvent) {
         cycleBorderStyle();
     }
 
+    // Handle 0 key - reset zoom
+    if (key === '0' && !ctrl && !shift) {
+        setZoom(1.0);
+        editor.setPan(0, 0);
+        showToast('Zoom reset to 100%');
+    }
+
     // Handle ? key - show keyboard shortcuts modal
     if (key === '?' || (key === '/' && shift)) {
         showShortcutsModal();
@@ -990,11 +997,15 @@ function updateToolButtons(activeTool: string) {
     // Update cursor
     if (canvasContainer && info) {
         // Clear previous tool classes
-        canvasContainer.classList.remove('tool-text', 'tool-select', 'tool-crosshair');
+        canvasContainer.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
         if (info.cursor === 'text') {
             canvasContainer.classList.add('tool-text');
         } else if (info.cursor === 'crosshair') {
-            canvasContainer.classList.add('tool-crosshair');
+            if (normalizedTool === 'eraser') {
+                canvasContainer.classList.add('tool-eraser');
+            } else {
+                canvasContainer.classList.add('tool-crosshair');
+            }
         } else if (normalizedTool === 'select') {
             canvasContainer.classList.add('tool-select');
         }

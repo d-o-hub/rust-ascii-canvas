@@ -363,6 +363,15 @@ body {
     opacity: 0;
 }
 
+.canvas-container.tool-select .cursor-indicator {
+    border-style: dashed;
+}
+
+.canvas-container.tool-eraser .cursor-indicator {
+    border-color: var(--error);
+    background-color: rgba(242, 72, 34, 0.2);
+}
+
 /* Side Panel */
 .side-panel {
     width: 220px;

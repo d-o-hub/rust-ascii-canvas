@@ -11,6 +11,7 @@ describe('UX Improvements', () => {
             <button class="tool-btn" data-tool="rectangle"></button>
             <button class="tool-btn" data-tool="text"></button>
             <button class="tool-btn" data-tool="select"></button>
+            <button class="tool-btn" data-tool="eraser"></button>
         `;
     });
 
@@ -34,6 +35,10 @@ describe('UX Improvements', () => {
 
         updateToolButtons('select');
         expect(container?.classList.contains('tool-select')).toBe(true);
+        expect(container?.classList.contains('tool-crosshair')).toBe(false);
+
+        updateToolButtons('eraser');
+        expect(container?.classList.contains('tool-eraser')).toBe(true);
         expect(container?.classList.contains('tool-crosshair')).toBe(false);
     });
 
