@@ -3,9 +3,16 @@
  * Tests all tools draw correctly with screenshot verification
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
+
+async function waitForRender(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
+        return canvas && canvas.width > 0 && canvas.height > 0;
+    }, { timeout: 5000 });
+}
 
 test.describe('Tool Drawing Verification', () => {
     test.beforeEach(async ({ page }) => {
@@ -35,7 +42,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="rectangle"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 100, 300, 200);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
@@ -48,7 +54,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="line"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 150, 300, 150);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).toContain('─');
@@ -60,7 +65,6 @@ test.describe('Tool Drawing Verification', () => {
         await page.click('[data-tool="line"]');
         
         await drawOnCanvas(page, 200, 100, 200, 300);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).toContain('│');
@@ -73,7 +77,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="arrow"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 150, 300, 150);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
@@ -86,7 +89,6 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="diamond"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 150, 100, 300, 200);
-        await page.waitForTimeout(200);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
@@ -103,12 +105,12 @@ test.describe('Tool Drawing Verification', () => {
         if (!box) return;
         
         await page.mouse.click(box.x + 100, box.y + 100);
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         await page.keyboard.type('HELLO');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         const ascii = await getAsciiContent(page);
         expect(ascii).toContain('HELLO');
@@ -135,10 +137,9 @@ test.describe('Tool Drawing Verification', () => {
         }
         
         await page.mouse.up();
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const ascii = await getAsciiContent(page);
-        // Freehand uses the border style's horizontal character (default: ─ for Single style)
         expect(ascii).toContain('─');
         
         await page.screenshot({ path: 'test-results/freehand-drawing.png' });
@@ -147,7 +148,7 @@ test.describe('Tool Drawing Verification', () => {
     test('Eraser tool clears content', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawOnCanvas(page, 100, 100, 300, 200);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const asciiBefore = await getAsciiContent(page);
         expect(asciiBefore).not.toMatch(/^(\s*\n)*$/);
@@ -156,7 +157,7 @@ test.describe('Tool Drawing Verification', () => {
         await expect(page.locator('[data-tool="eraser"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 150, 120, 250, 180);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await page.screenshot({ path: 'test-results/eraser-drawing.png' });
     });
@@ -187,7 +188,7 @@ test.describe('Select Tool Delete Functionality', () => {
     test('Select + Delete should clear selected area', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawOnCanvas(page, 100, 100, 300, 200);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const asciiBefore = await getAsciiContent(page);
         expect(asciiBefore).not.toMatch(/^(\s*\n)*$/);
@@ -196,14 +197,14 @@ test.describe('Select Tool Delete Functionality', () => {
         await expect(page.locator('[data-tool="select"]')).toHaveClass(/active/);
         
         await drawOnCanvas(page, 80, 80, 320, 220);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await page.screenshot({ path: 'test-results/select-before-delete.png' });
         
         const canvas = page.locator('#canvas');
         await canvas.focus();
         await page.keyboard.press('Delete');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.screenshot({ path: 'test-results/select-after-delete.png' });
         
@@ -214,19 +215,19 @@ test.describe('Select Tool Delete Functionality', () => {
     test('Select + Backspace should clear selected area', async ({ page }) => {
         await page.click('[data-tool="line"]');
         await drawOnCanvas(page, 100, 150, 400, 150);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const asciiBefore = await getAsciiContent(page);
         expect(asciiBefore).toContain('─');
         
         await page.click('[data-tool="select"]');
         await drawOnCanvas(page, 80, 130, 420, 170);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const canvas = page.locator('#canvas');
         await canvas.focus();
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         const asciiAfter = await getAsciiContent(page);
         expect(asciiAfter).toMatch(/^(\s*\n)*$/);
@@ -262,7 +263,6 @@ test.describe('Edge Cases', () => {
         await page.mouse.down();
         await page.mouse.move(box.x + 100, box.y + 50, { steps: 10 });
         await page.mouse.up();
-        await page.waitForTimeout(200);
         
         const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
@@ -285,12 +285,12 @@ test.describe('Edge Cases', () => {
         for (const pos of positions) {
             await canvas.focus();
             await page.mouse.click(pos.x, pos.y);
+            await waitForRender(page);
             await canvas.focus();
-            await page.waitForTimeout(100);
             await page.keyboard.type(pos.text);
-            await page.waitForTimeout(50);
+            await waitForRender(page);
             await page.keyboard.press('Escape');
-            await page.waitForTimeout(50);
+            await waitForRender(page);
         }
         
         const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
@@ -303,17 +303,16 @@ test.describe('Edge Cases', () => {
     test('Undo after drawing', async ({ page, isMobile }) => {
         await page.click('[data-tool="rectangle"]');
         await drawOnCanvas(page, 100, 100, 200, 150);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         if (isMobile) {
-            // On mobile, undo button is hidden in CSS. Use keyboard shortcut.
             await page.keyboard.press('Control+z');
         } else {
             await expect(page.locator('#undo-btn')).toBeEnabled();
             await page.click('#undo-btn');
         }
         
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         if (!isMobile) {
             await expect(page.locator('#undo-btn')).toBeDisabled();
@@ -331,10 +330,10 @@ test.describe('Edge Cases', () => {
             
             await page.locator('#border-style').selectOption(style);
             await page.click('[data-tool="rectangle"]');
-            await page.waitForTimeout(50);
+            await waitForRender(page);
             
             await drawOnCanvas(page, 50, offsetY + 20, 250, offsetY + 50);
-            await page.waitForTimeout(100);
+            await waitForRender(page);
         }
         
         await page.screenshot({ path: 'test-results/edge-all-border-styles.png' });
@@ -348,7 +347,7 @@ test.describe('Edge Cases', () => {
         if (!box) return;
         
         await page.mouse.click(box.x + 100, box.y + 100);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
         expect(ascii).not.toMatch(/^[ \t\r]*(?:\n[ \t\r]*)*$/);
@@ -367,7 +366,7 @@ test.describe('Keyboard Shortcuts', () => {
     test('All tool shortcuts work', async ({ page }) => {
         const canvas = page.locator('#canvas');
         await canvas.click();
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         const shortcuts: Array<{ key: string; tool: string }> = [
             { key: 'r', tool: 'rectangle' },
@@ -381,7 +380,6 @@ test.describe('Keyboard Shortcuts', () => {
         
         for (const { key, tool } of shortcuts) {
             await page.keyboard.press(key);
-            await page.waitForTimeout(100);
             await expect(page.locator(`[data-tool="${tool}"]`)).toHaveClass(/active/, { timeout: 3000 });
         }
     });
@@ -389,14 +387,12 @@ test.describe('Keyboard Shortcuts', () => {
     test('Select tool shortcut works', async ({ page }) => {
         const canvas = page.locator('#canvas');
         await canvas.focus();
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         await page.keyboard.press('r');
-        await page.waitForTimeout(100);
         await expect(page.locator('[data-tool="rectangle"]')).toHaveClass(/active/);
         
         await page.keyboard.press('v');
-        await page.waitForTimeout(100);
         await expect(page.locator('[data-tool="select"]')).toHaveClass(/active/);
     });
 });

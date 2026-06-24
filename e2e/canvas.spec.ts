@@ -3,22 +3,32 @@
  * Comprehensive tests for all buttons, functions, and drawing verification
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
+
+async function waitForRender(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
+        return canvas && canvas.width > 0 && canvas.height > 0;
+    }, { timeout: 5000 });
+}
+
+async function waitForCursorUpdate(page: Page): Promise<void> {
+    await page.waitForFunction(
+        () => {
+            const el = document.querySelector('#cursor-pos');
+            return el && el.textContent && el.textContent.trim().length > 0;
+        },
+        { timeout: 5000 }
+    );
+}
 
 test.describe('ASCII Canvas Editor', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(BASE_URL);
-        
-        // Wait for the loading overlay to be hidden
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        
-        // Wait for the canvas to be visible
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        
-        // Small delay to ensure JS is fully loaded
-        await page.waitForTimeout(500);
     });
 
     test('should load the editor', async ({ page }) => {
@@ -43,20 +53,14 @@ test.describe('ASCII Canvas Editor', () => {
     });
 
     test('should switch tools with keyboard shortcuts', async ({ page }) => {
-        // Click on canvas and release to ensure we start from a clean state
         await page.click('#canvas');
-        await page.mouse.up(); // Release any mouse button state
-        await page.waitForTimeout(200);
+        await page.mouse.up();
         
-        // Press 'L' for line tool
         await page.keyboard.press('l');
-        await page.waitForTimeout(200);
         const lineButton = page.locator('[data-tool="line"]');
         await expect(lineButton).toHaveClass(/active/);
         
-        // Press 'R' for rectangle tool
         await page.keyboard.press('r');
-        await page.waitForTimeout(200);
         const rectButton = page.locator('[data-tool="rectangle"]');
         await expect(rectButton).toHaveClass(/active/);
     });
@@ -106,7 +110,7 @@ test.describe('ASCII Canvas Editor', () => {
         
         if (box) {
             await page.mouse.move(box.x + 100, box.y + 100);
-            await page.waitForTimeout(100);
+            await waitForCursorUpdate(page);
             await expect(cursorPos).not.toBeEmpty();
         }
     });
@@ -135,7 +139,6 @@ test.describe('Drawing Tools Interaction', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     async function drawOnCanvas(page: import('@playwright/test').Page, startX: number, startY: number, endX: number, endY: number) {
@@ -159,7 +162,6 @@ test.describe('Drawing Tools Interaction', () => {
         await expect(statusTool).toContainText('Tool: Rectangle');
         
         await drawOnCanvas(page, 100, 100, 300, 200);
-        await page.waitForTimeout(300);
     });
 
     test('should select line tool and draw', async ({ page }) => {
@@ -169,7 +171,6 @@ test.describe('Drawing Tools Interaction', () => {
         await expect(lineBtn).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 100, 300, 100);
-        await page.waitForTimeout(300);
     });
 
     test('should select arrow tool and draw', async ({ page }) => {
@@ -179,7 +180,6 @@ test.describe('Drawing Tools Interaction', () => {
         await expect(arrowBtn).toHaveClass(/active/);
         
         await drawOnCanvas(page, 100, 100, 300, 100);
-        await page.waitForTimeout(300);
     });
 
     test('should select diamond tool and draw', async ({ page }) => {
@@ -189,7 +189,6 @@ test.describe('Drawing Tools Interaction', () => {
         await expect(diamondBtn).toHaveClass(/active/);
         
         await drawOnCanvas(page, 200, 100, 300, 200);
-        await page.waitForTimeout(300);
     });
 
     test('should select text tool', async ({ page }) => {
@@ -203,11 +202,10 @@ test.describe('Drawing Tools Interaction', () => {
         if (!box) return;
         
         await page.mouse.click(box.x + 100, box.y + 100);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await page.keyboard.type('Hello');
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(300);
     });
 
     test('should insert text at exact clicked grid position', async ({ page }) => {
@@ -228,11 +226,10 @@ test.describe('Drawing Tools Interaction', () => {
         
         await canvas.focus();
         await page.mouse.click(clickX, clickY);
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
-        // Type a character
         await page.keyboard.type('X');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         // Verify text was inserted at the correct position
         const ascii = await page.evaluate(() => {
@@ -256,22 +253,18 @@ test.describe('Drawing Tools Interaction', () => {
         // Click at position - focus canvas first
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 50);
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Re-focus canvas before typing (clicking may have moved focus)
         await canvas.focus();
         
         // Type 5 characters one by one
         await page.keyboard.type('A');
-        await page.waitForTimeout(50);
         await page.keyboard.type('B');
-        await page.waitForTimeout(50);
         await page.keyboard.type('C');
-        await page.waitForTimeout(50);
         await page.keyboard.type('D');
-        await page.waitForTimeout(50);
         await page.keyboard.type('E');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         // Verify all characters are present
         const ascii = await page.evaluate(() => {
@@ -292,22 +285,22 @@ test.describe('Drawing Tools Interaction', () => {
         // First position - type "X"
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 30);
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         await canvas.focus();
         await page.keyboard.type('X');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Press Escape to commit
         await page.keyboard.press('Escape');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Second position - type "Y"
         await canvas.focus();
         await page.mouse.click(box.x + 100, box.y + 30);
+        await waitForRender(page);
         await canvas.focus();
-        await page.waitForTimeout(100);
         await page.keyboard.type('Y');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         // Verify both characters exist at different positions
         const ascii = await page.evaluate(() => {
@@ -332,20 +325,17 @@ test.describe('Drawing Tools Interaction', () => {
         
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 50);
-        await canvas.focus();
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Type "Hello"
         await page.keyboard.type('Hello');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Backspace 3 times
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(50);
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(50);
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         // Should have "He" remaining
         const ascii = await page.evaluate(() => {
@@ -366,18 +356,18 @@ test.describe('Drawing Tools Interaction', () => {
         // First click - type "AAA"
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 30);
+        await waitForRender(page);
         await canvas.focus();
-        await page.waitForTimeout(100);
         await page.keyboard.type('AAA');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Click in new position - type "BBB"
         await canvas.focus();
         await page.mouse.click(box.x + 150, box.y + 30);
+        await waitForRender(page);
         await canvas.focus();
-        await page.waitForTimeout(100);
         await page.keyboard.type('BBB');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         // Verify both are present
         const ascii = await page.evaluate(() => {
@@ -399,18 +389,16 @@ test.describe('Drawing Tools Interaction', () => {
         // Click and type "Hello"
         await canvas.focus();
         await page.mouse.click(box.x + 50, box.y + 50);
+        await waitForRender(page);
         await canvas.focus();
-        await page.waitForTimeout(100);
         await page.keyboard.type('Hello');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         // Backspace 3 times
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(50);
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(50);
         await page.keyboard.press('Backspace');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         // Should have "He" remaining
         const ascii = await page.evaluate(() => {
@@ -438,7 +426,7 @@ test.describe('Drawing Tools Interaction', () => {
         await page.mouse.move(box.x + 200, box.y + 140, { steps: 5 });
         await page.mouse.move(box.x + 250, box.y + 130, { steps: 5 });
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await waitForRender(page);
     });
 
     test('should select eraser tool', async ({ page }) => {
@@ -451,7 +439,7 @@ test.describe('Drawing Tools Interaction', () => {
     test('should select and move a shape', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawOnCanvas(page, 100, 100, 200, 150);
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('[data-tool="select"]');
         
@@ -460,13 +448,13 @@ test.describe('Drawing Tools Interaction', () => {
         if (!box) return;
         
         await page.mouse.click(box.x + 150, box.y + 125);
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await page.mouse.move(box.x + 150, box.y + 125);
         await page.mouse.down();
         await page.mouse.move(box.x + 200, box.y + 175, { steps: 5 });
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await waitForRender(page);
     });
 });
 
@@ -475,7 +463,6 @@ test.describe('Undo/Redo', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     async function drawRect(page: import('@playwright/test').Page) {
@@ -492,7 +479,7 @@ test.describe('Undo/Redo', () => {
     test('should enable undo after drawing', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawRect(page);
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         const undoBtn = page.locator('#undo-btn');
         await expect(undoBtn).toBeEnabled();
@@ -501,10 +488,10 @@ test.describe('Undo/Redo', () => {
     test('should undo drawing', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawRect(page);
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#undo-btn');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         const undoBtn = page.locator('#undo-btn');
         await expect(undoBtn).toBeDisabled();
@@ -513,10 +500,10 @@ test.describe('Undo/Redo', () => {
     test('should enable redo after undo', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawRect(page);
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#undo-btn');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         const redoBtn = page.locator('#redo-btn');
         await expect(redoBtn).toBeEnabled();
@@ -525,13 +512,13 @@ test.describe('Undo/Redo', () => {
     test('should redo drawing', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
         await drawRect(page);
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#undo-btn');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#redo-btn');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         const undoBtn = page.locator('#undo-btn');
         await expect(undoBtn).toBeEnabled();
@@ -548,12 +535,12 @@ test.describe('Undo/Redo', () => {
         await page.mouse.down();
         await page.mouse.move(box.x + 200, box.y + 150, { steps: 10 });
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         page.on('dialog', dialog => dialog.accept());
         
         await page.click('#clear-btn');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         const undoBtn = page.locator('#undo-btn');
         await expect(undoBtn).toBeDisabled();
@@ -565,14 +552,13 @@ test.describe('Border Styles', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     test('should change border style via select', async ({ page }) => {
         const select = page.locator('#border-style');
         
         await select.selectOption('double');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         const selected = await select.inputValue();
         expect(selected).toBe('double');
@@ -580,13 +566,13 @@ test.describe('Border Styles', () => {
 
     test('should cycle border styles with B key', async ({ page }) => {
         await page.click('#canvas');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         await page.keyboard.press('b');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         await page.keyboard.press('b');
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         const toast = page.locator('#status-toast');
         await expect(toast).toBeVisible();
@@ -598,18 +584,16 @@ test.describe('Zoom Controls', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
         
-        // Reset zoom to 100% before each test
         await page.click('#zoom-reset');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
     });
 
     test('should zoom in with button', async ({ page }) => {
         await expect(page.locator('#zoom-level')).toContainText('100%');
         
         await page.click('#zoom-in');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(page.locator('#zoom-level')).not.toContainText('100%');
     });
@@ -618,24 +602,24 @@ test.describe('Zoom Controls', () => {
         await expect(page.locator('#zoom-level')).toContainText('100%');
         
         await page.click('#zoom-out');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(page.locator('#zoom-level')).not.toContainText('100%');
     });
 
     test('should reset zoom', async ({ page }) => {
         await page.click('#zoom-in');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await page.click('#zoom-reset');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(page.locator('#zoom-level')).toContainText('100%');
     });
 
     test('should fit zoom', async ({ page }) => {
         await page.click('#zoom-fit');
-        await page.waitForTimeout(500);
+        await waitForRender(page);
         
         await expect(page.locator('#zoom-level')).not.toBeEmpty();
     });
@@ -647,7 +631,7 @@ test.describe('Zoom Controls', () => {
         await canvas.hover();
         await page.mouse.wheel(0, -100);
         
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(page.locator('#zoom-level')).not.toContainText('100%');
     });
@@ -658,12 +642,11 @@ test.describe('Keyboard Shortcuts', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     test('should support all tool shortcuts', async ({ page }) => {
         await page.locator('#canvas').focus();
-        await page.waitForTimeout(100);
+        await waitForRender(page);
         
         const shortcuts = [
             { key: 'v', tool: 'select' },
@@ -679,7 +662,6 @@ test.describe('Keyboard Shortcuts', () => {
         for (const { key, tool } of shortcuts) {
             await page.locator('#canvas').focus();
             await page.keyboard.press(key);
-            await page.waitForTimeout(100);
             await expect(page.locator(`[data-tool="${tool}"]`)).toHaveClass(/active/, { timeout: 3000 });
         }
     });
@@ -687,7 +669,7 @@ test.describe('Keyboard Shortcuts', () => {
     test('should show shortcuts modal with ?', async ({ page }) => {
         await page.click('#canvas');
         await page.keyboard.press('?');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const modal = page.locator('#shortcuts-modal');
         await expect(modal).not.toHaveClass(/hidden/);
@@ -696,37 +678,34 @@ test.describe('Keyboard Shortcuts', () => {
     test('should close shortcuts modal with Escape', async ({ page }) => {
         await page.click('#canvas');
         await page.keyboard.press('?');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         const modal = page.locator('#shortcuts-modal');
         await expect(modal).not.toHaveClass(/hidden/);
         
-        // Click the close button instead
         await page.click('.modal-close');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(modal).toHaveClass(/hidden/);
     });
 
     test('should close shortcuts modal by clicking overlay', async ({ page }) => {
-        // First close any existing modal
         const modal = page.locator('#shortcuts-modal');
         const isVisible = await modal.evaluate(el => !el.classList.contains('hidden'));
         
         if (isVisible) {
             await page.click('.modal-close');
-            await page.waitForTimeout(200);
+            await waitForRender(page);
         }
         
-        // Now open and close
         await page.click('#canvas');
         await page.keyboard.press('?');
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(modal).not.toHaveClass(/hidden/);
         
         await page.click('#shortcuts-modal', { position: { x: 10, y: 10 } });
-        await page.waitForTimeout(200);
+        await waitForRender(page);
         
         await expect(modal).toHaveClass(/hidden/);
     });
@@ -742,11 +721,11 @@ test.describe('Keyboard Shortcuts', () => {
         await page.mouse.down();
         await page.mouse.move(box.x + 200, box.y + 150, { steps: 10 });
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#canvas');
         await page.keyboard.press('Control+z');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
     });
 
     test('should redo with Ctrl+Shift+Z', async ({ page }) => {
@@ -760,14 +739,14 @@ test.describe('Keyboard Shortcuts', () => {
         await page.mouse.down();
         await page.mouse.move(box.x + 200, box.y + 150, { steps: 10 });
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#canvas');
         await page.keyboard.press('Control+z');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.keyboard.press('Control+Shift+z');
-        await page.waitForTimeout(300);
+        await waitForRender(page);
     });
 });
 
@@ -776,7 +755,6 @@ test.describe('Copy Functionality', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     test('should show toast when copy is clicked', async ({ page }) => {
@@ -790,10 +768,10 @@ test.describe('Copy Functionality', () => {
         await page.mouse.down();
         await page.mouse.move(box.x + 200, box.y + 150, { steps: 10 });
         await page.mouse.up();
-        await page.waitForTimeout(300);
+        await waitForRender(page);
         
         await page.click('#copy-btn');
-        await page.waitForTimeout(500);
+        await waitForRender(page);
         
         const toast = page.locator('#status-toast');
         await expect(toast).toBeVisible();
@@ -805,7 +783,6 @@ test.describe('Output Verification', () => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     test('should have editor available', async ({ page }) => {
