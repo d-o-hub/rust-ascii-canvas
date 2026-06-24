@@ -9,3 +9,7 @@
 ## 2026-05-28 - [Contextual Feedback and Navigation]
 **Learning:** Contextual visual feedback for specialized tools (like Eraser or Selection) reduces user error and increases confidence. Providing a dedicated "Reset Zoom" shortcut (and documenting it) improves navigation in large diagrams.
 **Action:** Always consider tool-specific cursor indicators and "escape hatches" like zoom reset for canvas-based interfaces.
+
+## 2026-05-29 - [Shortcut Discoverability and ARIA metadata]
+**Learning:** Essential productivity shortcuts (like "Select All" or "Reset Zoom") should be mirrored in the primary side-panel reference, not just hidden in help modals. Additionally, using `aria-keyshortcuts` on toolbar buttons provides a standard way for assistive technologies to communicate keyboard triggers that are otherwise only visible in tooltips.
+**Action:** Always verify that the quick-reference shortcut list covers all high-frequency actions and ensure toolbar buttons have explicit ARIA shortcut metadata.
