@@ -252,9 +252,9 @@ jobs:
             "${{ needs.e2e.result }}"
           )
           for res in "${results[@]}"; do
-            if [[ "$res" == "failure" || "$res" == "cancelled" ]]; then
-              echo "One or more critical CI jobs failed or were cancelled"
+            if [[ "$res" == "failure" ]]; then
+              echo "One or more critical CI jobs failed"
               exit 1
             fi
           done
-          echo "All CI jobs passed or were correctly skipped!"
+          echo "All CI jobs passed, were skipped, or were cancelled (concurrency)!"
