@@ -1,0 +1,179 @@
+//! Rendering and pixel buffer API for WASM.
+
+#![allow(missing_docs)]
+
+use wasm_bindgen::prelude::*;
+
+use super::bindings::AsciiEditor;
+use crate::wasm::render_bridge::{
+    export_ascii, get_dirty_render_commands, get_render_commands, get_render_commands_full,
+    needs_redraw, request_full_redraw,
+};
+
+#[wasm_bindgen]
+impl AsciiEditor {
+    #[wasm_bindgen(js_name = exportAscii)]
+    pub fn export_ascii(&self) -> String {
+        export_ascii(&self.state.grid)
+    }
+
+    #[wasm_bindgen(js_name = getRenderCommands)]
+    pub fn get_render_commands(&mut self) -> JsValue {
+        self.full_render_count += 1;
+        let has_preview = !self.preview_ops.is_empty();
+        let has_selection = self.current_selection.is_some();
+
+        if !has_preview && !has_selection {
+            get_render_commands(&self.renderer, &self.state.grid)
+        } else {
+            get_render_commands_full(
+                &self.renderer,
+                &self.state.grid,
+                &self.preview_ops,
+                self.current_selection.as_ref(),
+            )
+        }
+    }
+
+    #[wasm_bindgen(js_name = getDirtyRenderCommands)]
+    pub fn get_dirty_render_commands(&mut self) -> JsValue {
+        if self.dirty_tracker.needs_full_redraw() {
+            self.full_render_count += 1;
+        } else if !self.dirty_tracker.dirty_rect().is_empty() {
+            self.dirty_render_count += 1;
+        }
+
+        get_dirty_render_commands(
+            &mut self.renderer,
+            &self.state.grid,
+            &mut self.dirty_tracker,
+        )
+    }
+
+    #[wasm_bindgen(getter = fullRenderCount)]
+    pub fn full_render_count(&self) -> u32 {
+        self.full_render_count
+    }
+
+    #[wasm_bindgen(getter = dirtyRenderCount)]
+    pub fn dirty_render_count(&self) -> u32 {
+        self.dirty_render_count
+    }
+
+    #[wasm_bindgen(js_name = resetPerformanceMetrics)]
+    pub fn reset_performance_metrics(&mut self) {
+        self.full_render_count = 0;
+        self.dirty_render_count = 0;
+    }
+
+    #[wasm_bindgen(getter = needsRedraw)]
+    pub fn needs_redraw(&self) -> bool {
+        needs_redraw(&self.dirty_tracker)
+    }
+
+    #[wasm_bindgen(js_name = requestRedraw)]
+    pub fn request_redraw(&mut self) {
+        request_full_redraw(&mut self.dirty_tracker);
+    }
+
+    #[wasm_bindgen(js_name = clearDirtyState)]
+    pub fn clear_dirty_state(&mut self) {
+        self.dirty_tracker.clear();
+    }
+
+    #[wasm_bindgen(js_name = updateFontAtlasGlyph)]
+    pub fn update_font_atlas_glyph(&mut self, ch_code: u32, glyph_data: Vec<u8>) {
+        if let Some(ch) = char::from_u32(ch_code) {
+            self.font_atlas.update_glyph(ch, &glyph_data);
+            self.dirty_tracker.request_full_redraw();
+        }
+    }
+
+    #[wasm_bindgen(js_name = getPixelBufferPtr)]
+    pub fn get_pixel_buffer_ptr(&self) -> *const u8 {
+        self.pixel_buffer.as_ptr()
+    }
+
+    #[wasm_bindgen(js_name = getPixelBufferLen)]
+    pub fn get_pixel_buffer_len(&self) -> usize {
+        self.pixel_buffer.len()
+    }
+
+    #[wasm_bindgen(js_name = renderToPixelBuffer)]
+    pub fn render_to_pixel_buffer(&mut self) {
+        let grid_width = self.state.grid.width();
+        let grid_height = self.state.grid.height();
+        let glyph_w = 8;
+        let glyph_h = 20;
+        let buffer_width = grid_width * glyph_w;
+        let buffer_height = grid_height * glyph_h;
+
+        let required_len = buffer_width * buffer_height * 4;
+        if self.pixel_buffer.len() != required_len {
+            self.pixel_buffer.resize(required_len, 0);
+        }
+
+        let bg_color = [30, 30, 30, 255];
+        for i in 0..buffer_width * buffer_height {
+            let idx = i * 4;
+            self.pixel_buffer[idx] = bg_color[0];
+            self.pixel_buffer[idx + 1] = bg_color[1];
+            self.pixel_buffer[idx + 2] = bg_color[2];
+            self.pixel_buffer[idx + 3] = bg_color[3];
+        }
+
+        let fg_color = [212, 212, 212, 255];
+
+        if let Some(ref sel) = self.current_selection {
+            let (min_x, min_y, max_x, max_y) = sel.bounds();
+            let highlight_color = [38, 79, 120, 255];
+
+            for gy in min_y..=max_y {
+                for gx in min_x..=max_x {
+                    if self.state.grid.in_bounds(gx, gy) {
+                        let sx = gx as usize * glyph_w;
+                        let sy = gy as usize * glyph_h;
+
+                        for y in 0..glyph_h {
+                            let buffer_y = sy + y;
+                            let buffer_row_start = (buffer_y * buffer_width + sx) * 4;
+                            for x in 0..glyph_w {
+                                let pixel_idx = buffer_row_start + x * 4;
+                                self.pixel_buffer[pixel_idx] = highlight_color[0];
+                                self.pixel_buffer[pixel_idx + 1] = highlight_color[1];
+                                self.pixel_buffer[pixel_idx + 2] = highlight_color[2];
+                                self.pixel_buffer[pixel_idx + 3] = highlight_color[3];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        for (x, y, cell) in self.state.grid.iter_with_coords() {
+            if cell.is_visible() {
+                self.font_atlas.render_glyph(
+                    &mut self.pixel_buffer,
+                    buffer_width,
+                    x as usize * glyph_w,
+                    y as usize * glyph_h,
+                    cell.ch,
+                    fg_color,
+                );
+            }
+        }
+
+        for op in &self.preview_ops {
+            if op.cell.is_visible() {
+                self.font_atlas.render_glyph(
+                    &mut self.pixel_buffer,
+                    buffer_width,
+                    op.x as usize * glyph_w,
+                    op.y as usize * glyph_h,
+                    op.cell.ch,
+                    fg_color,
+                );
+            }
+        }
+    }
+}

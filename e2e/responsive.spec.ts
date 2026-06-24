@@ -1,24 +1,34 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
+
+async function waitForRender(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
+        return canvas && canvas.width > 0 && canvas.height > 0;
+    }, { timeout: 5000 });
+}
+
+async function waitForGridResize(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const el = document.querySelector('#grid-size');
+        return el && el.textContent && el.textContent.trim().length > 0;
+    }, { timeout: 5000 });
+}
 
 test.describe('Responsive Grid', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto(BASE_URL);
         await page.waitForSelector('#loading.hidden', { timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
-        await page.waitForTimeout(500);
     });
 
     test('should have a smaller grid on mobile viewport', async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 667 });
-        await page.waitForTimeout(500);
+        await waitForGridResize(page);
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
-        // Mobile max is 60x30, but it should be even smaller based on viewport
-        // 375 / 8 = 46.875 -> 46 cols
-        // (667 - toolbar/header) / 20 -> around 25-30 rows
         const match = text?.match(/(\d+) × (\d+)/);
         if (match) {
             const cols = parseInt(match[1]);
@@ -33,11 +43,10 @@ test.describe('Responsive Grid', () => {
 
     test('should have a medium grid on tablet viewport', async ({ page }) => {
         await page.setViewportSize({ width: 768, height: 1024 });
-        await page.waitForTimeout(500);
+        await waitForGridResize(page);
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
-        // Tablet max is 120x50
         const match = text?.match(/(\d+) × (\d+)/);
         if (match) {
             const cols = parseInt(match[1]);
@@ -53,11 +62,10 @@ test.describe('Responsive Grid', () => {
 
     test('should have a large grid on desktop viewport', async ({ page }) => {
         await page.setViewportSize({ width: 1600, height: 1200 });
-        await page.waitForTimeout(500);
+        await waitForGridResize(page);
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
-        // Desktop max is 240x80
         const match = text?.match(/(\d+) × (\d+)/);
         if (match) {
             const cols = parseInt(match[1]);
@@ -74,7 +82,7 @@ test.describe('Responsive Grid', () => {
 
     test('should allow drawing at the edges of the responsive grid', async ({ page }) => {
         await page.setViewportSize({ width: 600, height: 600 });
-        await page.waitForTimeout(500);
+        await waitForGridResize(page);
 
         const gridSizeText = await page.locator('#grid-size').textContent();
         const match = gridSizeText?.match(/(\d+) × (\d+)/);
@@ -89,9 +97,6 @@ test.describe('Responsive Grid', () => {
         const box = await canvas.boundingBox();
         if (!box) throw new Error('Could not get canvas bounding box');
 
-        // Draw from (0,0) to (cols-1, rows-1)
-        // We need to translate grid coords to screen coords
-        // These are available via window.editor.pan and zoom which we assume are 0 and 1 here
         const charWidth = 8;
         const lineHeight = 20;
 
@@ -100,9 +105,8 @@ test.describe('Responsive Grid', () => {
         await page.mouse.move(box.x + (cols - 1) * charWidth + 4, box.y + (rows - 1) * lineHeight + 10, { steps: 5 });
         await page.mouse.up();
 
-        await page.waitForTimeout(300);
+        await waitForRender(page);
 
-        // Verify drawing at bottom-right corner
         const ascii = await page.evaluate(() => {
             // @ts-ignore
             return window.editor.exportAscii();
@@ -112,7 +116,6 @@ test.describe('Responsive Grid', () => {
         expect(lines.length).toBe(rows);
         const lastLine = lines[rows - 1];
         expect(lastLine.length).toBe(cols);
-        // Expect some box drawing character or border at the corner
         expect(lastLine[cols - 1]).not.toBe(' ');
     });
 });

@@ -2,8 +2,11 @@
 
 mod bindings;
 mod clipboard;
-mod events;
+mod event_handlers;
+mod helpers;
+mod render_api;
 mod render_bridge;
+mod selection;
 mod tool_manager;
 
 pub use bindings::AsciiEditor;

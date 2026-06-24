@@ -108,11 +108,12 @@ export class EditorPage {
     }
 
     async selectToolByShortcut(shortcut: string): Promise<void> {
-        // Focus the canvas properly
         await this.canvas.focus();
-        await this.page.waitForTimeout(50);
         await this.page.keyboard.press(shortcut.toLowerCase());
-        await this.page.waitForTimeout(100);
+        await this.page.waitForFunction(
+            () => document.querySelector('[data-tool].active') !== null,
+            { timeout: 2000 }
+        );
     }
 
     async drawWithTool(
