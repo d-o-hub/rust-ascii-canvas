@@ -740,11 +740,16 @@ function handleKeyDown(e: KeyboardEvent) {
     }
 
     // Handle tool shortcuts
-    const lowerKey = key.toLowerCase();
-    for (const [toolName, info] of Object.entries(TOOL_INFO)) {
-        if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
-            setTool(toolName);
-            break;
+    // Don't switch tools if we're currently typing in the Text tool
+    const isTypingText = editor.tool.toLowerCase() === 'text' && document.activeElement === mobileKeyboardProxy;
+
+    if (!isTypingText) {
+        const lowerKey = key.toLowerCase();
+        for (const [toolName, info] of Object.entries(TOOL_INFO)) {
+            if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
+                setTool(toolName);
+                break;
+            }
         }
     }
 }
@@ -1247,7 +1252,7 @@ if (typeof document !== 'undefined') {
         document.addEventListener('DOMContentLoaded', initialize);
     } else {
         // Only initialize if we're not in a test environment or if explicitly called
-        if (typeof process === 'undefined' || !process.env.VITEST) {
+        if (typeof window !== 'undefined' && !((window as unknown as { process?: { env?: { VITEST?: boolean } } }).process?.env?.VITEST)) {
             initialize();
         }
     }
