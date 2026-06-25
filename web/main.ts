@@ -230,11 +230,11 @@ async function initialize() {
         }
         ctx = ctxResult;
 
-        // Set up canvas size first to have correct container rect
-        resizeCanvas();
-
         // Measure font metrics MUST run before computeGridDimensions()
         measureFont();
+
+        // Set up canvas size first to have correct container rect
+        resizeCanvas();
 
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
@@ -437,8 +437,12 @@ function setupEventListeners() {
             currentLineDirection = direction;
             
             // Update active state
-            directionBtns.forEach(b => b.classList.remove('active'));
+            directionBtns.forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-pressed', 'false');
+            });
             btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
             
             // Call WASM to set line direction
             if (editor) {
@@ -718,29 +722,34 @@ function handleKeyDown(e: KeyboardEvent) {
 
     handleEventResult(result);
 
-    // Handle B key - cycle border styles
-    if (key.toLowerCase() === 'b' && !ctrl && !shift) {
-        cycleBorderStyle();
-    }
+    // Don't switch tools or cycle styles if we're currently typing in the Text tool
+    const isTypingText = editor.tool.toLowerCase() === 'text' && document.activeElement === mobileKeyboardProxy;
 
-    // Handle 0 key - reset zoom
-    if (key === '0' && !ctrl && !shift) {
-        setZoom(1.0);
-        editor.setPan(0, 0);
-        showToast('Zoom reset to 100%');
-    }
+    if (!isTypingText) {
+        // Handle B key - cycle border styles
+        if (key.toLowerCase() === 'b' && !ctrl && !shift) {
+            cycleBorderStyle();
+        }
 
-    // Handle ? key - show keyboard shortcuts modal
-    if (key === '?' || (key === '/' && shift)) {
-        showShortcutsModal();
-    }
+        // Handle 0 key - reset zoom
+        if (key === '0' && !ctrl && !shift) {
+            setZoom(1.0);
+            editor.setPan(0, 0);
+            showToast('Zoom reset to 100%');
+        }
 
-    // Handle tool shortcuts
-    const lowerKey = key.toLowerCase();
-    for (const [toolName, info] of Object.entries(TOOL_INFO)) {
-        if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
-            setTool(toolName);
-            break;
+        // Handle ? key - show keyboard shortcuts modal
+        if (key === '?' || (key === '/' && shift)) {
+            showShortcutsModal();
+        }
+
+        // Handle tool shortcuts
+        const lowerKey = key.toLowerCase();
+        for (const [toolName, info] of Object.entries(TOOL_INFO)) {
+            if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
+                setTool(toolName);
+                break;
+            }
         }
     }
 }
@@ -772,7 +781,7 @@ function handleEventResult(result: EventResult | null) {
     }
 
     // Handle mobile keyboard proxy
-    if (editor && editor.tool === 'text') {
+    if (editor && editor.tool.toLowerCase() === 'text') {
         if (document.activeElement !== mobileKeyboardProxy) {
             mobileKeyboardProxy.focus();
         }
@@ -1243,7 +1252,7 @@ if (typeof document !== 'undefined') {
         document.addEventListener('DOMContentLoaded', initialize);
     } else {
         // Only initialize if we're not in a test environment or if explicitly called
-        if (!process.env.VITEST) {
+        if (typeof window !== 'undefined' && !((window as unknown as { process?: { env?: { VITEST?: boolean } } }).process?.env?.VITEST)) {
             initialize();
         }
     }
