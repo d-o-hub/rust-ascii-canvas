@@ -208,6 +208,7 @@ impl AsciiEditor {
             if result.modified {
                 self.commit_ops(&result.ops);
             }
+            return self.js_event_result();
         }
 
         self.js_event_result()

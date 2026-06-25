@@ -230,11 +230,11 @@ async function initialize() {
         }
         ctx = ctxResult;
 
-        // Set up canvas size first to have correct container rect
-        resizeCanvas();
-
         // Measure font metrics MUST run before computeGridDimensions()
         measureFont();
+
+        // Set up canvas size first to have correct container rect
+        resizeCanvas();
 
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
@@ -722,28 +722,28 @@ function handleKeyDown(e: KeyboardEvent) {
 
     handleEventResult(result);
 
-    // Handle B key - cycle border styles
-    if (key.toLowerCase() === 'b' && !ctrl && !shift) {
-        cycleBorderStyle();
-    }
-
-    // Handle 0 key - reset zoom
-    if (key === '0' && !ctrl && !shift) {
-        setZoom(1.0);
-        editor.setPan(0, 0);
-        showToast('Zoom reset to 100%');
-    }
-
-    // Handle ? key - show keyboard shortcuts modal
-    if (key === '?' || (key === '/' && shift)) {
-        showShortcutsModal();
-    }
-
-    // Handle tool shortcuts
-    // Don't switch tools if we're currently typing in the Text tool
+    // Don't switch tools or cycle styles if we're currently typing in the Text tool
     const isTypingText = editor.tool.toLowerCase() === 'text' && document.activeElement === mobileKeyboardProxy;
 
     if (!isTypingText) {
+        // Handle B key - cycle border styles
+        if (key.toLowerCase() === 'b' && !ctrl && !shift) {
+            cycleBorderStyle();
+        }
+
+        // Handle 0 key - reset zoom
+        if (key === '0' && !ctrl && !shift) {
+            setZoom(1.0);
+            editor.setPan(0, 0);
+            showToast('Zoom reset to 100%');
+        }
+
+        // Handle ? key - show keyboard shortcuts modal
+        if (key === '?' || (key === '/' && shift)) {
+            showShortcutsModal();
+        }
+
+        // Handle tool shortcuts
         const lowerKey = key.toLowerCase();
         for (const [toolName, info] of Object.entries(TOOL_INFO)) {
             if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
@@ -781,7 +781,7 @@ function handleEventResult(result: EventResult | null) {
     }
 
     // Handle mobile keyboard proxy
-    if (editor && editor.tool === 'text') {
+    if (editor && editor.tool.toLowerCase() === 'text') {
         if (document.activeElement !== mobileKeyboardProxy) {
             mobileKeyboardProxy.focus();
         }
