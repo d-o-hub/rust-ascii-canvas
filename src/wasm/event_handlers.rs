@@ -155,6 +155,11 @@ impl AsciiEditor {
             return self.js_event_result();
         }
 
+        if ctrl && !shift && key.to_lowercase() == "y" {
+            self.redo();
+            return self.js_event_result();
+        }
+
         if ctrl && key.to_lowercase() == "c" {
             return self.js_event_result_with_copy(true);
         }

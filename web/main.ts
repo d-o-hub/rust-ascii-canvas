@@ -437,8 +437,12 @@ function setupEventListeners() {
             currentLineDirection = direction;
             
             // Update active state
-            directionBtns.forEach(b => b.classList.remove('active'));
+            directionBtns.forEach(b => {
+                b.classList.remove('active');
+                b.setAttribute('aria-pressed', 'false');
+            });
             btn.classList.add('active');
+            btn.setAttribute('aria-pressed', 'true');
             
             // Call WASM to set line direction
             if (editor) {
@@ -1243,7 +1247,7 @@ if (typeof document !== 'undefined') {
         document.addEventListener('DOMContentLoaded', initialize);
     } else {
         // Only initialize if we're not in a test environment or if explicitly called
-        if (!process.env.VITEST) {
+        if (typeof process === 'undefined' || !process.env.VITEST) {
             initialize();
         }
     }

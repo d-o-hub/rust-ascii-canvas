@@ -38,7 +38,7 @@
                     </button>
                     <!-- Line Direction Options (hidden by default) -->
                     <div id="line-direction-group" class="tool-group line-options" role="group" aria-label="Line Direction" style="display: none;">
-                        <button class="direction-btn active" data-direction="auto" title="Auto direction" aria-label="Auto">
+                        <button class="direction-btn active" data-direction="auto" title="Auto direction" aria-label="Auto" aria-pressed="true">
                             <span class="tool-icon">◐</span>
                         </button>
                         <button class="direction-btn" data-direction="horizontal" title="Horizontal (━)" aria-label="Horizontal">
@@ -91,7 +91,7 @@
                 <button id="undo-btn" class="action-btn" title="Undo (Ctrl+Z)" aria-label="Undo" aria-keyshortcuts="Control+Z" disabled>
                     <span class="action-icon">↶</span>
                 </button>
-                <button id="redo-btn" class="action-btn" title="Redo (Ctrl+Shift+Z)" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z" disabled>
+                <button id="redo-btn" class="action-btn" title="Redo (Ctrl+Shift+Z or Ctrl+Y)" aria-label="Redo" aria-keyshortcuts="Control+Shift+Z Control+Y" disabled>
                     <span class="action-icon">↷</span>
                 </button>
                 <div class="tool-separator"></div>
@@ -190,7 +190,7 @@
                             <kbd>Ctrl+Z</kbd> <span>Undo</span>
                         </div>
                         <div class="shortcut-item">
-                            <kbd>Ctrl+Shift+Z</kbd> <span>Redo</span>
+                            <kbd>Ctrl+Shift+Z</kbd> / <kbd>Ctrl+Y</kbd> <span>Redo</span>
                         </div>
                         <div class="shortcut-item">
                             <kbd>Ctrl+A</kbd> <span>Select All</span>
@@ -258,7 +258,7 @@
                     <div class="shortcut-grid">
                         <div class="shortcut-row"><kbd>B</kbd> <span>Cycle Border Style</span></div>
                         <div class="shortcut-row"><kbd>Ctrl+Z</kbd> <span>Undo</span></div>
-                        <div class="shortcut-row"><kbd>Ctrl+Shift+Z</kbd> <span>Redo</span></div>
+                        <div class="shortcut-row"><kbd>Ctrl+Shift+Z</kbd> / <kbd>Ctrl+Y</kbd> <span>Redo</span></div>
                         <div class="shortcut-row"><kbd>Ctrl+A</kbd> <span>Select All</span></div>
                         <div class="shortcut-row"><kbd>Ctrl+C</kbd> <span>Copy ASCII</span></div>
                         <div class="shortcut-row"><kbd>Space+Drag</kbd> <span>Pan Canvas</span></div>
