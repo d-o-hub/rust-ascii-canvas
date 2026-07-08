@@ -170,7 +170,7 @@ jobs:
           pnpm run build:wasm
 
       - name: Upload WASM
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-pkg
           path: web/pkg
