@@ -458,6 +458,7 @@ function setupEventListeners() {
         editor.undo();
         requestRender();
         updateUI();
+        if (canvas) canvas.focus();
     });
 
     redoBtn.addEventListener('mousedown', (e) => e.preventDefault());
@@ -466,10 +467,14 @@ function setupEventListeners() {
         editor.redo();
         requestRender();
         updateUI();
+        if (canvas) canvas.focus();
     });
 
     copyBtn.addEventListener('mousedown', (e) => e.preventDefault());
-    copyBtn.addEventListener('click', copyToClipboard);
+    copyBtn.addEventListener('click', () => {
+        void copyToClipboard();
+        if (canvas) canvas.focus();
+    });
 
     clearBtn.addEventListener('mousedown', (e) => e.preventDefault());
     clearBtn.addEventListener('click', () => {
@@ -479,6 +484,7 @@ function setupEventListeners() {
             requestRender();
             updateUI();
             showToast('Canvas cleared');
+            if (canvas) canvas.focus();
         }
     });
 
@@ -490,24 +496,28 @@ function setupEventListeners() {
     zoomFitBtn.addEventListener('click', () => {
         if (!editor) return;
         fitZoom();
+        if (canvas) canvas.focus();
     });
 
     zoomResetBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomResetBtn.addEventListener('click', () => {
         if (!editor) return;
         setZoom(1.0);
+        if (canvas) canvas.focus();
     });
 
     zoomOutBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomOutBtn.addEventListener('click', () => {
         if (!editor) return;
         setZoom(editor.zoom * 0.8);
+        if (canvas) canvas.focus();
     });
 
     zoomInBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomInBtn.addEventListener('click', () => {
         if (!editor) return;
         setZoom(editor.zoom * 1.25);
+        if (canvas) canvas.focus();
     });
 }
 
