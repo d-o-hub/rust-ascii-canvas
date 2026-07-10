@@ -212,7 +212,7 @@ jobs:
         run: npx playwright install chromium
 
       - name: Download WASM
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: wasm-pkg
           path: web/pkg
