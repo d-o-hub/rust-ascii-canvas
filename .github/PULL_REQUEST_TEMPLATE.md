@@ -2,28 +2,28 @@
 
 <!-- Briefly describe your changes -->
 
-## Changes Made
+## Changes made
 
-<!-- What changes were made? -->
+<!-- What changed and why -->
 
-## Testing
+## Testing (harness)
 
-- [ ] Tests pass (`cargo test`)
-- [ ] Clippy passes (`cargo clippy`)
-- [ ] Formatting is correct (`cargo fmt`)
-- [ ] E2E tests pass (`npx playwright test --project=chromium`)
+- [ ] Fast gates: `npm run gate:fast` (fmt, clippy, tests, architecture, web lint/tsc/vitest)
+- [ ] Full gates (if product behaviour): `npm run gate:full` (WASM, size, E2E)
+- [ ] Or equivalent CI jobs green
 
 ## Checklist
 
-- [ ] I have read the [CONTRIBUTING.md](./CONTRIBUTING.md)
-- [ ] My code follows the project's coding conventions
-- [ ] I have updated documentation where applicable
-- [ ] I have added tests that prove my fix is effective or my feature works
+- [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and [AGENTS.md](../AGENTS.md)
+- [ ] Architecture layers respected (`core` pure; see `agents-docs/architecture.md`)
+- [ ] Documentation / ADR updated if decision or harness changed
+- [ ] Tests prove the fix or feature (no weakened assertions)
+- [ ] If a recurring agent/CI failure was fixed: guide or sensor improved
 
 ## Screenshots
 
-<!-- If applicable, add screenshots -->
+<!-- If applicable -->
 
-## Related Issues
+## Related issues
 
-<!-- Link to related issues (e.g., "Closes #123") -->
+<!-- e.g. Closes #123 -->

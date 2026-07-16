@@ -1,67 +1,56 @@
 # Agent Best Practices - ASCII Canvas Project
 
-## Agent System Overview
+## Agent system overview
 
-This project uses specialized agents with skills for different tasks. All agents should document their work in the `plans/` folder.
+Specialized skills + an explicit **outer harness** (guides + sensors). Start at root [`AGENTS.md`](../AGENTS.md) and [harness.md](harness.md). Document lasting work in `plans/`.
 
-## Best Practices
+## Best practices
 
-### Task Execution
-1. **Analyze** - Understand requirements before acting
-2. **Plan** - Create steps in `plans/` with GOAP with ADR before execution
-3. **Execute** - Run commands and tests
-4. **Document** - Update `plans/` with results
+### Task execution
+1. **Analyze** — requirements and layers touched ([architecture.md](architecture.md))
+2. **Plan** — multi-step work → `plans/` + ADR (`goap-adr-planner`)
+3. **Execute** — implement; keep business logic in `src/core/`
+4. **Verify** — `npm run gate:fast` (iterate) / `gate:full` (handoff); skill `verify`
+5. **Document** — update `plans/` / ADRs; improve harness when failures recur
 
-### Documentation Standards
-- All architectural decisions → `plans/` folder
-- Use ADR format: title, status, date, context, decision, consequences
-- Update `PROJECT_STATUS.md` with test results
-- Add technical findings to `TECHNICAL_ANALYSIS.md`
-- **Always document learnings** - Any new tool, workflow, fix, or best practice discovered during development must be added to `plans/` (e.g., `TECHNICAL_ANALYSIS.md` for technical findings, new ADRs for decisions)
+### Documentation standards
+- Architectural decisions → `plans/ADRs/`
+- Status → `plans/PROJECT_STATUS.md`
+- Technical findings → `plans/TECHNICAL_ANALYSIS.md`
+- Harness inventory → `agents-docs/harness.md`
 
-### Testing Workflow
-1. Build dependencies (WASM, npm packages)
-2. Run tests: `cargo test`, `npx playwright test`
-3. Document results in `plans/`
-4. Update ADRs with learnings
+### Testing workflow (tiered)
+1. Focused tests while TDD’ing
+2. `npm run gate:fast` after meaningful edits
+3. `npm run gate:full` before PR (WASM, size, E2E)
+4. Tool/UI: `tool-validation` + relevant Playwright
 
-### File Organization
+### File organization
 ```
-plans/
-├── PROJECT_STATUS.md      # Current project state
-├── TECHNICAL_ANALYSIS.md  # Technical findings
-└── ADRs/                 # Architectural decisions
-    └── *.md
-
-.agents/skills/
+plans/           # status, ADRs, analysis
+agents-docs/     # harness, architecture, learnings
+.agents/skills/  # verify, code-review, rust-*, etc.
+scripts/         # quality-gates, check-architecture
 ```
 
-### Code Quality
-- Keep files under 500 LOC
-- Use consistent naming conventions
-- Add documentation comments for public APIs
-- Run tests before marking tasks complete
+### Code quality
+- ≤500 LOC per file (exceptions only in `.loc-allowlist`)
+- Computational sensors must stay green; do not skip or weaken
+- Public APIs documented; naming consistent with neighbours
 
 ### Communication
-- Provide structured output with summaries
-- Include specific issues and recommendations
-- Verify ADRs match implementation
+- Structured summaries; explicit harness changes in PRs
+- Prefer FIX hints from quality-gates when self-correcting
 
-### CI/CD Best Practices (2026-03-19)
+### CI/CD (updated 2026-07-16)
 
-1. **Release workflow**: Use `gh release create --target ${{ github.sha }}` to create both tag and release in one step. No manual `git tag` needed.
-2. **GH_TOKEN**: Always set `env: GH_TOKEN: ${{ github.token }}` on steps using `gh` CLI.
-3. **binaryen/wasm-opt**: Download from GitHub releases, not `apt-get`. Ubuntu packages are too old for latest Rust WASM output.
-4. **wasm-opt flags**: Use `--enable-sign-ext` (not `--enable-sign-extension`), `--enable-nontrapping-float-to-int`, `--enable-simd`, `--enable-bulk-memory`.
-5. **Always test CI fixes** — push, trigger, monitor. Fix iteratively until green.
+1. Path filters: **rust**, **web**, **product**, **harness** — web-only PRs still run web + WASM/E2E as needed
+2. Jobs: fmt, clippy, architecture, rust, security, deny, **web** (eslint/tsc/vitest), wasm+size, e2e
+3. Release: `gh release create --target ${{ github.sha }}`; `GH_TOKEN: ${{ github.token }}`
+4. wasm-opt: install recent binaryen; flags `--enable-sign-ext`, `--enable-nontrapping-float-to-int`, `--enable-simd`, `--enable-bulk-memory`
+5. Local mirror of CI left side: `npm run gate:fast`
 
-## Rust Testing Architecture
+## Rust testing architecture
 
-1. **Unit Tests (`src/`)**:
-   - Unit tests **must** live in the same file as the source code they test.
-   - Place them at the bottom of the file within a `#[cfg(test)] mod tests { ... }` block.
-   - This follows standard Rust idiomatic practice, allowing tests to access private functions and variables.
-
-2. **Integration Tests (`tests/`)**:
-   - Only place tests here if they are testing the crate's public API from the outside.
-   - The `tests/` directory is exclusively for integration-level validation.
+1. **Unit tests (`src/`)**: same file, `#[cfg(test)] mod tests`
+2. **Integration tests (`tests/`)**: public API only

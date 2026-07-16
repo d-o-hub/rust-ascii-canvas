@@ -45,6 +45,15 @@ npm run dev &
 
 The editor will be available at `http://localhost:3003`.
 
+### Quality gates (agent + human)
+
+```shell
+npm run gate:fast   # fmt, clippy, tests, architecture, web lint/tsc/vitest
+npm run gate:full   # + WASM build, size budget, E2E
+```
+
+Coding-agent harness: [`AGENTS.md`](AGENTS.md), [`agents-docs/harness.md`](agents-docs/harness.md). Architecture layers: [`agents-docs/architecture.md`](agents-docs/architecture.md).
+
 ## Project Structure
 
 ```

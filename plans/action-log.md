@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-07-16 — Harness engineering optimization
+
+- ADR-037; `agents-docs/harness.md` + `architecture.md`
+- Root `AGENTS.md` rewritten (tiered gates, steering loop)
+- `scripts/quality-gates.sh --fast|--full`; `check-architecture.sh`; `.loc-allowlist`
+- CI: web job, architecture job, size budget, fixed path filters for web/
+- Skills: `verify`, `code-review`; tool-validation frontmatter
+- package scripts: `gate:fast`, `gate:full`, `check:architecture`
+- CONTRIBUTING + PR template aligned
+
+---
+
 ## Initial Assessment
 
 ### Repository State

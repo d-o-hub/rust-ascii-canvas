@@ -81,12 +81,22 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
 ## Immediate next steps
 
-1. **F-01** — Open PR; close #21  
-2. **F-02** — Manual multi-OS paste QA  
-3. **F-03** — Dependabot #98 / #99  
-4. **F-10 / F-11** — SVG export and layer polish when product prioritizes  
+1. **F-02** — Manual multi-OS paste QA  
+2. **F-03** — Dependabot #98 / #99  
+3. **F-10 / F-11** — SVG export and layer polish when product prioritizes  
+4. **Harness** — Adopted ADR-037 (2026-07-16): tiered gates, architecture fitness, web CI, verify/code-review skills  
 
 Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
+
+### Agent harness (2026-07-16)
+
+| Piece | Location |
+|-------|----------|
+| ADR | [037-harness-engineering](ADRs/037-harness-engineering.md) |
+| Map | [agents-docs/harness.md](../agents-docs/harness.md) |
+| Fast/full sensors | `npm run gate:fast` / `gate:full` |
+| Architecture sensor | `scripts/check-architecture.sh` |
+| Skills | `verify`, `code-review` |
 
 ---
 
