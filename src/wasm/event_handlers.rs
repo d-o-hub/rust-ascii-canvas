@@ -1,7 +1,5 @@
 //! Pointer, keyboard, and wheel event handlers for WASM.
 
-#![allow(missing_docs)]
-
 use wasm_bindgen::prelude::*;
 
 use super::bindings::AsciiEditor;
@@ -9,6 +7,7 @@ use crate::core::tools::ToolId;
 
 #[wasm_bindgen]
 impl AsciiEditor {
+    /// Handles pointer/mouse down events and triggers tool action starts.
     #[wasm_bindgen(js_name = onPointerDown)]
     pub fn on_pointer_down(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.space_held {
@@ -50,6 +49,7 @@ impl AsciiEditor {
         self.js_event_result()
     }
 
+    /// Handles pointer/mouse move events for drawing previews, panning, or moving selections.
     #[wasm_bindgen(js_name = onPointerMove)]
     pub fn on_pointer_move(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.is_panning {
@@ -90,6 +90,7 @@ impl AsciiEditor {
         self.js_event_result()
     }
 
+    /// Handles pointer/mouse up events to commit drawing actions or selection modifications.
     #[wasm_bindgen(js_name = onPointerUp)]
     pub fn on_pointer_up(&mut self, screen_x: f64, screen_y: f64) -> JsValue {
         if self.is_panning {
@@ -120,6 +121,7 @@ impl AsciiEditor {
         self.js_event_result()
     }
 
+    /// Handles keyboard key down events for shortcuts, copy/paste, backspace/delete, etc.
     #[wasm_bindgen(js_name = onKeyDown)]
     pub fn on_key_down(&mut self, key: String, ctrl: bool, shift: bool) -> JsValue {
         let key_char = if key.len() == 1 {
@@ -218,6 +220,7 @@ impl AsciiEditor {
         self.js_event_result()
     }
 
+    /// Handles keyboard key up events (e.g. releasing spacebar to stop panning).
     #[wasm_bindgen(js_name = onKeyUp)]
     pub fn on_key_up(&mut self, key: String) {
         if key == " " {
@@ -226,6 +229,7 @@ impl AsciiEditor {
         }
     }
 
+    /// Handles mouse wheel zoom and pan operations.
     #[wasm_bindgen(js_name = onWheel)]
     pub fn on_wheel(&mut self, delta: f64, screen_x: f64, screen_y: f64) -> JsValue {
         let zoom_factor = if delta > 0.0 { 0.9 } else { 1.1 };
