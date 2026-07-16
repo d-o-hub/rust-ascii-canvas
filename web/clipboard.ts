@@ -9,45 +9,20 @@ import type { AsciiEditorInterface } from './types.js';
 export type ToastFn = (message: string, isError?: boolean) => void;
 
 /**
- * Escape text for embedding in a static HTML template (clipboard rich-text fallback).
- */
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-/**
- * Copy ASCII to the system clipboard with CRLF line endings and HTML fallback.
+ * Copy ASCII to the system clipboard with CRLF line endings.
+ *
+ * Uses plain text only (not text/html) so external paste targets receive the same
+ * characters without Codacy/eslint-plugin-xss false positives on HTML clipboard MIME.
  */
 export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Promise<void> {
     const normalized = normalizeToCRLF(text);
 
     try {
-        const plain = new Blob([normalized], { type: 'text/plain' });
-        // Build HTML from escaped text only (no outerHTML / DOM serialization) for Codacy XSS tools.
-        const safeBody = escapeHtml(normalized);
-        const htmlPayload =
-            `<pre style="font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace;font-size:14px;line-height:1.4;white-space:pre">${safeBody}</pre>`;
-
-        await navigator.clipboard.write([
-            new ClipboardItem({
-                'text/plain': plain,
-                'text/html': new Blob([htmlPayload], { type: 'text/html' }),
-            }),
-        ]);
-
+        await navigator.clipboard.writeText(normalized);
         showToast('Copied — paste in a monospace editor');
     } catch (err) {
         logger.error('Failed to copy:', err);
-        try {
-            await navigator.clipboard.writeText(normalized);
-            showToast('Copied — paste in a monospace editor');
-        } catch {
-            showToast('Failed to copy', true);
-        }
+        showToast('Failed to copy', true);
     }
 }
 
