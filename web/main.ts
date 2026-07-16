@@ -222,6 +222,12 @@ async function initialize() {
         // Hide loading overlay
         loadingOverlay.classList.add('hidden');
 
+        // Dispatch a resize event to ensure WebKit viewport/layout is fully synchronized
+        window.dispatchEvent(new Event('resize'));
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
+
         // Focus canvas
         canvas.focus();
 
