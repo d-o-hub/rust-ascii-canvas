@@ -17,7 +17,7 @@ import {
     TOOL_INFO,
     BORDER_STYLES,
 } from './constants.js';
-import { capitalize, debounce, getElement, getOptionalElement } from './utils.js';
+import { capitalize, debounce, getElement } from './utils.js';
 import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
 import {
     createAutoSaveScheduler,
@@ -1064,16 +1064,15 @@ function updateToolButtons(activeTool: string) {
         btn.setAttribute('aria-pressed', isActive.toString());
     });
 
-    // Update instruction message (module ref or live DOM for unit tests)
+    // TOOL_INFO is a full Record for known tools; callers pass known tool ids.
     const info = TOOL_INFO[normalizedTool];
-    const statusEl = getOptionalElement('status-message');
-    if (info && statusEl) {
+    const statusEl = document.querySelector('#status-message');
+    if (statusEl instanceof HTMLElement) {
         statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
     }
 
-    // Update cursor
-    const container = getOptionalElement('canvas-container');
-    if (container && info) {
+    const container = document.querySelector('#canvas-container');
+    if (container instanceof HTMLElement) {
         // Clear previous tool classes
         container.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
         if (info.cursor === 'text') {

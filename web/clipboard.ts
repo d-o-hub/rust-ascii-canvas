@@ -9,6 +9,17 @@ import type { AsciiEditorInterface } from './types.js';
 export type ToastFn = (message: string, isError?: boolean) => void;
 
 /**
+ * Escape text for embedding in a static HTML template (clipboard rich-text fallback).
+ */
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+/**
  * Copy ASCII to the system clipboard with CRLF line endings and HTML fallback.
  */
 export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Promise<void> {
@@ -16,21 +27,15 @@ export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Pr
 
     try {
         const plain = new Blob([normalized], { type: 'text/plain' });
-
-        const pre = document.createElement('pre');
-        pre.style.fontFamily = "'JetBrains Mono','Cascadia Code','Courier New',monospace";
-        pre.style.fontSize = '14px';
-        pre.style.lineHeight = '1.4';
-        pre.style.whiteSpace = 'pre';
-        // Use the same CRLF-normalized text for HTML so Word/web paste targets match plain text.
-        // textContent (not innerHTML) so content is never interpreted as markup.
-        pre.textContent = normalized;
+        // Build HTML from escaped text only (no outerHTML / DOM serialization) for Codacy XSS tools.
+        const safeBody = escapeHtml(normalized);
+        const htmlPayload =
+            `<pre style="font-family:'JetBrains Mono','Cascadia Code','Courier New',monospace;font-size:14px;line-height:1.4;white-space:pre">${safeBody}</pre>`;
 
         await navigator.clipboard.write([
             new ClipboardItem({
                 'text/plain': plain,
-                // Inline Blob avoids intermediate HTML-typed variable (Codacy xss/no-mixed-html FP).
-                'text/html': new Blob([pre.outerHTML], { type: 'text/html' }),
+                'text/html': new Blob([htmlPayload], { type: 'text/html' }),
             }),
         ]);
 
