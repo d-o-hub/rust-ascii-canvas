@@ -69,7 +69,9 @@ export function openDocumentPicker(
                 showToast('Invalid diagram file', true);
             }
         };
-        reader.onerror = () => showToast('Failed to read file', true);
+        reader.onerror = () => {
+            showToast('Failed to read file', true);
+        };
         reader.readAsText(file);
     });
     input.click();
@@ -89,23 +91,23 @@ export function createAutoSaveScheduler(
 ): AutoSaveScheduler {
     let timer: ReturnType<typeof setTimeout> | null = null;
 
-    const flush = (): void => {
+    function flush(): void {
         if (timer) {
             clearTimeout(timer);
             timer = null;
         }
         const editor = getEditor();
         if (editor) autoSave(editor);
-    };
+    }
 
-    const schedule = (): void => {
+    function schedule(): void {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
             timer = null;
             const editor = getEditor();
             if (editor) autoSave(editor);
         }, delayMs);
-    };
+    }
 
     return { schedule, flush };
 }

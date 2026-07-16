@@ -23,9 +23,15 @@ export function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay
 
 /** Get a required DOM element by id. */
 export function getElement<T extends HTMLElement>(id: string): T {
-    const el = document.getElementById(id);
-    if (!el) {
+    const el = document.querySelector(`#${CSS.escape(id)}`);
+    if (!(el instanceof HTMLElement)) {
         throw new Error(`Element #${id} not found`);
     }
     return el as T;
+}
+
+/** Get an optional DOM element by id (null when missing). */
+export function getOptionalElement<T extends HTMLElement>(id: string): T | null {
+    const el = document.querySelector(`#${CSS.escape(id)}`);
+    return el instanceof HTMLElement ? (el as T) : null;
 }

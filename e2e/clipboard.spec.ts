@@ -45,11 +45,11 @@ test.describe('Copy / export fidelity', () => {
 
         // Wait for content to be non-empty
         await page.waitForFunction(() => {
-            const ascii = window.editor?.exportAscii?.() ?? '';
+            const ascii = window.editor?.exportAscii() ?? '';
             return ascii.length > 0;
         }, null, { timeout: 10000 });
 
-        const ascii = await page.evaluate(() => window.editor!.exportAscii());
+        const ascii = await page.evaluate(() => window.editor?.exportAscii() ?? '');
         const lines = ascii.split('\n').filter((l: string) => l.length > 0);
         expect(lines.length).toBeGreaterThanOrEqual(2);
 
@@ -75,10 +75,11 @@ test.describe('Copy / export fidelity', () => {
         await page.mouse.move(box.x + 120, box.y + 90);
         await page.mouse.up();
 
-        await page.waitForFunction(() => (window.editor?.exportAscii?.() ?? '').length > 0);
+        await page.waitForFunction(() => (window.editor?.exportAscii() ?? '').length > 0);
 
         const { full, forCopy } = await page.evaluate(() => {
-            const ed = window.editor!;
+            const ed = window.editor;
+            if (!ed) return { full: '', forCopy: '' };
             return {
                 full: ed.exportAscii(),
                 forCopy: typeof ed.exportForCopy === 'function' ? ed.exportForCopy() : ed.exportAscii(),
@@ -105,10 +106,13 @@ test.describe('Copy / export fidelity', () => {
         await page.mouse.move(box.x + 140, box.y + 100);
         await page.mouse.up();
 
-        await page.waitForFunction(() => (window.editor?.exportAscii?.() ?? '').length > 0);
+        await page.waitForFunction(() => (window.editor?.exportAscii() ?? '').length > 0);
 
         const ok = await page.evaluate(() => {
-            const ed = window.editor!;
+            const ed = window.editor;
+            if (!ed) {
+                return { loaded: false, before: '', afterClear: '', after: '', same: false };
+            }
             const before = ed.exportAscii();
             const json = ed.serializeDocument();
             ed.clear();

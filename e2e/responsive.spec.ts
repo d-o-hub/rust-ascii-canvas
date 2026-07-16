@@ -103,7 +103,7 @@ test.describe('Responsive Grid', () => {
         await waitForRender(page);
 
         const ascii = await page.evaluate(() => {
-            return window.editor!.exportAscii();
+            return window.editor?.exportAscii() ?? '';
         });
 
         const lines = ascii.trimEnd().split('\n');

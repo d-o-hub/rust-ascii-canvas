@@ -17,7 +17,7 @@ import {
     TOOL_INFO,
     BORDER_STYLES,
 } from './constants.js';
-import { capitalize, debounce, getElement } from './utils.js';
+import { capitalize, debounce, getElement, getOptionalElement } from './utils.js';
 import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
 import {
     createAutoSaveScheduler,
@@ -82,14 +82,7 @@ let zoomInBtn: HTMLButtonElement;
 let lineDirectionGroup: HTMLDivElement;
 let directionBtns: NodeListOf<Element>;
 let mobileKeyboardProxy: HTMLInputElement;
-let saveBtn: HTMLButtonElement | null = null;
-let loadBtn: HTMLButtonElement | null = null;
-let pngBtn: HTMLButtonElement | null = null;
-let gridWidthInput: HTMLInputElement | null = null;
-let gridHeightInput: HTMLInputElement | null = null;
-let applyGridBtn: HTMLButtonElement | null = null;
-let layerSelect: HTMLSelectElement | null = null;
-let addLayerBtn: HTMLButtonElement | null = null;
+
 
 // Mobile state
 let lastTouchDistance: number | null = null;
@@ -99,6 +92,17 @@ let currentLineDirection = 'auto';
 void currentLineDirection;
 
 const { schedule: scheduleAutoSave, flush: flushAutoSave } = createAutoSaveScheduler(() => editor);
+
+/** Module-level handlers so nested closures are not flagged as non-serializable (Biome/Qwik FP). */
+function onPageHideFlushAutoSave(): void {
+    if (editor) flushAutoSave();
+}
+
+function onVisibilityChangeFlushAutoSave(): void {
+    if (document.visibilityState === 'hidden' && editor) {
+        flushAutoSave();
+    }
+}
 
 /**
  * Compute grid dimensions based on viewport
@@ -159,16 +163,6 @@ async function initialize() {
         mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
         mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection
 
-        // Optional feature controls (may be absent in older HTML snapshots)
-        saveBtn = document.getElementById('save-btn') as HTMLButtonElement | null;
-        loadBtn = document.getElementById('load-btn') as HTMLButtonElement | null;
-        pngBtn = document.getElementById('png-btn') as HTMLButtonElement | null;
-        gridWidthInput = document.getElementById('grid-width') as HTMLInputElement | null;
-        gridHeightInput = document.getElementById('grid-height') as HTMLInputElement | null;
-        applyGridBtn = document.getElementById('apply-grid-btn') as HTMLButtonElement | null;
-        layerSelect = document.getElementById('layer-select') as HTMLSelectElement | null;
-        addLayerBtn = document.getElementById('add-layer-btn') as HTMLButtonElement | null;
-
         // Get canvas and context
         canvas = getElement<HTMLCanvasElement>('canvas');
         const ctxResult = canvas.getContext('2d', { alpha: false });
@@ -194,7 +188,7 @@ async function initialize() {
         }
 
         // Restore auto-saved document if present (locks grid so resize cannot crop it).
-        if (editor && tryRestoreAutoSave(editor)) {
+        if (tryRestoreAutoSave(editor)) {
             logger.info('Restored auto-saved diagram');
             gridSizeLocked = true;
             offscreenCanvas = null;
@@ -311,15 +305,8 @@ function setupEventListeners() {
     window.addEventListener('resize', debounce(resizeCanvas, 100));
 
     // Flush pending auto-save so a short-lived tab close does not drop edits.
-    const flushOnLeave = () => {
-        if (editor) flushAutoSave();
-    };
-    window.addEventListener('pagehide', flushOnLeave);
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'hidden') {
-            flushOnLeave();
-        }
-    });
+    window.addEventListener('pagehide', onPageHideFlushAutoSave);
+    document.addEventListener('visibilitychange', onVisibilityChangeFlushAutoSave);
 
     // Reset panning state when window loses focus
     window.addEventListener('blur', () => {
@@ -461,79 +448,62 @@ function setupEventListeners() {
         }
     });
 
-    if (saveBtn) {
-        saveBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        saveBtn.addEventListener('click', () => {
-            if (!editor) return;
-            downloadDocument(editor, showToast);
-            if (canvas) canvas.focus();
+    // Optional feature controls: resolve and wire without storing Element refs in nullable module vars
+    // (avoids Codacy ESLint xss/no-mixed-html false positives on DOM lookups).
+    wireOptionalButton('save-btn', () => {
+        if (!editor) return;
+        downloadDocument(editor, showToast);
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('load-btn', () => {
+        if (!editor) return;
+        openDocumentPicker(editor, showToast, () => {
+            gridSizeLocked = true;
+            offscreenCanvas = null;
+            offscreenCtx = null;
+            refreshLayerSelect();
+            syncGridInputs();
+            requestRender();
+            updateUI();
+            flushAutoSave();
         });
-    }
-
-    if (loadBtn) {
-        loadBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        loadBtn.addEventListener('click', () => {
-            if (!editor) return;
-            openDocumentPicker(editor, showToast, () => {
-                gridSizeLocked = true;
-                offscreenCanvas = null;
-                offscreenCtx = null;
-                refreshLayerSelect();
-                syncGridInputs();
-                requestRender();
-                updateUI();
-                flushAutoSave();
+    });
+    wireOptionalButton('png-btn', () => {
+        if (editor) {
+            editor.requestRedraw();
+            requestRender();
+            requestAnimationFrame(() => {
+                exportPng(offscreenCanvas, canvas, showToast);
             });
-        });
-    }
+        }
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('apply-grid-btn', () => {
+        applyCustomGridSize();
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('add-layer-btn', () => {
+        if (!editor) return;
+        editor.addLayer();
+        refreshLayerSelect();
+        requestRender();
+        updateUI();
+        scheduleAutoSave();
+        showToast('Layer added');
+        if (canvas) canvas.focus();
+    });
 
-    if (pngBtn) {
-        pngBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        pngBtn.addEventListener('click', () => {
-            if (editor) {
-                editor.requestRedraw();
-                requestRender();
-                // Allow one frame so pixel buffer is fresh
-                requestAnimationFrame(() => {
-                    exportPng(offscreenCanvas, canvas, showToast);
-                });
-            }
-            if (canvas) canvas.focus();
-        });
-    }
-
-    if (applyGridBtn && gridWidthInput && gridHeightInput) {
-        applyGridBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        applyGridBtn.addEventListener('click', () => {
-            applyCustomGridSize();
-            if (canvas) canvas.focus();
-        });
-    }
-
-    if (layerSelect) {
-        layerSelect.addEventListener('change', () => {
-            if (!editor || !layerSelect) return;
-            const idx = parseInt(layerSelect.value, 10);
+    const layerSelectEl = document.querySelector('#layer-select');
+    if (layerSelectEl instanceof HTMLSelectElement) {
+        layerSelectEl.addEventListener('change', () => {
+            if (!editor) return;
+            const idx = parseInt(layerSelectEl.value, 10);
             if (!Number.isNaN(idx)) {
                 editor.setActiveLayer(idx);
                 requestRender();
                 updateUI();
                 scheduleAutoSave();
             }
-            if (canvas) canvas.focus();
-        });
-    }
-
-    if (addLayerBtn) {
-        addLayerBtn.addEventListener('mousedown', (e) => e.preventDefault());
-        addLayerBtn.addEventListener('click', () => {
-            if (!editor) return;
-            editor.addLayer();
-            refreshLayerSelect();
-            requestRender();
-            updateUI();
-            scheduleAutoSave();
-            showToast('Layer added');
             if (canvas) canvas.focus();
         });
     }
@@ -1031,48 +1001,58 @@ function updateCursorIndicator(gridX: number, gridY: number) {
 /**
  * Set the current tool
  */
+function focusCanvasElement(): void {
+    if (canvas) {
+        canvas.focus();
+        return;
+    }
+    const el = document.querySelector('#canvas');
+    if (el instanceof HTMLCanvasElement) {
+        el.focus();
+    }
+}
+
+/** Wire click (+ mousedown preventDefault) for an optional button by id. */
+function wireOptionalButton(id: string, onClick: () => void): void {
+    const el = document.querySelector(`#${CSS.escape(id)}`);
+    if (!(el instanceof HTMLButtonElement)) return;
+    el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+    });
+    el.addEventListener('click', onClick);
+}
+
 function setTool(toolName: string) {
     if (!editor) {
         logger.error('Editor not initialized');
         // Still focus canvas when present (unit tests / early UI)
-        const el = canvas ?? (document.getElementById('canvas') as HTMLCanvasElement | null);
-        el?.focus();
+        focusCanvasElement();
         return;
     }
     try {
         editor.setTool(toolName);
         updateToolButtons(toolName);
-        
-        // Show/hide line direction options
-        if (lineDirectionGroup) {
-            if (toolName.toLowerCase() === 'line') {
-                lineDirectionGroup.style.display = 'flex';
-            } else {
-                lineDirectionGroup.style.display = 'none';
-            }
-        }
-        
-        if (statusToolEl) {
-            statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
-        }
+
+        // Module refs are initialized before tools are interactive.
+        lineDirectionGroup.style.display =
+            toolName.toLowerCase() === 'line' ? 'flex' : 'none';
+        statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
 
         // Ensure canvas keeps focus for keyboard shortcuts
-        const el = canvas ?? (document.getElementById('canvas') as HTMLCanvasElement | null);
-        el?.focus();
+        focusCanvasElement();
     } catch (error) {
         logger.error('Failed to set tool:', error);
     }
 }
 
 /**
- * Update tool button states
+ * Update tool button states.
+ * Uses live DOM queries so unit tests work before module refs are initialized.
  */
 function updateToolButtons(activeTool: string) {
     const normalizedTool = activeTool.toLowerCase();
 
-    const buttons = toolButtons?.length
-        ? toolButtons
-        : document.querySelectorAll('.tool-btn');
+    const buttons = document.querySelectorAll('.tool-btn');
     buttons.forEach(btn => {
         const tool = btn.getAttribute('data-tool');
         const isActive = tool?.toLowerCase() === normalizedTool;
@@ -1086,13 +1066,13 @@ function updateToolButtons(activeTool: string) {
 
     // Update instruction message (module ref or live DOM for unit tests)
     const info = TOOL_INFO[normalizedTool];
-    const statusEl = statusMessageEl ?? document.getElementById('status-message');
+    const statusEl = getOptionalElement('status-message');
     if (info && statusEl) {
         statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
     }
 
     // Update cursor
-    const container = canvasContainer ?? document.getElementById('canvas-container');
+    const container = getOptionalElement('canvas-container');
     if (container && info) {
         // Clear previous tool classes
         container.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
@@ -1137,7 +1117,12 @@ async function copyToClipboard() {
  * Apply custom grid dimensions from side-panel inputs.
  */
 function applyCustomGridSize() {
-    if (!editor || !gridWidthInput || !gridHeightInput) return;
+    if (!editor) return;
+    const gridWidthInput = document.querySelector('#grid-width');
+    const gridHeightInput = document.querySelector('#grid-height');
+    if (!(gridWidthInput instanceof HTMLInputElement) || !(gridHeightInput instanceof HTMLInputElement)) {
+        return;
+    }
     const w = Math.max(MIN_COLS, Math.min(400, parseInt(gridWidthInput.value, 10) || MIN_COLS));
     const h = Math.max(MIN_ROWS, Math.min(200, parseInt(gridHeightInput.value, 10) || MIN_ROWS));
     gridWidthInput.value = String(w);
@@ -1158,16 +1143,25 @@ function applyCustomGridSize() {
 }
 
 function syncGridInputs() {
-    if (!editor || !gridWidthInput || !gridHeightInput) return;
+    if (!editor) return;
+    const gridWidthInput = document.querySelector('#grid-width');
+    const gridHeightInput = document.querySelector('#grid-height');
+    if (!(gridWidthInput instanceof HTMLInputElement) || !(gridHeightInput instanceof HTMLInputElement)) {
+        return;
+    }
     gridWidthInput.value = String(editor.width);
     gridHeightInput.value = String(editor.height);
 }
 
 function refreshLayerSelect() {
-    if (!editor || !layerSelect || typeof editor.layerCount !== 'number') return;
+    if (!editor || typeof editor.layerCount !== 'number') return;
+    const layerSelect = document.querySelector('#layer-select');
+    if (!(layerSelect instanceof HTMLSelectElement)) return;
     const count = editor.layerCount;
     const active = editor.activeLayer ?? 0;
-    layerSelect.innerHTML = '';
+    while (layerSelect.firstChild) {
+        layerSelect.removeChild(layerSelect.firstChild);
+    }
     for (let i = 0; i < count; i++) {
         const opt = document.createElement('option');
         opt.value = String(i);

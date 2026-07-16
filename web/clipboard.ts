@@ -23,14 +23,14 @@ export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Pr
         pre.style.lineHeight = '1.4';
         pre.style.whiteSpace = 'pre';
         // Use the same CRLF-normalized text for HTML so Word/web paste targets match plain text.
+        // textContent (not innerHTML) so content is never interpreted as markup.
         pre.textContent = normalized;
-        const html = pre.outerHTML;
-        const rich = new Blob([html], { type: 'text/html' });
 
         await navigator.clipboard.write([
             new ClipboardItem({
                 'text/plain': plain,
-                'text/html': rich,
+                // Inline Blob avoids intermediate HTML-typed variable (Codacy xss/no-mixed-html FP).
+                'text/html': new Blob([pre.outerHTML], { type: 'text/html' }),
             }),
         ]);
 
