@@ -52,30 +52,32 @@ documentation:
   adr_count: 36
   plans_refreshed: 2026-07-16
   follow_ups_file: true           # plans/FOLLOW_UPS.md
-  open_issue_21: fixed_unmerged   # F-01
+  open_issue_21: closed           # PR #107 merged
+  pr_107_merged: true
+  composite_pixel_render: true    # F-12 done
 ```
 
 ### Target State (next horizon)
 
 ```yaml
 code_quality:
-  max_file_loc: 500               # finish main.ts split
-  wasm_missing_docs_allow: false
+  max_file_loc: 500               # finish main.ts split (F-20)
+  wasm_missing_docs_allow: false  # F-25
 
 tests:
-  e2e_firefox: in_ci
+  e2e_firefox: in_ci              # F-21
   e2e_webkit: in_ci
   vitest_frontend: 25+
 
 features:
-  layers: full                    # lock, reorder, composite render, history
-  svg_export: true
-  preview_rendering: true
-  enhanced_text_tool: true
+  layers: full                    # lock, reorder, history (F-11, F-13)
+  svg_export: true                # F-10
+  preview_rendering: true         # F-15
+  enhanced_text_tool: true        # F-14
 
 process:
   issue_21: closed
-  dependabot_prs: triaged
+  dependabot_99: triaged          # F-03 remainder
 ```
 
 ---
@@ -112,8 +114,8 @@ process:
 ### Tier 4: Process
 
 - [x] Plans + FOLLOW_UPS updated for 2026-07 bundle
-- [ ] PR merged; #21 closed (F-01)
-- [ ] Dependabot #98/#99 resolved (F-03)
+- [x] PR #107 merged; #21 closed (F-01)
+- [ ] Dependabot #99 resolved (F-03; #98 already merged)
 
 ---
 

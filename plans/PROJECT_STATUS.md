@@ -4,11 +4,12 @@
 
 A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
-## Current Status: **Feature Bundle Complete (2026-07-16)** ✅
+## Current Status: **Feature Bundle Merged (2026-07-16)** ✅
 
 **Focus completed**: Issue #21 copy-paste fidelity + product roadmap items (persistence, PNG, grid UI, basic layers, frontend modules).
 
-**Open GitHub issue (pre-PR)**: #21 *Bug Report: Copy-Paste Not Working* — **fixed on branch; PR + close pending** (see FOLLOW_UPS F-01).
+**Shipped**: [PR #107](https://github.com/d-o-hub/rust-ascii-canvas/pull/107) merged to `main` (`fa8d0ee`). Issue **#21** closed.  
+**Next**: follow-ups in [FOLLOW_UPS.md](FOLLOW_UPS.md) and linked GitHub issues.
 
 ---
 
@@ -46,9 +47,9 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 | File save/load (`.asc`) + localStorage auto-save | ✅ |
 | PNG export | ✅ |
 | Grid size UI + responsive defaults | ✅ |
-| Basic layers (add/switch; composite export) | ✅ basic |
+| Basic layers (add/switch; composite export + composite pixel render) | ✅ basic |
 | SVG export | ❌ deferred (F-10) |
-| Full layer editor (lock/reorder/history) | ❌ (F-11–F-13) |
+| Full layer editor (lock/reorder/history) | ❌ (F-11, F-13) |
 
 ---
 
