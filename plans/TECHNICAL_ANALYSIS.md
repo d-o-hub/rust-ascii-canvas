@@ -1,5 +1,29 @@
 # ASCII Canvas Editor - Technical Analysis
 
+## Harness engineering (2026-07-16)
+
+Mapped the repo to [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html):
+
+| Gap found | Fix |
+|-----------|-----|
+| CI path filter only watched Rust → **web-only PRs got zero checks** | Filters: `rust`, `web`, `product`, `harness`; web job + product WASM/E2E |
+| No web ESLint/tsc/Vitest in CI | `web` job |
+| No WASM size in CI | `pnpm run check-size` on wasm job |
+| No architecture fitness sensor | `scripts/check-architecture.sh` + CI job |
+| Quality gates all-or-nothing, Rust-only | `--fast` / full tiers; web + architecture + FIX hints |
+| Thin AGENTS.md feedforward | Tiered verify, architecture rules, steering loop |
+| No review skill | `code-review` (inferential) + `verify` (computational) |
+| LOC hard-fail on known debt `helpers.rs` (708) | `.loc-allowlist` + do-not-grow policy |
+
+**Debt**: split `src/wasm/helpers.rs` to leave allowlist.
+
+### Steering learning L-001 (PR #128 CI)
+
+- **Failure**: `Web` job `tsc`: `Cannot find module './pkg/ascii_canvas.js'`
+- **Cause**: gitignored `web/pkg`; CI ran tsc without WASM artifact; local gate used a pre-existing pkg
+- **Harness fix**: `web` needs `wasm` + artifact download; `quality-gates` builds pkg if missing; documented in `agents-docs/harness.md` L-001
+- **Rule**: local sensors must reproduce clean-CI inputs
+
 ## Build & Test Summary
 
 ### Build Results

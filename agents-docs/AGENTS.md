@@ -1,8 +1,30 @@
 # Agent Skills - Reference Documentation
 
-This folder contains reference documentation for all agent skills available in the project.
+Reference docs for agent skills. Operational harness: [harness.md](harness.md), [architecture.md](architecture.md). Root directives: [`../AGENTS.md`](../AGENTS.md).
 
-## Available Skills
+## Harness-critical skills
+
+### verify
+- **Location**: `.agents/skills/verify/SKILL.md`
+- **Role**: Computational feedback — run `gate:fast` / `gate:full`, self-correct
+- **Use when**: After code changes, before PR, CI failures
+
+### code-review
+- **Location**: `.agents/skills/code-review/SKILL.md`
+- **Role**: Inferential feedback — architecture, failure modes, harness coherence
+- **Use when**: Gates green; before human review
+
+### tool-validation
+- **Location**: `.agents/skills/tool-validation/SKILL.md`
+- **Role**: Behaviour harness for the 8 drawing tools
+- **Use when**: Tool or canvas interaction changes
+
+### goap-adr-planner
+- **Location**: `.agents/skills/goap-adr-planner/SKILL.md`
+- **Role**: Feedforward planning / ADRs
+- **Use when**: Multi-step work, architecture decisions
+
+## Available skills
 
 ### rust-engineer
 - **Location**: `.agents/skills/rust-engineer/SKILL.md`

@@ -2,63 +2,90 @@
 
 Thank you for your interest in contributing!
 
-## Development Setup
+## Development setup
 
 ### Prerequisites
 
-- Rust (latest stable)
-- Node.js 18+
-- wasm-pack (`cargo install wasm-pack`)
+- Rust (stable) with target `wasm32-unknown-unknown`
+- Node.js 22+ and pnpm 10
+- [mise](https://mise.jdx.dev/) recommended (`mise.toml` pins wasm-bindgen-cli **0.2.121** and binaryen)
 
-### Quick Start
+### Quick start
 
 ```bash
-# Clone the repository
-git clone https://github.com/anomalyco/ascii-canvas.git
-cd ascii-canvas
+git clone https://github.com/d-o-hub/rust-ascii-canvas.git
+cd rust-ascii-canvas
 
-# Install Node dependencies
-npm install
+# Toolchain (if using mise)
+mise install
 
-# Build WASM
-wasm-pack build --release --target web --out-dir web/pkg
+# JS deps (root + web)
+pnpm install
+cd web && pnpm install && cd ..
 
-# Start development server
-cd web && npm run dev
+# Build WASM into web/pkg
+pnpm run build:wasm
+
+# Dev server
+pnpm run dev
 ```
 
-## Code Style
+## Quality harness (keep quality left)
 
-- Run `cargo fmt` before committing
-- Run `cargo clippy` to catch common mistakes
-- Keep lines under 100 characters when possible
+This repo uses a **coding-agent harness**: guides + sensors. See `AGENTS.md` and `agents-docs/harness.md`.
 
-## Testing
+| Tier | Command | When |
+|------|---------|------|
+| **fast** | `npm run gate:fast` | Every meaningful change / pre-commit |
+| **full** | `npm run gate:full` | Before opening a PR |
+| Architecture only | `npm run check:architecture` | Layer / import changes |
+
+Optional git hook:
 
 ```bash
-# Run Rust unit tests
-cargo test
+ln -sf ../../scripts/pre-commit-fast.sh .git/hooks/pre-commit
+```
 
-# Run E2E tests (requires dev server)
+### Manual checks
+
+```bash
+cargo fmt --all -- --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all
+cd web && pnpm lint && pnpm exec tsc --noEmit && pnpm test
+pnpm run build:wasm && pnpm run check-size
 npx playwright test --project=chromium
 ```
 
-## Pull Request Process
+## Architecture
 
-1. Create a feature branch from `main`
-2. Make your changes
-3. Ensure all tests pass
-4. Update documentation if needed
-5. Submit a pull request
+- `src/core/` — pure Rust (no WASM/browser APIs)
+- `src/render/`, `src/ui/` — may use core; not wasm
+- `src/wasm/` — JS bindings only
+- `web/` — Vite/TypeScript UI
 
-## Areas to Contribute
+Details: `agents-docs/architecture.md`. File size target: ≤500 lines (known debt in `.loc-allowlist`).
 
-- Drawing tools (select, rectangle, line, arrow, diamond, text, freehand, eraser)
-- Border styles
-- UI/UX improvements
-- Performance optimizations
-- Documentation
+## Code style
 
-## Code of Conduct
+- `cargo fmt` before commit
+- Clippy clean with `-D warnings`
+- Prefer tests next to Rust code (`#[cfg(test)]`) for units; `tests/` for public API
+
+## Pull request process
+
+1. Branch from `main`
+2. Keep `gate:fast` green while iterating; `gate:full` before review
+3. Fill `.github/PULL_REQUEST_TEMPLATE.md` honestly
+4. Link issues (`Closes #…`)
+5. Call out harness/CI/doc changes in the PR body
+
+## Areas to contribute
+
+- Drawing tools, border styles, UI/UX
+- Layers, export, clipboard fidelity
+- Performance, docs, tests, harness sensors
+
+## Code of conduct
 
 Be respectful and constructive. Follow the [Rust Code of Conduct](https://www.rust-lang.org/policies/code-of-conduct).

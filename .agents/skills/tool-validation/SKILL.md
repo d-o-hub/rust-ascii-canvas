@@ -1,6 +1,13 @@
+---
+name: tool-validation
+description: >
+  Behaviour harness for the 8 ASCII Canvas drawing tools. Use when changing tools,
+  canvas interaction, border styles, or when AGENTS.md tool checklist applies.
+---
+
 # Tool Validation Skill
 
-This skill provides a standardized methodology for validating the 8 drawing tools in the ASCII Canvas editor.
+Behaviour-harness methodology for the 8 drawing tools. Complements computational sensors (`verify` / E2E). See [agents-docs/harness.md](../../../agents-docs/harness.md).
 
 ## Verification Checklist
 

@@ -20,31 +20,69 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Path filters keep quality left: only run expensive jobs for relevant changes.
   changes:
     name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      code: ${{ steps.filter.outputs.code }}
+      rust: ${{ steps.filter.outputs.rust }}
+      web: ${{ steps.filter.outputs.web }}
+      product: ${{ steps.filter.outputs.product }}
+      harness: ${{ steps.filter.outputs.harness }}
     steps:
       - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
-            code:
+            rust:
               - 'src/**'
               - 'tests/**'
               - 'benches/**'
               - 'Cargo.toml'
               - 'Cargo.lock'
               - 'rust-toolchain.toml'
+              - 'clippy.toml'
+              - 'rustfmt.toml'
+              - 'deny.toml'
+            web:
+              - 'web/**'
+              - 'e2e/**'
+              - 'playwright.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+            harness:
+              - 'scripts/**'
+              - 'AGENTS.md'
+              - 'agents-docs/**'
+              - '.agents/**'
+              - '.loc-allowlist'
+              - '.github/workflows/**'
+            product:
+              - 'src/**'
+              - 'tests/**'
+              - 'benches/**'
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - 'clippy.toml'
+              - 'rustfmt.toml'
+              - 'deny.toml'
+              - 'web/**'
+              - 'e2e/**'
+              - 'playwright.config.ts'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'scripts/**'
+              - 'mise.toml'
 
   fmt:
     name: Format
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.code == 'true'
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -59,7 +97,8 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.code == 'true'
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -70,12 +109,45 @@ jobs:
       - name: Clippy (all targets, all features)
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
+  architecture:
+    name: Architecture Fitness
+    needs: [changes]
+    if: >
+      github.event_name != 'pull_request' ||
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.harness == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install ripgrep
+        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: Layer import rules + LOC
+        run: |
+          bash scripts/check-architecture.sh
+          # LOC: fail only on non-allowlisted oversized files
+          max=500
+          failed=0
+          while IFS= read -r file; do
+            lines=$(wc -l < "$file" | tr -d ' ')
+            rel="${file#./}"
+            if [ "$lines" -gt "$max" ]; then
+              if grep -qxF "$rel" .loc-allowlist 2>/dev/null; then
+                echo "WARN: $rel has $lines lines (allowlisted)"
+              else
+                echo "FAIL: $rel has $lines lines (max $max)"
+                failed=1
+              fi
+            fi
+          done < <(find ./src -name '*.rs' -type f | sort)
+          exit $failed
+
   rust:
     name: Rust (Build + Tests)
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.code == 'true'
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -110,7 +182,7 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.code == 'true'
+      needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -130,18 +202,21 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.code == 'true'
+      needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
 
+  # WASM first: web/pkg is gitignored; tsc and e2e both need generated bindings.
   wasm:
     name: WASM Build
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.code == 'true'
+      needs.changes.outputs.product == 'true' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -169,16 +244,73 @@ jobs:
           npm install -g wasm-opt
           pnpm run build:wasm
 
+      - name: WASM size budget
+        run: pnpm run check-size
+
       - name: Upload WASM
         uses: actions/upload-artifact@v7
         with:
           name: wasm-pkg
           path: web/pkg
 
+  web:
+    name: Web (Lint + Types + Unit)
+    needs: [changes, wasm]
+    # web/pkg is gitignored — TypeScript imports ./pkg/ascii_canvas.js and needs the WASM artifact.
+    if: >
+      always() &&
+      (github.event_name != 'pull_request' ||
+       needs.changes.outputs.web == 'true' ||
+       needs.changes.outputs.harness == 'true') &&
+      needs.wasm.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Install web dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Download WASM pkg (required for tsc)
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-pkg
+          path: web/pkg
+
+      - name: ESLint
+        working-directory: web
+        run: pnpm run lint
+
+      - name: TypeScript (strict)
+        working-directory: web
+        run: pnpm exec tsc --noEmit
+
+      - name: Vitest
+        working-directory: web
+        run: pnpm test
+
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
-    needs: [rust, wasm]
+    needs: [changes, wasm]
+    if: >
+      always() &&
+      (github.event_name != 'pull_request' ||
+       needs.changes.outputs.product == 'true' ||
+       needs.changes.outputs.web == 'true' ||
+       needs.changes.outputs.harness == 'true') &&
+      needs.wasm.result == 'success'
     timeout-minutes: 20
 
     steps:
@@ -209,7 +341,7 @@ jobs:
           cd web && pnpm install --frozen-lockfile
 
       - name: Install Playwright
-        run: npx playwright install chromium
+        run: npx playwright install chromium --with-deps
 
       - name: Download WASM
         uses: actions/download-artifact@v8
@@ -236,7 +368,7 @@ jobs:
 
   ci-success:
     name: CI Success
-    needs: [fmt, clippy, rust, security, deny, wasm, e2e]
+    needs: [fmt, clippy, architecture, rust, security, deny, web, wasm, e2e]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -245,9 +377,11 @@ jobs:
           results=(
             "${{ needs.fmt.result }}"
             "${{ needs.clippy.result }}"
+            "${{ needs.architecture.result }}"
             "${{ needs.rust.result }}"
             "${{ needs.security.result }}"
             "${{ needs.deny.result }}"
+            "${{ needs.web.result }}"
             "${{ needs.wasm.result }}"
             "${{ needs.e2e.result }}"
           )

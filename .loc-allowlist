@@ -1,0 +1,4 @@
+# Files allowed to exceed the 500-line limit (known debt).
+# One repo-relative path per line. Do not grow these files — extract modules instead.
+# See agents-docs/architecture.md and ADR-037.
+src/wasm/helpers.rs
