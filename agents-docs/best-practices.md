@@ -45,10 +45,12 @@ scripts/         # quality-gates, check-architecture
 ### CI/CD (updated 2026-07-16)
 
 1. Path filters: **rust**, **web**, **product**, **harness** — web-only PRs still run web + WASM/E2E as needed
-2. Jobs: fmt, clippy, architecture, rust, security, deny, **web** (eslint/tsc/vitest), wasm+size, e2e
-3. Release: `gh release create --target ${{ github.sha }}`; `GH_TOKEN: ${{ github.token }}`
-4. wasm-opt: install recent binaryen; flags `--enable-sign-ext`, `--enable-nontrapping-float-to-int`, `--enable-simd`, `--enable-bulk-memory`
-5. Local mirror of CI left side: `npm run gate:fast`
+2. Jobs: fmt, clippy, architecture, rust, security, deny, **wasm+size** (before web), **web** (download pkg → eslint/tsc/vitest), e2e
+3. **`web/pkg` is gitignored** — never run CI `tsc` without the `wasm-pkg` artifact (harness L-001)
+4. Release: `gh release create --target ${{ github.sha }}`; `GH_TOKEN: ${{ github.token }}`
+5. wasm-opt: install recent binaryen; flags `--enable-sign-ext`, `--enable-nontrapping-float-to-int`, `--enable-simd`, `--enable-bulk-memory`
+6. Local mirror of CI left side: `npm run gate:fast` (auto-builds pkg if missing)
+7. Steering: recurring CI fail → append `agents-docs/harness.md` Learned failure modes + harden sensor
 
 ## Rust testing architecture
 

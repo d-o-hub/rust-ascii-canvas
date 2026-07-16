@@ -208,50 +208,14 @@ jobs:
       - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@v2
 
-  web:
-    name: Web (Lint + Types + Unit)
-    needs: [changes]
-    if: >
-      github.event_name != 'pull_request' ||
-      needs.changes.outputs.web == 'true' ||
-      needs.changes.outputs.harness == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-        with:
-          version: 10
-
-      - name: Install web dependencies
-        working-directory: web
-        run: pnpm install --frozen-lockfile
-
-      - name: ESLint
-        working-directory: web
-        run: pnpm run lint
-
-      - name: TypeScript (strict)
-        working-directory: web
-        run: pnpm exec tsc --noEmit
-
-      - name: Vitest
-        working-directory: web
-        run: pnpm test
-
+  # WASM first: web/pkg is gitignored; tsc and e2e both need generated bindings.
   wasm:
     name: WASM Build
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
       needs.changes.outputs.product == 'true' ||
+      needs.changes.outputs.web == 'true' ||
       needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -289,6 +253,53 @@ jobs:
           name: wasm-pkg
           path: web/pkg
 
+  web:
+    name: Web (Lint + Types + Unit)
+    needs: [changes, wasm]
+    # web/pkg is gitignored — TypeScript imports ./pkg/ascii_canvas.js and needs the WASM artifact.
+    if: >
+      always() &&
+      (github.event_name != 'pull_request' ||
+       needs.changes.outputs.web == 'true' ||
+       needs.changes.outputs.harness == 'true') &&
+      needs.wasm.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Install web dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Download WASM pkg (required for tsc)
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-pkg
+          path: web/pkg
+
+      - name: ESLint
+        working-directory: web
+        run: pnpm run lint
+
+      - name: TypeScript (strict)
+        working-directory: web
+        run: pnpm exec tsc --noEmit
+
+      - name: Vitest
+        working-directory: web
+        run: pnpm test
+
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
@@ -297,6 +308,7 @@ jobs:
       always() &&
       (github.event_name != 'pull_request' ||
        needs.changes.outputs.product == 'true' ||
+       needs.changes.outputs.web == 'true' ||
        needs.changes.outputs.harness == 'true') &&
       needs.wasm.result == 'success'
     timeout-minutes: 20

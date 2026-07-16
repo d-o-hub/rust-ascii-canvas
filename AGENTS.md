@@ -27,8 +27,13 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
 - `cargo test` (native)
 - Architecture layer check
 - LOC limit (see `.loc-allowlist`)
+- **WASM pkg for typecheck**: `web/pkg` is gitignored; gate builds it if missing (CI downloads the wasm artifact before `tsc`)
 - Web: `pnpm lint`, `tsc --noEmit`, `pnpm test` (when `web/` present)
 - Privacy / secret scan
+
+### CI vs local (learned)
+
+If CI is red and local is green, **do not** only re-run CI. Diff assumptions (artifacts, path filters, env). Fix the **sensor** so local fails the same way next time — see [harness learned failures](agents-docs/harness.md#learned-failure-modes-steering-log) (e.g. L-001 `web/pkg`).
 
 ### What full adds
 

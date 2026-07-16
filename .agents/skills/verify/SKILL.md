@@ -51,22 +51,35 @@ Part of the project **harness** ([agents-docs/harness.md](../../../agents-docs/h
 - rustfmt, clippy `-D warnings`, build, `cargo test`
 - architecture layer rules
 - LOC (non-allowlisted)
+- **ensures `web/pkg` exists** (builds WASM if missing — pkg is gitignored)
 - web ESLint, `tsc --noEmit`, Vitest
 - privacy / secret scan
 
 ## What full adds
 
 - cargo audit / deny (if installed)
-- `pnpm run build:wasm` + `check-size` (≤ 1.5MB)
+- `pnpm run build:wasm` + `check-size` (≤ 1.5MB) if not already built
 - Playwright Chromium E2E
+
+## CI parity checks (do not skip)
+
+| CI job | Local equivalent | Gotcha |
+|--------|------------------|--------|
+| Web tsc | `cd web && pnpm exec tsc --noEmit` | Needs `web/pkg` (gitignored). Clean tree: `npm run build:wasm` first. See harness **L-001**. |
+| Architecture | `./scripts/check-architecture.sh` | Needs `rg` |
+| WASM size | `npm run check-size` | After `build:wasm` |
+| E2E | `npx playwright test --project=chromium` | Needs pkg + dev server |
+
+If CI fails but local gates passed, treat it as a **harness bug**: update sensors so local fails the same way (append to `agents-docs/harness.md` Learned failure modes).
 
 ## Steering loop
 
 If you hit the **same** failure class twice in a session (or it recurred from a past PR):
 
-1. Fix product code.
-2. Strengthen harness: new test, clearer `AGENTS.md` rule, or sensor message.
-3. Note in `plans/TECHNICAL_ANALYSIS.md` when non-obvious.
+1. Fix product / CI code.
+2. Strengthen harness: new test, clearer `AGENTS.md` rule, sensor message, or CI job dependency.
+3. Append a short entry under **Learned failure modes** in `agents-docs/harness.md`.
+4. Note in `plans/TECHNICAL_ANALYSIS.md` when non-obvious.
 
 ## Integration
 

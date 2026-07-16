@@ -17,6 +17,13 @@ Mapped the repo to [Harness engineering for coding agent users](https://martinfo
 
 **Debt**: split `src/wasm/helpers.rs` to leave allowlist.
 
+### Steering learning L-001 (PR #128 CI)
+
+- **Failure**: `Web` job `tsc`: `Cannot find module './pkg/ascii_canvas.js'`
+- **Cause**: gitignored `web/pkg`; CI ran tsc without WASM artifact; local gate used a pre-existing pkg
+- **Harness fix**: `web` needs `wasm` + artifact download; `quality-gates` builds pkg if missing; documented in `agents-docs/harness.md` L-001
+- **Rule**: local sensors must reproduce clean-CI inputs
+
 ## Build & Test Summary
 
 ### Build Results

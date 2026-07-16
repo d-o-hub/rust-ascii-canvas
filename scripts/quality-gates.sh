@@ -154,8 +154,26 @@ printf "\n"
 # ============================================================
 # 4. WEB CHECKS (when web/ exists)
 # ============================================================
+# LEARNING (PR #128): web/pkg is gitignored. tsc imports ./pkg/ascii_canvas.js.
+# Local trees often have a stale/cached pkg so gate:fast passes while CI fails.
+# Always require pkg bindings before typecheck (build if missing).
 if [[ -d "$REPO_ROOT/web" ]]; then
   info "Web checks (lint, typecheck, unit tests)..."
+
+  if [[ ! -f "$REPO_ROOT/web/pkg/ascii_canvas.d.ts" ]] || [[ ! -f "$REPO_ROOT/web/pkg/ascii_canvas.js" ]]; then
+    info "web/pkg missing (gitignored) — building WASM for typecheck parity with CI..."
+    if ! OUTPUT=$(pnpm run build:wasm 2>&1); then
+      fail "web/pkg / WASM build"
+      echo "  FIX: npm run build:wasm (mise: wasm-bindgen-cli 0.2.121, target wasm32-unknown-unknown)."
+      echo "  WHY: main.ts imports ./pkg/ascii_canvas.js; CI downloads wasm-pkg artifact before tsc."
+      printf "%s\n" "$OUTPUT" >&2
+    else
+      pass "WASM pkg generated for typecheck"
+    fi
+  else
+    pass "web/pkg bindings present"
+  fi
+
   pushd "$REPO_ROOT/web" >/dev/null || exit 1
 
   if [[ ! -d node_modules ]]; then
@@ -175,6 +193,7 @@ if [[ -d "$REPO_ROOT/web" ]]; then
     if ! OUTPUT=$(pnpm exec tsc --noEmit 2>&1); then
       fail "TypeScript"
       echo "  FIX: cd web && pnpm exec tsc --noEmit — fix type errors (strict mode)."
+      echo "  IF 'Cannot find module ./pkg/ascii_canvas.js': run npm run build:wasm (pkg is gitignored)."
       printf "%s\n" "$OUTPUT" >&2
     else
       pass "TypeScript: OK"

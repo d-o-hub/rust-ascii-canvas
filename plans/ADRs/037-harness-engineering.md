@@ -47,6 +47,10 @@ We adopt the mental model from [Harness engineering for coding agent users](http
 
 ## Related
 
-- `agents-docs/harness.md` — operational map of guides and sensors
+- `agents-docs/harness.md` — operational map of guides and sensors (+ **Learned failure modes** steering log)
 - `agents-docs/architecture.md` — architecture feedforward
 - ADR-024 (tests), ADR-018 (TS standards), ADR-021 (production readiness)
+
+## Amendment (2026-07-16, PR #128 CI)
+
+**L-001**: Web TypeScript in CI requires generated `web/pkg` (gitignored). Computational sensors must either produce or download those bindings before `tsc`. Documented as a permanent steering rule: *local green / CI red on missing artifacts ⇒ fix the sensor, not only the job once.*

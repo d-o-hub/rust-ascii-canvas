@@ -104,3 +104,25 @@ Do **not** only patch product code and hope the agent remembers next time.
 - Prefer **computational** sensors for anything structural; reserve inferential for semantics and UX.
 - Sensor failure messages should tell the agent **how to fix** (see quality-gates output).
 - If a sensor never fires, suspect weak detection — not perfect quality.
+- **Local sensors must match CI assumptions** (same inputs, same missing artifacts). A green `gate:fast` that cannot fail the way CI fails is a harness bug — fix the sensor.
+
+## Learned failure modes (steering log)
+
+Append here when the same class of failure hits CI or agents twice (or once with high impact). Each entry must name the **sensor/guide change** that prevents recurrence.
+
+### L-001 — `tsc` without `web/pkg` (PR #128, 2026-07-16)
+
+| | |
+|--|--|
+| **Symptom** | CI `Web (Lint + Types + Unit)` fails: `Cannot find module './pkg/ascii_canvas.js'` |
+| **Root cause** | `web/pkg/` is **gitignored**. Local machines often have a leftover build so `gate:fast` / `tsc` pass; clean CI checkout does not. |
+| **Why harness failed** | Web job ran `tsc` in parallel with WASM build and never downloaded the `wasm-pkg` artifact. Local gate did not require pkg presence. |
+| **Prevention** | (1) CI `web` **needs** `wasm` + `download-artifact` to `web/pkg` before tsc. (2) `quality-gates.sh` builds WASM if `web/pkg` is missing before typecheck. (3) FIX hints mention gitignored pkg. |
+| **Agent rule** | Never assume `./pkg` exists after a clean clone. Before claiming web typecheck green on a machine without pkg, run `npm run build:wasm` or `gate:fast` (which ensures pkg). |
+
+### L-002 — Web-only / harness PRs skipping product sensors (pre-#128)
+
+| | |
+|--|--|
+| **Symptom** | Frontend-only PRs got no meaningful CI (path filter was Rust-only). |
+| **Prevention** | Path filters `rust` / `web` / `product` / `harness`; web + wasm + e2e wired to those outputs. |
