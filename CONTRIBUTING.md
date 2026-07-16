@@ -8,7 +8,7 @@ Thank you for your interest in contributing!
 
 - Rust (stable) with target `wasm32-unknown-unknown`
 - Node.js 22+ and pnpm 10
-- [mise](https://mise.jdx.dev/) recommended (`mise.toml` pins wasm-bindgen-cli **0.2.121** and binaryen)
+- [mise](https://mise.jdx.dev/) recommended (`mise.toml` pins wasm-bindgen-cli **0.2.126** and binaryen)
 
 ### Quick start
 

@@ -18,7 +18,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 | Item | Value |
 |------|--------|
 | Version | 0.1.1 |
-| WASM toolchain | cargo + wasm-bindgen **0.2.121** |
+| WASM toolchain | cargo + wasm-bindgen **0.2.126** |
 | Target | `wasm32-unknown-unknown` / ES modules |
 | Rust | stable |
 | WASM size budget | ≤ 1.5MB (`npm run check-size`) |
