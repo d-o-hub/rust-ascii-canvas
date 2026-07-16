@@ -502,7 +502,7 @@ function setupEventListeners() {
     zoomResetBtn.addEventListener('mousedown', (e) => e.preventDefault());
     zoomResetBtn.addEventListener('click', () => {
         if (!editor) return;
-        setZoom(1.0);
+        resetZoom();
         if (canvas) canvas.focus();
     });
 
@@ -741,11 +741,13 @@ function handleKeyDown(e: KeyboardEvent) {
             cycleBorderStyle();
         }
 
-        // Handle 0 key - reset zoom
-        if (key === '0' && !ctrl && !shift) {
-            setZoom(1.0);
-            editor.setPan(0, 0);
-            showToast('Zoom reset to 100%');
+        // Handle 0 key - reset zoom or fit to view
+        if ((key === '0' || key === ')') && !ctrl) {
+            if (shift || key === ')') {
+                fitZoom();
+            } else {
+                resetZoom();
+            }
         }
 
         // Handle ? key - show keyboard shortcuts modal
@@ -1120,23 +1122,47 @@ function setZoom(zoom: number) {
 }
 
 /**
+ * Reset zoom level to 100% and center the grid
+ */
+function resetZoom() {
+    if (!editor || !canvasContainer) return;
+
+    const containerRect = canvasContainer.getBoundingClientRect();
+    const gridWidth = editor.width * charWidth;
+    const gridHeight = editor.height * lineHeight;
+
+    const panX = (containerRect.width - gridWidth) / 2;
+    const panY = (containerRect.height - gridHeight) / 2;
+
+    setZoom(1.0);
+    editor.setPan(panX, panY);
+    editor.requestRedraw();
+    requestRender();
+    showToast('Zoom reset to 100%');
+}
+
+/**
  * Fit zoom to show entire canvas
  */
 function fitZoom() {
     if (!editor || !canvasContainer) return;
-    
+
     const containerRect = canvasContainer.getBoundingClientRect();
     const gridWidth = editor.width * charWidth;
     const gridHeight = editor.height * lineHeight;
-    
+
     const zoomX = containerRect.width / (gridWidth + 40);
     const zoomY = containerRect.height / (gridHeight + 40);
-    const fitZoom = Math.min(zoomX, zoomY, 1.0);
-    
-    setZoom(fitZoom);
-    editor.setPan(0, 0);
+    const fitZoomLevel = Math.min(zoomX, zoomY, 1.0);
+
+    const panX = (containerRect.width - gridWidth * fitZoomLevel) / 2;
+    const panY = (containerRect.height - gridHeight * fitZoomLevel) / 2;
+
+    setZoom(fitZoomLevel);
+    editor.setPan(panX, panY);
     editor.requestRedraw();
     requestRender();
+    showToast('Zoom fitted to view');
 }
 
 /**
