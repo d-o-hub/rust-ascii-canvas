@@ -76,7 +76,8 @@ test.describe('ASCII Canvas Editor', () => {
         expect(options).toContain('Dotted (*)');
     });
 
-    test('should have undo/redo buttons initially', async ({ page }) => {
+    test('should have undo/redo buttons initially', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Undo/redo buttons are hidden on mobile viewports');
         const undoBtn = page.locator('#undo-btn');
         const redoBtn = page.locator('#redo-btn');
         
@@ -84,7 +85,8 @@ test.describe('ASCII Canvas Editor', () => {
         await expect(redoBtn).toBeVisible();
     });
 
-    test('should have copy and clear buttons', async ({ page }) => {
+    test('should have copy and clear buttons', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Copy and clear buttons are hidden on mobile viewports');
         const copyBtn = page.locator('#copy-btn');
         await expect(copyBtn).toBeVisible();
         
@@ -92,14 +94,16 @@ test.describe('ASCII Canvas Editor', () => {
         await expect(clearBtn).toBeVisible();
     });
 
-    test('should have zoom controls', async ({ page }) => {
+    test('should have zoom controls', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Zoom controls are hidden on mobile viewports');
         await expect(page.locator('#zoom-fit')).toBeVisible();
         await expect(page.locator('#zoom-reset')).toBeVisible();
         await expect(page.locator('#zoom-out')).toBeVisible();
         await expect(page.locator('#zoom-in')).toBeVisible();
     });
 
-    test('should display cursor position', async ({ page }) => {
+    test('should display cursor position', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Side panel and status bar are hidden on mobile viewports');
         const cursorPos = page.locator('#cursor-pos');
         await expect(cursorPos).toBeVisible();
         
@@ -113,7 +117,8 @@ test.describe('ASCII Canvas Editor', () => {
         }
     });
 
-    test('should show status bar', async ({ page }) => {
+    test('should show status bar', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Status bar is hidden on mobile viewports');
         const statusBar = page.locator('.status-bar');
         await expect(statusBar).toBeVisible();
         
@@ -121,12 +126,14 @@ test.describe('ASCII Canvas Editor', () => {
         await expect(toolStatus).toContainText('Tool:');
     });
 
-    test('should show grid info', async ({ page }) => {
+    test('should show grid info', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Side panel is hidden on mobile viewports');
         const gridSize = page.locator('#grid-size');
         await expect(gridSize).toContainText(/(\d+) × (\d+)/);
     });
 
-    test('should show zoom level', async ({ page }) => {
+    test('should show zoom level', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Side panel is hidden on mobile viewports');
         const zoomLevel = page.locator('#zoom-level');
         await expect(zoomLevel).toContainText('100%');
     });
@@ -455,7 +462,8 @@ test.describe('Drawing Tools Interaction', () => {
 });
 
 test.describe('Undo/Redo', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Undo/redo buttons are hidden on mobile viewports');
         await openEditor(page);
     });
 
@@ -556,7 +564,8 @@ test.describe('Border Styles', () => {
         expect(selected).toBe('double');
     });
 
-    test('should cycle border styles with B key', async ({ page }) => {
+    test('should cycle border styles with B key', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Status bar and toast are hidden on mobile viewports');
         await page.click('#canvas');
         await waitForRender(page);
         
@@ -572,7 +581,8 @@ test.describe('Border Styles', () => {
 });
 
 test.describe('Zoom Controls', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Zoom controls and indicators are hidden on mobile viewports');
         await openEditor(page);
         await page.click('#zoom-reset');
         await waitForRender(page);
@@ -738,7 +748,8 @@ test.describe('Keyboard Shortcuts', () => {
 });
 
 test.describe('Copy Functionality', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Copy button and status toast are hidden on mobile viewports');
         await openEditor(page);
     });
 
