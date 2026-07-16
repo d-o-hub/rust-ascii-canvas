@@ -177,6 +177,17 @@ async function initialize() {
         // Set up canvas size first to have correct container rect
         resizeCanvas();
 
+        // If the container has collapsed height (e.g. layout pending on WebKit), wait for layout
+        let rect = canvasContainer.getBoundingClientRect();
+        if (rect.height < 50) {
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                resizeCanvas();
+                rect = canvasContainer.getBoundingClientRect();
+                if (rect.height >= 50) break;
+            }
+        }
+
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
         editor = new AsciiEditor(width, height) as unknown as AsciiEditorInterface;
