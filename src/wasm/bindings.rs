@@ -1,7 +1,5 @@
 //! WASM bindings - struct definition, constructor, and core methods.
 
-#![allow(missing_docs)]
-
 use crate::core::history::History;
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolId};
@@ -12,6 +10,11 @@ use crate::wasm::tool_manager::{
 };
 use wasm_bindgen::prelude::*;
 
+/// WebAssembly-bindable ASCII editor instance for frontend integration.
+///
+/// `AsciiEditor` manages the state of the ASCII canvas, handles user interactions,
+/// renders grid content to JSON / canvas drawing commands, and supports history
+/// (undo/redo) and layer capabilities.
 #[wasm_bindgen]
 pub struct AsciiEditor {
     pub(crate) state: EditorState,
@@ -50,6 +53,7 @@ pub(crate) struct LayerData {
 
 #[wasm_bindgen]
 impl AsciiEditor {
+    /// Creates a new `AsciiEditor` instance with the given dimensions.
     #[wasm_bindgen(constructor)]
     pub fn new(width: usize, height: usize) -> Self {
         let state = EditorState::new(width, height);
@@ -85,6 +89,7 @@ impl AsciiEditor {
         }
     }
 
+    /// Resizes the editor canvas and all its layers to the new dimensions.
     #[wasm_bindgen]
     pub fn resize(&mut self, new_width: usize, new_height: usize) {
         self.state.grid.resize(new_width, new_height);
@@ -95,21 +100,25 @@ impl AsciiEditor {
         self.dirty_tracker.request_full_redraw();
     }
 
+    /// Gets the current width of the canvas grid.
     #[wasm_bindgen(getter)]
     pub fn width(&self) -> usize {
         self.state.grid.width()
     }
 
+    /// Gets the current height of the canvas grid.
     #[wasm_bindgen(getter)]
     pub fn height(&self) -> usize {
         self.state.grid.height()
     }
 
+    /// Gets the name of the active drawing tool.
     #[wasm_bindgen(getter)]
     pub fn tool(&self) -> String {
         self.tool_id.name().to_string()
     }
 
+    /// Sets the active tool by its string ID.
     #[wasm_bindgen(js_name = setTool)]
     pub fn set_tool(&mut self, tool_id: String) {
         if let Some(id) = parse_tool_id(&tool_id) {
@@ -124,6 +133,8 @@ impl AsciiEditor {
         }
     }
 
+    /// Attempts to set the active tool using a keyboard shortcut character.
+    /// Returns true if the shortcut is valid and the tool was switched.
     #[wasm_bindgen(js_name = setToolByShortcut)]
     pub fn set_tool_by_shortcut(&mut self, shortcut: char) -> bool {
         if let Some(id) = ToolId::from_shortcut(shortcut) {
@@ -141,39 +152,46 @@ impl AsciiEditor {
         }
     }
 
+    /// Sets the border style for shapes like Rectangles.
     #[wasm_bindgen(js_name = setBorderStyle)]
     pub fn set_border_style(&mut self, style: String) {
         set_border_style(&mut self.state, style, &mut self.active_tool);
     }
 
+    /// Sets the line direction setting (e.g. Horizontal, Vertical, Auto) for the Line tool.
     #[wasm_bindgen(js_name = setLineDirection)]
     pub fn set_line_direction(&mut self, direction: String) {
         set_line_direction(self.tool_id, &mut self.active_tool, direction);
     }
 
+    /// Sets the zoom scale factor of the editor viewport.
     #[wasm_bindgen(js_name = setZoom)]
     pub fn set_zoom(&mut self, zoom: f64) {
         self.renderer.set_zoom(zoom);
         self.dirty_tracker.request_full_redraw();
     }
 
+    /// Gets the current zoom scale factor of the editor viewport.
     #[wasm_bindgen(getter)]
     pub fn zoom(&self) -> f64 {
         self.renderer.zoom()
     }
 
+    /// Sets the pan offset (X and Y coordinates) of the editor viewport.
     #[wasm_bindgen(js_name = setPan)]
     pub fn set_pan(&mut self, x: f64, y: f64) {
         self.renderer.set_pan(x, y);
         self.dirty_tracker.request_full_redraw();
     }
 
+    /// Gets the current pan offset of the editor viewport as a `[x, y]` list.
     #[wasm_bindgen(getter = pan)]
     pub fn get_pan(&self) -> Vec<f64> {
         let (x, y) = self.renderer.pan();
         vec![x, y]
     }
 
+    /// Configures the font metrics for text size and grid layout spacing calculations.
     #[wasm_bindgen(js_name = setFontMetrics)]
     pub fn set_font_metrics(&mut self, char_width: f64, line_height: f64, size: f64) {
         let mut metrics = FontMetrics::new("JetBrains Mono, monospace", size);
@@ -183,6 +201,7 @@ impl AsciiEditor {
         self.dirty_tracker.request_full_redraw();
     }
 
+    /// Reverts the last drawing operation. Returns true if successful.
     #[wasm_bindgen]
     pub fn undo(&mut self) -> bool {
         let result = self.history.undo(&mut self.state.grid);
@@ -192,6 +211,7 @@ impl AsciiEditor {
         result
     }
 
+    /// Re-applies a previously undone operation. Returns true if successful.
     #[wasm_bindgen]
     pub fn redo(&mut self) -> bool {
         let result = self.history.redo(&mut self.state.grid);
@@ -201,16 +221,19 @@ impl AsciiEditor {
         result
     }
 
+    /// Returns whether there is an action that can be undone in the history.
     #[wasm_bindgen(getter)]
     pub fn can_undo(&self) -> bool {
         self.history.can_undo()
     }
 
+    /// Returns whether there is an action that can be redone in the history.
     #[wasm_bindgen(getter)]
     pub fn can_redo(&self) -> bool {
         self.history.can_redo()
     }
 
+    /// Clears the canvas, history, clipboard, and reset layers.
     #[wasm_bindgen]
     pub fn clear(&mut self) {
         self.state.grid.clear();
