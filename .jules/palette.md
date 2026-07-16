@@ -13,3 +13,7 @@
 ## 2026-05-29 - [Shortcut Discoverability and ARIA metadata]
 **Learning:** Essential productivity shortcuts (like "Select All" or "Reset Zoom") should be mirrored in the primary side-panel reference, not just hidden in help modals. Additionally, using `aria-keyshortcuts` on toolbar buttons provides a standard way for assistive technologies to communicate keyboard triggers that are otherwise only visible in tooltips.
 **Action:** Always verify that the quick-reference shortcut list covers all high-frequency actions and ensure toolbar buttons have explicit ARIA shortcut metadata.
+
+## 2026-07-10 - [Centering Logic and Robust Shortcuts]
+**Learning:** Centering the grid content in the viewport after zoom or fit-to-view actions significantly improves the professional feel and interaction quality of the editor. Furthermore, providing character-based fallbacks for shortcuts (e.g., handling ')' for Shift+0) ensures that keyboard interactions remain accessible across different international keyboard layouts.
+**Action:** Always calculate centering pan offsets when modifying canvas scale and implement character-level checks for shortcuts that involve Shift or Alt modifiers.
