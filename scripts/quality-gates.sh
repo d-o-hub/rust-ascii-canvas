@@ -164,7 +164,7 @@ if [[ -d "$REPO_ROOT/web" ]]; then
     info "web/pkg missing (gitignored) — building WASM for typecheck parity with CI..."
     if ! OUTPUT=$(pnpm run build:wasm 2>&1); then
       fail "web/pkg / WASM build"
-      echo "  FIX: npm run build:wasm (mise: wasm-bindgen-cli 0.2.121, target wasm32-unknown-unknown)."
+      echo "  FIX: npm run build:wasm (mise: wasm-bindgen-cli 0.2.126, target wasm32-unknown-unknown)."
       echo "  WHY: main.ts imports ./pkg/ascii_canvas.js; CI downloads wasm-pkg artifact before tsc."
       printf "%s\n" "$OUTPUT" >&2
     else
@@ -286,7 +286,7 @@ if ! $FAST; then
   info "WASM build + size..."
   if ! OUTPUT=$(pnpm run build:wasm 2>&1); then
     fail "WASM build"
-    echo "  FIX: Ensure rustup target wasm32-unknown-unknown and wasm-bindgen-cli 0.2.121 (mise.toml)."
+    echo "  FIX: Ensure rustup target wasm32-unknown-unknown and wasm-bindgen-cli 0.2.126 (mise.toml)."
     printf "%s\n" "$OUTPUT" >&2
   else
     pass "WASM build: OK"

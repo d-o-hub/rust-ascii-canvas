@@ -62,7 +62,7 @@ core (pure) ← render, ui ← wasm ← web/
 
 ## Web / WASM
 
-- Build WASM: `npm run build:wasm` (wasm-bindgen **0.2.121**, see `mise.toml`).
+- Build WASM: `npm run build:wasm` (wasm-bindgen **0.2.126**, see `mise.toml`).
 - Web lint/test: `cd web && pnpm lint && pnpm exec tsc --noEmit && pnpm test`.
 - E2E: Playwright from repo root; prefer `--project=chromium` locally.
 
