@@ -301,7 +301,7 @@ jobs:
         run: pnpm test
 
   e2e:
-    name: E2E Tests (Playwright)
+    name: E2E Tests (Playwright) - ${{ matrix.project }}
     runs-on: ubuntu-latest
     needs: [changes, wasm]
     if: >
@@ -312,6 +312,10 @@ jobs:
        needs.changes.outputs.harness == 'true') &&
       needs.wasm.result == 'success'
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        project: [chromium, firefox, webkit]
 
     steps:
       - name: Checkout code
@@ -341,7 +345,7 @@ jobs:
           cd web && pnpm install --frozen-lockfile
 
       - name: Install Playwright
-        run: npx playwright install chromium --with-deps
+        run: npx playwright install ${{ matrix.project }} --with-deps
 
       - name: Download WASM
         uses: actions/download-artifact@v8
@@ -362,7 +366,7 @@ jobs:
             sleep 1
           done
           cd ..
-          npx playwright test --project=chromium --timeout=90000
+          npx playwright test --project=${{ matrix.project }} --timeout=120000
         env:
           CI: true
 
