@@ -75,17 +75,37 @@ export function openDocumentPicker(
     input.click();
 }
 
-/** Debounced auto-save helper. */
+export interface AutoSaveScheduler {
+    /** Debounced schedule (for content mutations). */
+    schedule: () => void;
+    /** Immediate flush (pagehide / visibilitychange / explicit saves). */
+    flush: () => void;
+}
+
+/** Debounced auto-save helper with immediate flush for unload paths. */
 export function createAutoSaveScheduler(
     getEditor: () => AsciiEditorInterface | null,
     delayMs = 1500,
-): () => void {
+): AutoSaveScheduler {
     let timer: ReturnType<typeof setTimeout> | null = null;
-    return () => {
+
+    const flush = (): void => {
+        if (timer) {
+            clearTimeout(timer);
+            timer = null;
+        }
+        const editor = getEditor();
+        if (editor) autoSave(editor);
+    };
+
+    const schedule = (): void => {
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
+            timer = null;
             const editor = getEditor();
             if (editor) autoSave(editor);
         }, delayMs);
     };
+
+    return { schedule, flush };
 }

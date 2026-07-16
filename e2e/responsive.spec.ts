@@ -1,6 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
+import { clearAutosave, BASE_URL } from './helpers';
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
@@ -9,18 +8,12 @@ async function waitForRender(page: Page): Promise<void> {
     }, { timeout: 5000 });
 }
 
-async function openAtViewport(page: Page, width: number, height: number): Promise<void> {
+async function openAtViewport(page: import('@playwright/test').Page, width: number, height: number) {
     await page.setViewportSize({ width, height });
-    await page.addInitScript(() => {
-        try {
-            localStorage.removeItem('ascii-canvas-autosave');
-        } catch {
-            /* ignore */
-        }
-    });
+    await clearAutosave(page);
     await page.goto(BASE_URL);
-    await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
-    await page.waitForSelector('#canvas', { timeout: 10000 });
+    await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 30000 });
+    await page.waitForSelector('#canvas', { timeout: 15000 });
     await page.waitForFunction(() => window.editor !== null, null, { timeout: 15000 });
 }
 

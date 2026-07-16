@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { openEditor } from './helpers';
 
 /**
  * Clipboard / export fidelity tests for issue #21.
@@ -19,11 +20,7 @@ declare global {
 
 test.describe('Copy / export fidelity', () => {
     test.beforeEach(async ({ page }) => {
-                await page.addInitScript(() => {
-            try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
-        });
-        await page.goto('/');
-        await page.waitForFunction(() => window.editor !== null, null, { timeout: 30000 });
+        await openEditor(page);
         // Grant clipboard permissions where supported
         await page.context().grantPermissions(['clipboard-read', 'clipboard-write']).catch(() => {});
     });

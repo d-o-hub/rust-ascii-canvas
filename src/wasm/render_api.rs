@@ -199,13 +199,16 @@ impl AsciiEditor {
 
         let fg_color = [212, 212, 212, 255];
 
+        // Composite all visible layers so on-screen view and PNG export match ASCII export.
+        let composite = self.composite_visible_grid();
+
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
             let highlight_color = [38, 79, 120, 255];
 
             for gy in min_y..=max_y {
                 for gx in min_x..=max_x {
-                    if self.state.grid.in_bounds(gx, gy) {
+                    if composite.in_bounds(gx, gy) {
                         let sx = gx as usize * glyph_w;
                         let sy = gy as usize * glyph_h;
 
@@ -225,7 +228,7 @@ impl AsciiEditor {
             }
         }
 
-        for (x, y, cell) in self.state.grid.iter_with_coords() {
+        for (x, y, cell) in composite.iter_with_coords() {
             if cell.is_visible() {
                 self.font_atlas.render_glyph(
                     &mut self.pixel_buffer,

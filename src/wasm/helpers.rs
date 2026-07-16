@@ -19,13 +19,15 @@ impl AsciiEditor {
         }
     }
 
-    /// Export text for OS clipboard: selection region if present, else composite of visible layers.
+    /// Export text for OS clipboard: selection region if present, else full composite.
+    /// Always reads from the composite of visible layers so multi-layer docs match `exportAscii`.
     pub(crate) fn export_for_copy(&self) -> String {
+        let composite = self.composite_visible_grid();
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
-            export_region(&self.state.grid, min_x, min_y, max_x, max_y)
+            export_region(&composite, min_x, min_y, max_x, max_y)
         } else {
-            export_ascii(&self.composite_visible_grid())
+            export_ascii(&composite)
         }
     }
 
@@ -187,6 +189,10 @@ impl AsciiEditor {
     }
 
     pub(crate) fn copy_selection_impl(&mut self) -> bool {
+        // Always source from the composite of visible layers so internal paste matches
+        // OS clipboard / exportAscii for multi-layer documents.
+        let composite = self.composite_visible_grid();
+
         // Prefer explicit selection; otherwise copy full content bounds into internal clipboard.
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
@@ -197,7 +203,7 @@ impl AsciiEditor {
             let mut cells = Vec::new();
             for y in min_y..=max_y {
                 for x in min_x..=max_x {
-                    if let Some(cell) = self.state.grid.get(x, y) {
+                    if let Some(cell) = composite.get(x, y) {
                         if cell.is_visible() {
                             cells.push((x - min_x, y - min_y, *cell));
                         }
@@ -215,14 +221,14 @@ impl AsciiEditor {
 
         // No selection: copy entire content bounding box (visible cells only).
         if let Some((min_x, min_y, max_x, max_y)) =
-            crate::core::ascii_export::find_content_bounds(&self.state.grid)
+            crate::core::ascii_export::find_content_bounds(&composite)
         {
             let width = max_x - min_x + 1;
             let height = max_y - min_y + 1;
             let mut cells = Vec::new();
             for y in min_y..=max_y {
                 for x in min_x..=max_x {
-                    if let Some(cell) = self.state.grid.get(x, y) {
+                    if let Some(cell) = composite.get(x, y) {
                         if cell.is_visible() {
                             cells.push((x - min_x, y - min_y, *cell));
                         }
@@ -505,7 +511,16 @@ impl AsciiEditor {
         if doc.format != "ascii-canvas" || doc.version == 0 || doc.layers.is_empty() {
             return false;
         }
-        if doc.canvas.width == 0 || doc.canvas.height == 0 {
+        // Match UI grid Apply caps (400×200) and keep layer count bounded to avoid OOM.
+        const MAX_CANVAS_WIDTH: usize = 400;
+        const MAX_CANVAS_HEIGHT: usize = 200;
+        const MAX_LAYERS: usize = 32;
+        if doc.canvas.width == 0
+            || doc.canvas.height == 0
+            || doc.canvas.width > MAX_CANVAS_WIDTH
+            || doc.canvas.height > MAX_CANVAS_HEIGHT
+            || doc.layers.len() > MAX_LAYERS
+        {
             return false;
         }
 
@@ -617,5 +632,77 @@ mod clipboard_tests {
         let idx = canvas.add_layer_impl();
         assert_eq!(idx, 1);
         assert_eq!(canvas.layers.len(), 2);
+    }
+
+    #[test]
+    fn test_load_document_rejects_oversized_canvas() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        let json = r#"{
+            "format":"ascii-canvas",
+            "version":1,
+            "canvas":{"width":50000,"height":50000},
+            "active_layer":0,
+            "layers":[{"name":"Layer 1","visible":true,"cells":[]}]
+        }"#;
+        assert!(!canvas.load_document_impl(json));
+        // Original canvas unchanged
+        assert_eq!(canvas.state.grid.width(), 10);
+        assert_eq!(canvas.state.grid.height(), 10);
+    }
+
+    #[test]
+    fn test_load_document_rejects_too_many_layers() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        let layers: String = (0..40)
+            .map(|i| format!(r#"{{"name":"L{i}","visible":true,"cells":[]}}"#))
+            .collect::<Vec<_>>()
+            .join(",");
+        let json = format!(
+            r#"{{"format":"ascii-canvas","version":1,"canvas":{{"width":10,"height":10}},"active_layer":0,"layers":[{layers}]}}"#
+        );
+        assert!(!canvas.load_document_impl(&json));
+    }
+
+    #[test]
+    fn test_export_and_copy_use_composite_layers() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        // Layer 0: 'A' at (0,0)
+        canvas.state.grid.set_char(0, 0, 'A');
+        // Sync layer 0 snapshot then add layer 1 with 'B' at (1,0)
+        let idx = canvas.add_layer_impl();
+        assert_eq!(idx, 1);
+        canvas.state.grid.set_char(1, 0, 'B');
+        // Both layers visible — export/copy must include A and B
+        let ascii = canvas.export_for_copy();
+        assert!(
+            ascii.contains('A'),
+            "composite export missing layer 0: {ascii:?}"
+        );
+        assert!(
+            ascii.contains('B'),
+            "composite export missing layer 1: {ascii:?}"
+        );
+
+        assert!(canvas.copy_selection_impl());
+        // Paste onto a clean area and verify composite was captured
+        canvas.set_selection_for_test(5, 5, 5, 5);
+        assert!(canvas.paste_impl());
+        assert_eq!(canvas.state.grid.get(5, 5).map(|c| c.ch), Some('A'));
+        assert_eq!(canvas.state.grid.get(6, 5).map(|c| c.ch), Some('B'));
+    }
+
+    #[test]
+    fn test_selection_export_uses_composite() {
+        let mut canvas = AsciiEditor::new(10, 10);
+        canvas.state.grid.set_char(0, 0, 'A');
+        let _ = canvas.add_layer_impl();
+        canvas.state.grid.set_char(1, 0, 'B');
+        // Active layer is 1; selection covers both cells
+        canvas.set_selection_for_test(0, 0, 1, 0);
+        let ascii = canvas.export_for_copy();
+        assert!(
+            ascii.contains('A') && ascii.contains('B'),
+            "selection export must composite layers: {ascii:?}"
+        );
     }
 }

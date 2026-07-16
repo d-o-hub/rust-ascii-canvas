@@ -382,9 +382,21 @@ mod tests {
         let lines: Vec<&str> = result.lines().collect();
 
         assert_eq!(lines.len(), 3);
-        assert!(lines[0].ends_with('┐'), "Top row must end with ┐, got: {:?}", lines[0]);
-        assert!(lines[1].ends_with('│'), "Middle row must end with │, got: {:?}", lines[1]);
-        assert!(lines[2].ends_with('┘'), "Bottom row must end with ┘, got: {:?}", lines[2]);
+        assert!(
+            lines[0].ends_with('┐'),
+            "Top row must end with ┐, got: {:?}",
+            lines[0]
+        );
+        assert!(
+            lines[1].ends_with('│'),
+            "Middle row must end with │, got: {:?}",
+            lines[1]
+        );
+        assert!(
+            lines[2].ends_with('┘'),
+            "Bottom row must end with ┘, got: {:?}",
+            lines[2]
+        );
         let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
         assert!(
             widths.windows(2).all(|w| w[0] == w[1]),

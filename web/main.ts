@@ -37,6 +37,8 @@ let offscreenCtx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number | null = null;
 let isInitialized = false;
 void isInitialized;
+/** When true, window resize updates CSS pixels only and does not shrink the grid. */
+let gridSizeLocked = false;
 
 // Expose editor for testing
 declare global {
@@ -96,7 +98,7 @@ let currentBorderStyleIndex = 0;
 let currentLineDirection = 'auto';
 void currentLineDirection;
 
-const scheduleAutoSave = createAutoSaveScheduler(() => editor);
+const { schedule: scheduleAutoSave, flush: flushAutoSave } = createAutoSaveScheduler(() => editor);
 
 /**
  * Compute grid dimensions based on viewport
@@ -191,9 +193,10 @@ async function initialize() {
             editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
         }
 
-        // Restore auto-saved document if present
+        // Restore auto-saved document if present (locks grid so resize cannot crop it).
         if (editor && tryRestoreAutoSave(editor)) {
             logger.info('Restored auto-saved diagram');
+            gridSizeLocked = true;
             offscreenCanvas = null;
             offscreenCtx = null;
         }
@@ -264,7 +267,9 @@ function measureFont() {
 }
 
 /**
- * Resize canvas to match container
+ * Resize canvas to match container.
+ * When `gridSizeLocked` (restored doc / custom Apply / load file), only update
+ * CSS/device pixels — never shrink or grow the logical grid via responsive sizing.
  */
 function resizeCanvas() {
     if (!canvas || !ctx || !canvasContainer) return;
@@ -283,12 +288,14 @@ function resizeCanvas() {
     measureFont();
 
     if (editor) {
-        const { width, height } = computeGridDimensions();
-        if (editor.width !== width || editor.height !== height) {
-            editor.resize(width, height);
-            offscreenCanvas = null; // force offscreen canvas recreation
-            offscreenCtx = null;
-            updateUI();
+        if (!gridSizeLocked) {
+            const { width, height } = computeGridDimensions();
+            if (editor.width !== width || editor.height !== height) {
+                editor.resize(width, height);
+                offscreenCanvas = null; // force offscreen canvas recreation
+                offscreenCtx = null;
+                updateUI();
+            }
         }
         requestRender();
     }
@@ -302,6 +309,17 @@ function setupEventListeners() {
     
     // Window resize
     window.addEventListener('resize', debounce(resizeCanvas, 100));
+
+    // Flush pending auto-save so a short-lived tab close does not drop edits.
+    const flushOnLeave = () => {
+        if (editor) flushAutoSave();
+    };
+    window.addEventListener('pagehide', flushOnLeave);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            flushOnLeave();
+        }
+    });
 
     // Reset panning state when window loses focus
     window.addEventListener('blur', () => {
@@ -457,12 +475,14 @@ function setupEventListeners() {
         loadBtn.addEventListener('click', () => {
             if (!editor) return;
             openDocumentPicker(editor, showToast, () => {
+                gridSizeLocked = true;
                 offscreenCanvas = null;
                 offscreenCtx = null;
                 refreshLayerSelect();
                 syncGridInputs();
                 requestRender();
                 updateUI();
+                flushAutoSave();
             });
         });
     }
@@ -589,7 +609,8 @@ function handlePointerMove(e: PointerEvent) {
     updateCursorIndicator(gridX, gridY);
 
     const result = editor.onPointerMove(x, y);
-    handleEventResult(result);
+    // Do not auto-save on pointermove (pan/hover/preview) — avoids thrashing and empty saves.
+    handleEventResult(result, { persist: false });
 }
 
 /**
@@ -606,7 +627,7 @@ function handlePointerUp(e: PointerEvent) {
     const y = e.clientY - rect.top;
 
     const result = editor.onPointerUp(x, y);
-    handleEventResult(result);
+    handleEventResult(result, { persist: true });
 }
 
 /**
@@ -652,7 +673,7 @@ function handleTouchMove(e: TouchEvent) {
         updateCursorIndicator(gridX, gridY);
 
         const result = editor.onPointerMove(x, y);
-        handleEventResult(result);
+        handleEventResult(result, { persist: false });
     } else if (e.touches.length === 2) {
         const currentDistance = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
@@ -667,7 +688,7 @@ function handleTouchMove(e: TouchEvent) {
 
             // Map distance change to onWheel for zoom
             const result = editor.onWheel(delta * 2, centerX, centerY);
-            handleEventResult(result);
+            handleEventResult(result, { persist: false });
         }
         lastTouchDistance = currentDistance;
     }
@@ -734,7 +755,7 @@ function handleWheel(e: WheelEvent) {
     const y = e.clientY - rect.top;
 
     const result = editor.onWheel(e.deltaY, x, y);
-    handleEventResult(result);
+    handleEventResult(result, { persist: false });
 }
 
 /**
@@ -813,10 +834,13 @@ function handleKeyUp(e: KeyboardEvent) {
 }
 
 /**
- * Handle event result from WASM
+ * Handle event result from WASM.
+ * @param persist When true (default), schedule debounced auto-save. Pass false for
+ *   navigation-only paths (pointermove, wheel, pan) so we do not serialize on every hover.
  */
-function handleEventResult(result: EventResult | null) {
+function handleEventResult(result: EventResult | null, options: { persist?: boolean } = {}) {
     if (!result) return;
+    const persist = options.persist !== false;
 
     if (result.needs_redraw) {
         requestRender();
@@ -845,7 +869,9 @@ function handleEventResult(result: EventResult | null) {
     }
 
     updateUI();
-    scheduleAutoSave();
+    if (persist) {
+        scheduleAutoSave();
+    }
 }
 
 /**
@@ -1116,14 +1142,18 @@ function applyCustomGridSize() {
     const h = Math.max(MIN_ROWS, Math.min(200, parseInt(gridHeightInput.value, 10) || MIN_ROWS));
     gridWidthInput.value = String(w);
     gridHeightInput.value = String(h);
+    gridSizeLocked = true;
     if (editor.width !== w || editor.height !== h) {
         editor.resize(w, h);
         offscreenCanvas = null;
         offscreenCtx = null;
         requestRender();
         updateUI();
+        syncGridInputs();
         scheduleAutoSave();
         showToast(`Grid: ${w} × ${h}`);
+    } else {
+        syncGridInputs();
     }
 }
 

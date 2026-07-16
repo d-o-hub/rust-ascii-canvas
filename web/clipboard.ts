@@ -22,7 +22,8 @@ export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Pr
         pre.style.fontSize = '14px';
         pre.style.lineHeight = '1.4';
         pre.style.whiteSpace = 'pre';
-        pre.textContent = text; // HTML preserves visual lines; text nodes use original content
+        // Use the same CRLF-normalized text for HTML so Word/web paste targets match plain text.
+        pre.textContent = normalized;
         const html = pre.outerHTML;
         const rich = new Blob([html], { type: 'text/html' });
 
