@@ -14,7 +14,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
 | **F-01** | ✅ | — | [PR #107](https://github.com/d-o-hub/rust-ascii-canvas/pull/107) merged; #21 closed |
-| **F-02** | open | [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108) | Manual clipboard QA across editors |
+| **F-02** | ✅ | [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108) | Manual clipboard QA verified across Notepad, TextEdit, VS Code, and monospace area |
 | **F-03** | partial | [#109](https://github.com/d-o-hub/rust-ascii-canvas/issues/109) | #98 merged; open Dependabot [#99](https://github.com/d-o-hub/rust-ascii-canvas/pull/99) wasm-bindgen |
 
 ---

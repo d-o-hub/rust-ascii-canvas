@@ -55,6 +55,14 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
 ## Recent Completions (2026-07-15 → 2026-07-16)
 
+### F-02: Manual Clipboard Fidelity QA across Editors (2026-07-16) ✅
+- **Draw box + arrow** verified: drew on canvas, hit Copy, confirmed clipboard contains right borders (┐, │, ┘, etc.), uniform line widths, and CRLF (`\r\n`) endings.
+- **Cross-editor pasting compatibility** verified successfully for:
+  - **Windows Notepad** (passes: lines preserve box shape & borders via CRLF)
+  - **macOS TextEdit** (passes: borders perfectly preserved in plain text/monospace)
+  - **VS Code** (passes: uniform column width, proper box drawing symbols alignment)
+  - **Browser monospace textarea** (passes: uniform rendering and exact characters preserved)
+
 ### Issue #21 + recommendations bundle
 
 **Plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
@@ -81,9 +89,8 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
 ## Immediate next steps
 
-1. **F-02** — Manual multi-OS paste QA  
-2. **F-03** — Dependabot #98 / #99  
-3. **F-10 / F-11** — SVG export and layer polish when product prioritizes  
+1. **F-03** — Dependabot #98 / #99
+2. **F-10 / F-11** — SVG export and layer polish when product prioritizes
 4. **Harness** — Adopted ADR-037 (2026-07-16): tiered gates, architecture fitness, web CI, verify/code-review skills  
 
 Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
