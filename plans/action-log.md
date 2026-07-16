@@ -173,3 +173,31 @@
 - ADR-025: Error Handling Hardening
 - ADR-030: Select Tool Delete Bug Fix
 - ADR-031: GitHub Monitoring and CI Fix Strategy
+
+---
+
+## 2026-07-15 → 2026-07-16 — Recommendations bundle
+
+**Repository**: d-o-hub/rust-ascii-canvas  
+**Plan**: `plans/full-recommendations-2026-07.md`  
+**ADR**: `plans/ADRs/036-clipboard-fidelity-and-product-features.md`  
+**Status**: Code complete; PR / issue close pending (F-01)
+
+### Actions taken
+
+1. Analyzed open GitHub issues (only **#21** open) + codebase gaps
+2. Implemented clipboard fidelity (selection export, paste origin, CRLF, visible cells, secure context)
+3. Implemented `.asc` persistence + localStorage auto-save
+4. Implemented PNG export, grid size UI, basic layers
+5. Extracted web modules; fixed package metadata to d-o-hub
+6. Added unit/E2E coverage; fixed E2E infrastructure bugs found during verification
+7. Updated plans: PROJECT_STATUS, current-plan, goal-state, FOLLOW_UPS, TECHNICAL_ANALYSIS addendum
+
+### Verification
+
+- clippy clean, cargo lib 98, vitest 14, eslint clean, chromium e2e 71
+
+### Open follow-ups logged
+
+See `plans/FOLLOW_UPS.md` (F-01 ship PR, F-02 manual QA, F-03 Dependabot, F-10+ product/quality backlog).
+

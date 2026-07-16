@@ -372,6 +372,54 @@ body {
     background-color: rgba(242, 72, 34, 0.2);
 }
 
+/* Grid size / layer controls */
+.grid-size-controls,
+.layer-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.grid-size-label {
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.grid-size-input {
+    width: 56px;
+    height: 28px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--fg);
+    font-family: var(--font-family);
+    font-size: 12px;
+    padding: 0 6px;
+}
+
+.grid-size-input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+
+.layer-controls .select-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* Side Panel */
 .side-panel {
     width: 220px;

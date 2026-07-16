@@ -4,8 +4,8 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { openEditor } from './helpers';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
@@ -16,9 +16,7 @@ async function waitForRender(page: Page): Promise<void> {
 
 test.describe('Tool Drawing Verification', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
         await expect(page.locator('#canvas')).toBeVisible();
     });
 
@@ -165,9 +163,7 @@ test.describe('Tool Drawing Verification', () => {
 
 test.describe('Select Tool Delete Functionality', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     async function drawOnCanvas(page: import('@playwright/test').Page, startX: number, startY: number, endX: number, endY: number) {
@@ -236,9 +232,7 @@ test.describe('Select Tool Delete Functionality', () => {
 
 test.describe('Edge Cases', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     async function drawOnCanvas(page: import('@playwright/test').Page, startX: number, startY: number, endX: number, endY: number) {
@@ -358,14 +352,13 @@ test.describe('Edge Cases', () => {
 
 test.describe('Keyboard Shortcuts', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     test('All tool shortcuts work', async ({ page }) => {
         const canvas = page.locator('#canvas');
         await canvas.click();
+        await canvas.focus();
         await waitForRender(page);
         
         const shortcuts: Array<{ key: string; tool: string }> = [
@@ -379,6 +372,7 @@ test.describe('Keyboard Shortcuts', () => {
         ];
         
         for (const { key, tool } of shortcuts) {
+            await canvas.focus();
             await page.keyboard.press(key);
             await expect(page.locator(`[data-tool="${tool}"]`)).toHaveClass(/active/, { timeout: 3000 });
         }

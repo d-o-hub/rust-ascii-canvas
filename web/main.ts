@@ -6,75 +6,39 @@
 
 import init, { AsciiEditor } from './pkg/ascii_canvas.js';
 import { logger } from './logger.js';
-
-
-// Type definitions
-interface EventResult {
-    needs_redraw: boolean;
-    tool: string;
-    can_undo: boolean;
-    can_redo: boolean;
-    should_copy: boolean;
-    ascii: string | null;
-}
-
-interface RenderCommand {
-    type: string;
-    [key: string]: unknown;
-}
-
-// WASM AsciiEditor interface
-interface AsciiEditorInterface {
-    width: number;
-    height: number;
-    tool: string;
-    zoom: number;
-    pan: number[] | Float64Array;
-    can_undo: boolean;
-    can_redo: boolean;
-    setTool(toolId: string): void;
-    setBorderStyle(style: string): void;
-    setLineDirection(direction: string): void;
-    setZoom(zoom: number): void;
-    setPan(x: number, y: number): void;
-    setFontMetrics(charWidth: number, lineHeight: number, fontSize: number): void;
-    onPointerDown(x: number, y: number): EventResult | null;
-    onPointerMove(x: number, y: number): EventResult | null;
-    onPointerUp(x: number, y: number): EventResult | null;
-    onKeyDown(key: string, ctrl: boolean, shift: boolean): EventResult | null;
-    onKeyUp(key: string): void;
-    onWheel(delta: number, x: number, y: number): EventResult | null;
-    undo(): boolean;
-    redo(): boolean;
-    clear(): void;
-    selectAll(): void;
-    exportAscii(): string;
-    getRenderCommands(): RenderCommand[];
-    getDirtyRenderCommands(): RenderCommand[];
-    getPixelBufferPtr(): number;
-    getPixelBufferLen(): number;
-    renderToPixelBuffer(): void;
-    updateFontAtlasGlyph(chCode: number, glyphData: Uint8Array): void;
-    resize(width: number, height: number): void;
-    requestRedraw(): void;
-    clearDirtyState(): void;
-    readonly needsRedraw: boolean;
-    readonly fullRenderCount: number;
-    readonly dirtyRenderCount: number;
-}
+import type { AsciiEditorInterface, EventResult, RenderCommand } from './types.js';
+import {
+    FONT_SIZE,
+    MIN_COLS,
+    MIN_ROWS,
+    USE_PIXEL_BUFFER,
+    GLYPH_WIDTH,
+    GLYPH_HEIGHT,
+    TOOL_INFO,
+    BORDER_STYLES,
+} from './constants.js';
+import { capitalize, debounce, getElement } from './utils.js';
+import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
+import {
+    createAutoSaveScheduler,
+    downloadDocument,
+    openDocumentPicker,
+    tryRestoreAutoSave,
+} from './persistence.js';
+import { exportPng } from './exportPng.js';
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let wasmMemory: any = null;
+let wasmMemory: WebAssembly.Memory | null = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let offscreenCanvas: HTMLCanvasElement | null = null;
 let offscreenCtx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number | null = null;
-// Track initialization state
 let isInitialized = false;
-void isInitialized; // Suppress unused variable warning
+void isInitialized;
+/** When true, window resize updates CSS pixels only and does not shrink the grid. */
+let gridSizeLocked = false;
 
 // Expose editor for testing
 declare global {
@@ -84,10 +48,11 @@ declare global {
         lineHeight: number;
     }
 }
-window.editor = null;
 
-// Font metrics
-const FONT_SIZE = 14;
+if (typeof window !== 'undefined') {
+    window.editor = null;
+}
+
 let charWidth = 8.4;
 let lineHeight = 20;
 
@@ -118,49 +83,25 @@ let lineDirectionGroup: HTMLDivElement;
 let directionBtns: NodeListOf<Element>;
 let mobileKeyboardProxy: HTMLInputElement;
 
+
 // Mobile state
 let lastTouchDistance: number | null = null;
 
-// Grid dimensions
-const MIN_COLS = 40;
-const MIN_ROWS = 20;
-
-// Rendering configuration
-const USE_PIXEL_BUFFER = true;
-const GLYPH_WIDTH = 8;
-const GLYPH_HEIGHT = 20;
-
-// Tool information for UX
-const TOOL_INFO: Record<string, { instruction: string; cursor: string; shortcut: string }> = {
-    'select': { instruction: 'Click to select, drag selection to move, or Del to erase', cursor: 'default', shortcut: 'V' },
-    'rectangle': { instruction: 'Drag to draw a rectangle', cursor: 'crosshair', shortcut: 'R' },
-    'line': { instruction: 'Drag to draw a line', cursor: 'crosshair', shortcut: 'L' },
-    'arrow': { instruction: 'Drag to draw an arrow', cursor: 'crosshair', shortcut: 'A' },
-    'diamond': { instruction: 'Drag to draw a diamond', cursor: 'crosshair', shortcut: 'D' },
-    'text': { instruction: 'Click to place cursor, then type', cursor: 'text', shortcut: 'T' },
-    'freehand': { instruction: 'Drag to draw freely', cursor: 'crosshair', shortcut: 'F' },
-    'eraser': { instruction: 'Drag to erase areas', cursor: 'crosshair', shortcut: 'E' },
-};
-
-// Border styles for cycling
-const BORDER_STYLES = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
 let currentBorderStyleIndex = 0;
-
-// Line direction options
-const LINE_DIRECTIONS = ['auto', 'horizontal', 'vertical'];
-void LINE_DIRECTIONS; // Suppress unused - reserved for future UI
 let currentLineDirection = 'auto';
-void currentLineDirection; // Suppress unused - state tracked via DOM
+void currentLineDirection;
 
-/**
- * Get DOM element with null check
- */
-function getElement<T extends HTMLElement>(id: string): T {
-    const el = document.getElementById(id);
-    if (!el) {
-        throw new Error(`Required element not found: ${id}`);
+const { schedule: scheduleAutoSave, flush: flushAutoSave } = createAutoSaveScheduler(() => editor);
+
+/** Module-level handlers so nested closures are not flagged as non-serializable (Biome/Qwik FP). */
+function onPageHideFlushAutoSave(): void {
+    if (editor) flushAutoSave();
+}
+
+function onVisibilityChangeFlushAutoSave(): void {
+    if (document.visibilityState === 'hidden' && editor) {
+        flushAutoSave();
     }
-    return el as T;
 }
 
 /**
@@ -238,7 +179,7 @@ async function initialize() {
 
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
-        editor = new AsciiEditor(width, height);
+        editor = new AsciiEditor(width, height) as unknown as AsciiEditorInterface;
         window.editor = editor;
 
         // Update editor with font metrics again after creation
@@ -246,11 +187,21 @@ async function initialize() {
             editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
         }
 
+        // Restore auto-saved document if present (locks grid so resize cannot crop it).
+        if (tryRestoreAutoSave(editor)) {
+            logger.info('Restored auto-saved diagram');
+            gridSizeLocked = true;
+            offscreenCanvas = null;
+            offscreenCtx = null;
+        }
+
         // Set up event listeners
         setupEventListeners();
 
         // Update UI
         updateUI();
+        refreshLayerSelect();
+        syncGridInputs();
 
         // Initial render
         requestRender();
@@ -310,7 +261,9 @@ function measureFont() {
 }
 
 /**
- * Resize canvas to match container
+ * Resize canvas to match container.
+ * When `gridSizeLocked` (restored doc / custom Apply / load file), only update
+ * CSS/device pixels — never shrink or grow the logical grid via responsive sizing.
  */
 function resizeCanvas() {
     if (!canvas || !ctx || !canvasContainer) return;
@@ -329,12 +282,14 @@ function resizeCanvas() {
     measureFont();
 
     if (editor) {
-        const { width, height } = computeGridDimensions();
-        if (editor.width !== width || editor.height !== height) {
-            editor.resize(width, height);
-            offscreenCanvas = null; // force offscreen canvas recreation
-            offscreenCtx = null;
-            updateUI();
+        if (!gridSizeLocked) {
+            const { width, height } = computeGridDimensions();
+            if (editor.width !== width || editor.height !== height) {
+                editor.resize(width, height);
+                offscreenCanvas = null; // force offscreen canvas recreation
+                offscreenCtx = null;
+                updateUI();
+            }
         }
         requestRender();
     }
@@ -348,6 +303,10 @@ function setupEventListeners() {
     
     // Window resize
     window.addEventListener('resize', debounce(resizeCanvas, 100));
+
+    // Flush pending auto-save so a short-lived tab close does not drop edits.
+    window.addEventListener('pagehide', onPageHideFlushAutoSave);
+    document.addEventListener('visibilitychange', onVisibilityChangeFlushAutoSave);
 
     // Reset panning state when window loses focus
     window.addEventListener('blur', () => {
@@ -483,10 +442,71 @@ function setupEventListeners() {
             editor.clear();
             requestRender();
             updateUI();
+            scheduleAutoSave();
             showToast('Canvas cleared');
             if (canvas) canvas.focus();
         }
     });
+
+    // Optional feature controls: resolve and wire without storing Element refs in nullable module vars
+    // (avoids Codacy ESLint xss/no-mixed-html false positives on DOM lookups).
+    wireOptionalButton('save-btn', () => {
+        if (!editor) return;
+        downloadDocument(editor, showToast);
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('load-btn', () => {
+        if (!editor) return;
+        openDocumentPicker(editor, showToast, () => {
+            gridSizeLocked = true;
+            offscreenCanvas = null;
+            offscreenCtx = null;
+            refreshLayerSelect();
+            syncGridInputs();
+            requestRender();
+            updateUI();
+            flushAutoSave();
+        });
+    });
+    wireOptionalButton('png-btn', () => {
+        if (editor) {
+            editor.requestRedraw();
+            requestRender();
+            requestAnimationFrame(() => {
+                exportPng(offscreenCanvas, canvas, showToast);
+            });
+        }
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('apply-grid-btn', () => {
+        applyCustomGridSize();
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('add-layer-btn', () => {
+        if (!editor) return;
+        editor.addLayer();
+        refreshLayerSelect();
+        requestRender();
+        updateUI();
+        scheduleAutoSave();
+        showToast('Layer added');
+        if (canvas) canvas.focus();
+    });
+
+    const layerSelectEl = document.querySelector('#layer-select');
+    if (layerSelectEl instanceof HTMLSelectElement) {
+        layerSelectEl.addEventListener('change', () => {
+            if (!editor) return;
+            const idx = parseInt(layerSelectEl.value, 10);
+            if (!Number.isNaN(idx)) {
+                editor.setActiveLayer(idx);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+            if (canvas) canvas.focus();
+        });
+    }
 
     helpBtn.addEventListener('mousedown', (e) => e.preventDefault());
     helpBtn.addEventListener('click', showShortcutsModal);
@@ -559,7 +579,8 @@ function handlePointerMove(e: PointerEvent) {
     updateCursorIndicator(gridX, gridY);
 
     const result = editor.onPointerMove(x, y);
-    handleEventResult(result);
+    // Do not auto-save on pointermove (pan/hover/preview) — avoids thrashing and empty saves.
+    handleEventResult(result, { persist: false });
 }
 
 /**
@@ -576,7 +597,7 @@ function handlePointerUp(e: PointerEvent) {
     const y = e.clientY - rect.top;
 
     const result = editor.onPointerUp(x, y);
-    handleEventResult(result);
+    handleEventResult(result, { persist: true });
 }
 
 /**
@@ -622,7 +643,7 @@ function handleTouchMove(e: TouchEvent) {
         updateCursorIndicator(gridX, gridY);
 
         const result = editor.onPointerMove(x, y);
-        handleEventResult(result);
+        handleEventResult(result, { persist: false });
     } else if (e.touches.length === 2) {
         const currentDistance = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
@@ -637,7 +658,7 @@ function handleTouchMove(e: TouchEvent) {
 
             // Map distance change to onWheel for zoom
             const result = editor.onWheel(delta * 2, centerX, centerY);
-            handleEventResult(result);
+            handleEventResult(result, { persist: false });
         }
         lastTouchDistance = currentDistance;
     }
@@ -704,7 +725,7 @@ function handleWheel(e: WheelEvent) {
     const y = e.clientY - rect.top;
 
     const result = editor.onWheel(e.deltaY, x, y);
-    handleEventResult(result);
+    handleEventResult(result, { persist: false });
 }
 
 /**
@@ -732,10 +753,12 @@ function handleKeyDown(e: KeyboardEvent) {
 
     handleEventResult(result);
 
-    // Don't switch tools or cycle styles if we're currently typing in the Text tool
-    const isTypingText = editor.tool.toLowerCase() === 'text' && document.activeElement === mobileKeyboardProxy;
+    // While the Text tool is selected, letter keys must type characters — not switch tools
+    // (e.g. typing "HELLO" must not activate Eraser on 'E').
+    // Switch tools via the toolbar or press Escape first, then a shortcut.
+    const isTextTool = editor.tool.toLowerCase() === 'text';
 
-    if (!isTypingText) {
+    if (!isTextTool) {
         // Handle B key - cycle border styles
         if (key.toLowerCase() === 'b' && !ctrl && !shift) {
             cycleBorderStyle();
@@ -755,7 +778,7 @@ function handleKeyDown(e: KeyboardEvent) {
             showShortcutsModal();
         }
 
-        // Handle tool shortcuts
+        // Handle tool shortcuts (desktop + keyboard UI)
         const lowerKey = key.toLowerCase();
         for (const [toolName, info] of Object.entries(TOOL_INFO)) {
             if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
@@ -763,6 +786,8 @@ function handleKeyDown(e: KeyboardEvent) {
                 break;
             }
         }
+    } else if (key === '?' || (key === '/' && shift)) {
+        showShortcutsModal();
     }
 }
 
@@ -779,10 +804,13 @@ function handleKeyUp(e: KeyboardEvent) {
 }
 
 /**
- * Handle event result from WASM
+ * Handle event result from WASM.
+ * @param persist When true (default), schedule debounced auto-save. Pass false for
+ *   navigation-only paths (pointermove, wheel, pan) so we do not serialize on every hover.
  */
-function handleEventResult(result: EventResult | null) {
+function handleEventResult(result: EventResult | null, options: { persist?: boolean } = {}) {
     if (!result) return;
+    const persist = options.persist !== false;
 
     if (result.needs_redraw) {
         requestRender();
@@ -792,22 +820,28 @@ function handleEventResult(result: EventResult | null) {
         updateToolButtons(result.tool);
     }
 
-    // Handle mobile keyboard proxy
+    // Focus the mobile keyboard proxy only on coarse pointers (touch).
+    // Auto-focusing it on desktop steals focus from the canvas so tool shortcuts
+    // (e.g. E for eraser after T for text) never reach the editor.
     if (editor && editor.tool.toLowerCase() === 'text') {
-        if (document.activeElement !== mobileKeyboardProxy) {
+        const touchUi = typeof window.matchMedia === 'function'
+            && window.matchMedia('(pointer: coarse)').matches;
+        if (touchUi && document.activeElement !== mobileKeyboardProxy) {
             mobileKeyboardProxy.focus();
         }
-    } else {
-        if (document.activeElement === mobileKeyboardProxy) {
-            mobileKeyboardProxy.blur();
-        }
+    } else if (document.activeElement === mobileKeyboardProxy) {
+        mobileKeyboardProxy.blur();
+        if (canvas) canvas.focus();
     }
 
     if (result.should_copy && result.ascii) {
-        void copyAsciiToClipboard(result.ascii);
+        void copyAsciiToClipboard(result.ascii, showToast);
     }
 
     updateUI();
+    if (persist) {
+        scheduleAutoSave();
+    }
 }
 
 /**
@@ -967,38 +1001,59 @@ function updateCursorIndicator(gridX: number, gridY: number) {
 /**
  * Set the current tool
  */
+function focusCanvasElement(): void {
+    if (canvas) {
+        canvas.focus();
+        return;
+    }
+    const el = document.querySelector('#canvas');
+    if (el instanceof HTMLCanvasElement) {
+        el.focus();
+    }
+}
+
+/** Wire click (+ mousedown preventDefault) for an optional button by id. */
+function wireOptionalButton(id: string, onClick: () => void): void {
+    const el = document.querySelector(`#${CSS.escape(id)}`);
+    if (!(el instanceof HTMLButtonElement)) return;
+    el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+    });
+    el.addEventListener('click', onClick);
+}
+
 function setTool(toolName: string) {
     if (!editor) {
         logger.error('Editor not initialized');
+        // Still focus canvas when present (unit tests / early UI)
+        focusCanvasElement();
         return;
     }
     try {
         editor.setTool(toolName);
         updateToolButtons(toolName);
-        
-        // Show/hide line direction options
-        if (toolName.toLowerCase() === 'line') {
-            lineDirectionGroup.style.display = 'flex';
-        } else {
-            lineDirectionGroup.style.display = 'none';
-        }
-        
+
+        // Module refs are initialized before tools are interactive.
+        lineDirectionGroup.style.display =
+            toolName.toLowerCase() === 'line' ? 'flex' : 'none';
         statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
 
         // Ensure canvas keeps focus for keyboard shortcuts
-        if (canvas) canvas.focus();
+        focusCanvasElement();
     } catch (error) {
         logger.error('Failed to set tool:', error);
     }
 }
 
 /**
- * Update tool button states
+ * Update tool button states.
+ * Uses live DOM queries so unit tests work before module refs are initialized.
  */
 function updateToolButtons(activeTool: string) {
     const normalizedTool = activeTool.toLowerCase();
 
-    toolButtons.forEach(btn => {
+    const buttons = document.querySelectorAll('.tool-btn');
+    buttons.forEach(btn => {
         const tool = btn.getAttribute('data-tool');
         const isActive = tool?.toLowerCase() === normalizedTool;
         if (isActive) {
@@ -1009,26 +1064,27 @@ function updateToolButtons(activeTool: string) {
         btn.setAttribute('aria-pressed', isActive.toString());
     });
 
-    // Update instruction message
+    // TOOL_INFO is a full Record for known tools; callers pass known tool ids.
     const info = TOOL_INFO[normalizedTool];
-    if (info && statusMessageEl) {
-        statusMessageEl.textContent = `[${info.shortcut}] ${info.instruction}`;
+    const statusEl = document.querySelector('#status-message');
+    if (statusEl instanceof HTMLElement) {
+        statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
     }
 
-    // Update cursor
-    if (canvasContainer && info) {
+    const container = document.querySelector('#canvas-container');
+    if (container instanceof HTMLElement) {
         // Clear previous tool classes
-        canvasContainer.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
+        container.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
         if (info.cursor === 'text') {
-            canvasContainer.classList.add('tool-text');
+            container.classList.add('tool-text');
         } else if (info.cursor === 'crosshair') {
             if (normalizedTool === 'eraser') {
-                canvasContainer.classList.add('tool-eraser');
+                container.classList.add('tool-eraser');
             } else {
-                canvasContainer.classList.add('tool-crosshair');
+                container.classList.add('tool-crosshair');
             }
         } else if (normalizedTool === 'select') {
-            canvasContainer.classList.add('tool-select');
+            container.classList.add('tool-select');
         }
     }
 }
@@ -1049,51 +1105,69 @@ function updateUI() {
 }
 
 /**
- * Copy ASCII to clipboard with both plain text and HTML formats
- * to preserve formatting in various editors.
- */
-async function copyAsciiToClipboard(text: string) {
-    try {
-        const plain = new Blob([text], { type: 'text/plain' });
-
-        // HTML version with specific font stack to preserve monospace layout
-        // Use DOM element to ensure robust sanitization of the ASCII text
-        const pre = document.createElement('pre');
-        pre.style.fontFamily = "'JetBrains Mono','Cascadia Code','Courier New',monospace";
-        pre.style.fontSize = '14px';
-        pre.style.lineHeight = '1.4';
-        pre.style.whiteSpace = 'pre';
-        pre.textContent = text;
-        const html = pre.outerHTML;
-        const rich = new Blob([html], { type: 'text/html' });
-
-        await navigator.clipboard.write([
-            new ClipboardItem({
-                'text/plain': plain,
-                'text/html': rich,
-            }),
-        ]);
-
-        showToast('Copied — paste in a monospace editor');
-    } catch (err) {
-        logger.error('Failed to copy:', err);
-        // Fallback to simple text copy if ClipboardItem is not supported
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast('Copied — paste in a monospace editor');
-        } catch {
-            showToast('Failed to copy', true);
-        }
-    }
-}
-
-/**
- * Copy ASCII to clipboard
+ * Selection-aware copy to OS clipboard (CRLF + internal clipboard).
  */
 async function copyToClipboard() {
     if (!editor) return;
-    const ascii = editor.exportAscii();
-    await copyAsciiToClipboard(ascii);
+    await copySelectionAware(editor, showToast);
+}
+
+/**
+ * Apply custom grid dimensions from side-panel inputs.
+ */
+function applyCustomGridSize() {
+    if (!editor) return;
+    const gridWidthInput = document.querySelector('#grid-width');
+    const gridHeightInput = document.querySelector('#grid-height');
+    if (!(gridWidthInput instanceof HTMLInputElement) || !(gridHeightInput instanceof HTMLInputElement)) {
+        return;
+    }
+    const w = Math.max(MIN_COLS, Math.min(400, parseInt(gridWidthInput.value, 10) || MIN_COLS));
+    const h = Math.max(MIN_ROWS, Math.min(200, parseInt(gridHeightInput.value, 10) || MIN_ROWS));
+    gridWidthInput.value = String(w);
+    gridHeightInput.value = String(h);
+    gridSizeLocked = true;
+    if (editor.width !== w || editor.height !== h) {
+        editor.resize(w, h);
+        offscreenCanvas = null;
+        offscreenCtx = null;
+        requestRender();
+        updateUI();
+        syncGridInputs();
+        scheduleAutoSave();
+        showToast(`Grid: ${w} × ${h}`);
+    } else {
+        syncGridInputs();
+    }
+}
+
+function syncGridInputs() {
+    if (!editor) return;
+    const gridWidthInput = document.querySelector('#grid-width');
+    const gridHeightInput = document.querySelector('#grid-height');
+    if (!(gridWidthInput instanceof HTMLInputElement) || !(gridHeightInput instanceof HTMLInputElement)) {
+        return;
+    }
+    gridWidthInput.value = String(editor.width);
+    gridHeightInput.value = String(editor.height);
+}
+
+function refreshLayerSelect() {
+    if (!editor || typeof editor.layerCount !== 'number') return;
+    const layerSelect = document.querySelector('#layer-select');
+    if (!(layerSelect instanceof HTMLSelectElement)) return;
+    const count = editor.layerCount;
+    const active = editor.activeLayer ?? 0;
+    while (layerSelect.firstChild) {
+        layerSelect.removeChild(layerSelect.firstChild);
+    }
+    for (let i = 0; i < count; i++) {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = editor.layerName(i) || `Layer ${i + 1}`;
+        if (i === active) opt.selected = true;
+        layerSelect.appendChild(opt);
+    }
 }
 
 /**
@@ -1262,24 +1336,6 @@ function uploadFontAtlas() {
 
     logger.debug(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
     editor.requestRedraw();
-}
-
-/**
- * Capitalize first letter
- */
-function capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-/**
- * Debounce utility
- */
-function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
-    let timeout: ReturnType<typeof setTimeout>;
-    return ((...args: Parameters<T>) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fn(...args), delay);
-    }) as T;
 }
 
 // Initialize when DOM is ready

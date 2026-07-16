@@ -34,9 +34,21 @@ pub async fn read_from_clipboard() -> Result<String, JsValue> {
 }
 
 /// Check if clipboard API is available.
+/// Requires a secure context (`https://` or `localhost`) and a usable
+/// `navigator.clipboard.writeText` implementation.
 #[wasm_bindgen(js_name = isClipboardAvailable)]
 pub fn is_clipboard_available() -> bool {
-    web_sys::window()
-        .map(|w| w.navigator().clipboard())
-        .is_some()
+    let window = match web_sys::window() {
+        Some(w) => w,
+        None => return false,
+    };
+    if !window.is_secure_context() {
+        return false;
+    }
+    let navigator = window.navigator();
+    let clipboard_val = match js_sys::Reflect::get(&navigator, &JsValue::from_str("clipboard")) {
+        Ok(v) if !v.is_undefined() && !v.is_null() => v,
+        _ => return false,
+    };
+    js_sys::Reflect::has(&clipboard_val, &JsValue::from_str("writeText")).unwrap_or(false)
 }

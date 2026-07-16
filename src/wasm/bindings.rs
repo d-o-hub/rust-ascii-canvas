@@ -29,10 +29,23 @@ pub struct AsciiEditor {
     pub(crate) move_clipboard: Option<SelectionClipboard>,
     pub(crate) move_original_selection: Option<Selection>,
     pub(crate) is_moving_selection: bool,
+    /// Last grid cell under the pointer (for paste origin when no selection).
+    pub(crate) last_cursor: Option<(i32, i32)>,
     pub(crate) full_render_count: u32,
     pub(crate) dirty_render_count: u32,
     pub(crate) pixel_buffer: Vec<u8>,
     pub(crate) font_atlas: FontAtlas,
+    /// Named layers (background layers + active content mirrored in `state.grid`).
+    pub(crate) layers: Vec<LayerData>,
+    pub(crate) active_layer: usize,
+}
+
+/// Serializable layer metadata + content snapshot.
+#[derive(Clone, Debug)]
+pub(crate) struct LayerData {
+    pub name: String,
+    pub visible: bool,
+    pub grid: crate::core::Grid,
 }
 
 #[wasm_bindgen]
@@ -58,16 +71,26 @@ impl AsciiEditor {
             move_clipboard: None,
             move_original_selection: None,
             is_moving_selection: false,
+            last_cursor: None,
             full_render_count: 0,
             dirty_render_count: 0,
             pixel_buffer: vec![0u8; width * 8 * height * 20 * 4],
             font_atlas: FontAtlas::new(),
+            layers: vec![LayerData {
+                name: "Layer 1".to_string(),
+                visible: true,
+                grid: crate::core::Grid::new(width, height),
+            }],
+            active_layer: 0,
         }
     }
 
     #[wasm_bindgen]
     pub fn resize(&mut self, new_width: usize, new_height: usize) {
         self.state.grid.resize(new_width, new_height);
+        for layer in &mut self.layers {
+            layer.grid.resize(new_width, new_height);
+        }
         self.pixel_buffer = vec![0u8; new_width * 8 * new_height * 20 * 4];
         self.dirty_tracker.request_full_redraw();
     }
@@ -191,6 +214,9 @@ impl AsciiEditor {
     #[wasm_bindgen]
     pub fn clear(&mut self) {
         self.state.grid.clear();
+        if let Some(layer) = self.layers.get_mut(self.active_layer) {
+            layer.grid.clear();
+        }
         self.history.clear();
         self.clipboard.clear();
         self.dirty_tracker.request_full_redraw();

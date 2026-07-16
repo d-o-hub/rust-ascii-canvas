@@ -1,7 +1,7 @@
 # ADR-027: File Persistence (Save/Load)
 
 ## Status
-Proposed
+Accepted (implemented 2026-07-15 — `.asc` + localStorage)
 
 ## Date
 2026-03-03

@@ -4,8 +4,8 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { openEditor } from './helpers';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
@@ -26,9 +26,7 @@ async function waitForCursorUpdate(page: Page): Promise<void> {
 
 test.describe('ASCII Canvas Editor', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     test('should load the editor', async ({ page }) => {
@@ -136,9 +134,7 @@ test.describe('ASCII Canvas Editor', () => {
 
 test.describe('Drawing Tools Interaction', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     async function drawOnCanvas(page: import('@playwright/test').Page, startX: number, startY: number, endX: number, endY: number) {
@@ -460,9 +456,7 @@ test.describe('Drawing Tools Interaction', () => {
 
 test.describe('Undo/Redo', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     async function drawRect(page: import('@playwright/test').Page) {
@@ -549,9 +543,7 @@ test.describe('Undo/Redo', () => {
 
 test.describe('Border Styles', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     test('should change border style via select', async ({ page }) => {
@@ -581,10 +573,7 @@ test.describe('Border Styles', () => {
 
 test.describe('Zoom Controls', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
-        
+        await openEditor(page);
         await page.click('#zoom-reset');
         await waitForRender(page);
     });
@@ -639,9 +628,7 @@ test.describe('Zoom Controls', () => {
 
 test.describe('Keyboard Shortcuts', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     test('should support all tool shortcuts', async ({ page }) => {
@@ -752,9 +739,7 @@ test.describe('Keyboard Shortcuts', () => {
 
 test.describe('Copy Functionality', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     test('should show toast when copy is clicked', async ({ page }) => {
@@ -780,9 +765,7 @@ test.describe('Copy Functionality', () => {
 
 test.describe('Output Verification', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
+        await openEditor(page);
     });
 
     test('should have editor available', async ({ page }) => {

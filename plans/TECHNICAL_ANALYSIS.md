@@ -902,3 +902,89 @@ Download binaryen from GitHub releases and use correct flag names in `.github/wo
 2. **Ubuntu binaryen is too old**: Always download from GitHub releases for latest feature support
 3. **WASM instruction evolution**: As Rust evolves, newer compiler versions generate WASM using newer instruction sets. `wasm-opt` must have matching feature flags enabled.
 4. **Error diagnosis**: The `wasm-validator error: all used features should be allowed` message is the key indicator of missing feature flags in `wasm-opt`.
+
+---
+
+## Addendum: Recommendations Bundle (2026-07-15 / 2026-07-16)
+
+### Verification snapshot
+
+| Component | Status | Details |
+|-----------|--------|---------|
+| Clippy (`-D warnings`) | ✅ | all targets |
+| Rust lib tests | ✅ | 98 (incl. clipboard_tests) |
+| Vitest | ✅ | 14 |
+| ESLint web | ✅ | |
+| E2E Chromium | ✅ | 71 |
+
+### Clipboard / export architecture
+
+```
+Ctrl+C / Copy button
+  → copy_selection_impl()     # internal SelectionClipboard (visible cells)
+  → export_for_copy()         # export_region(selection) | export_ascii(composite)
+  → normalizeToCRLF()         # TypeScript
+  → ClipboardItem text/plain + text/html
+
+Ctrl+V
+  → paste_impl()
+  → origin = selection.bounds min | last_cursor | (0,0)
+  → write only clipboard cells (no empty-space clobber)
+```
+
+**Key files**
+
+- `src/wasm/helpers.rs` — copy/paste/export/document/layers
+- `src/wasm/event_handlers.rs` — Ctrl+C path, last_cursor tracking
+- `src/wasm/clipboard.rs` — secure context
+- `src/core/ascii_export.rs` — uniform column export (right borders preserved)
+- `web/clipboard.ts` — CRLF + OS clipboard
+- `web/persistence.ts` — `.asc` + auto-save
+
+### Document format (`.asc`)
+
+JSON schema (v1):
+
+- `format: "ascii-canvas"`, `version: 1`
+- `canvas: { width, height }`
+- `active_layer`, `layers[]` with `{ name, visible, cells: [{x,y,ch}] }`
+
+Sparse cell encoding (visible only). Multi-layer round-trip covered by unit + E2E tests.
+
+### Layers (basic)
+
+- Active drawing surface remains `state.grid`
+- `layers[]` stores snapshots; switch swaps grids and **clears history**
+- `composite_visible_grid()` used for export / full copy when no selection
+- **Gap**: live canvas render still shows active layer only (F-12)
+
+### Frontend module map
+
+| File | Responsibility |
+|------|----------------|
+| `main.ts` | Init, events, render loop, tool UI |
+| `clipboard.ts` | OS clipboard |
+| `persistence.ts` | localStorage + file I/O |
+| `exportPng.ts` | PNG download |
+| `types.ts` | `AsciiEditorInterface`, event/render types |
+| `constants.ts` / `utils.ts` | Shared constants / CRLF / debounce |
+
+### E2E lessons (2026-07-16)
+
+1. **`waitForSelector('#loading.hidden')` + default visible state never succeeds** when `.hidden { display: none }`. Always use `{ state: 'attached' }`.
+2. **Tool letter shortcuts vs text entry**: while Text tool is selected, TS must not call `setTool` on letter keys (typing `HELLO` must not activate Eraser).
+3. **Mobile keyboard proxy**: only focus on `(pointer: coarse)` so desktop canvas retains focus for shortcuts.
+4. **Responsive tests**: set viewport **before** navigation; post-load `setViewportSize` alone does not recompute grid without waiting for debounced resize.
+5. **Autosave**: clear `localStorage['ascii-canvas-autosave']` in E2E init for determinism.
+
+### Known technical debt after bundle
+
+| Item | Follow-up |
+|------|-----------|
+| `main.ts` still ~1300 LOC | F-20 |
+| Layer render not composite | F-12 |
+| History cleared on layer switch | F-13 |
+| SVG export missing | F-10 |
+| wasm `missing_docs` allows | F-25 |
+| wasm-opt optional locally | F-24 |
+

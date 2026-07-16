@@ -27,4 +27,9 @@ export default defineConfig({
   worker: {
     format: 'es',
   },
+
+  test: {
+    environment: 'happy-dom',
+    include: ['**/*.test.ts'],
+  },
 });

@@ -18,6 +18,7 @@ impl AsciiEditor {
         }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
+        self.last_cursor = Some((x, y));
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
 
@@ -64,6 +65,7 @@ impl AsciiEditor {
         }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
+        self.last_cursor = Some((x, y));
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_move(x, y, &ctx);
 
@@ -161,6 +163,8 @@ impl AsciiEditor {
         }
 
         if ctrl && key.to_lowercase() == "c" {
+            // Fill internal SelectionClipboard, then export selection-aware ASCII for OS clipboard.
+            let _ = self.copy_selection_impl();
             return self.js_event_result_with_copy(true);
         }
 

@@ -1,7 +1,7 @@
 # ADR-009: Selection Copy/Paste Operations
 
 ## Status
-Proposed
+Accepted (implemented 2026-07-15 — see ADR-036)
 
 ## Context
 The Select tool can create selections and move them, but lacks copy/paste functionality. This is a critical gap for a diagram editor where users frequently need to duplicate shapes or copy content between areas.

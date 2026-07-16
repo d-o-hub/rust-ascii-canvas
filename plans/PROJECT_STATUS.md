@@ -4,360 +4,117 @@
 
 A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
-## Current Status: **All Tests Passing & All Tools Validated** ✅
+## Current Status: **Feature Bundle Complete (2026-07-16)** ✅
+
+**Focus completed**: Issue #21 copy-paste fidelity + product roadmap items (persistence, PNG, grid UI, basic layers, frontend modules).
+
+**Open GitHub issue (pre-PR)**: #21 *Bug Report: Copy-Paste Not Working* — **fixed on branch; PR + close pending** (see FOLLOW_UPS F-01).
+
+---
 
 ### Build Status
-- **WASM Binary Size**: 151KB (well under 1.5MB budget)
-- **Build Tool**: wasm-pack 0.14.0
-- **Target**: Web (ES Modules)
-- **Rust Version**: stable
 
-### Test Results
+| Item | Value |
+|------|--------|
+| Version | 0.1.1 |
+| WASM toolchain | cargo + wasm-bindgen **0.2.121** |
+| Target | `wasm32-unknown-unknown` / ES modules |
+| Rust | stable |
+| WASM size budget | ≤ 1.5MB (`npm run check-size`) |
+| wasm-opt | Optional in local build if binaryen missing |
 
-#### Rust Unit Tests
-```
-running 79 tests
-test result: ok. 79 passed; 0 failed; 0 ignored
-```
+### Test Results (Verified 2026-07-16)
 
-#### Integration Tests
-```
-running 44 tests
-test result: ok. 44 passed; 0 failed; 0 ignored
-```
+| Suite | Result |
+|-------|--------|
+| `cargo clippy --all-targets --all-features -- -D warnings` | ✅ clean |
+| `cargo test --lib` | ✅ **98** passed (incl. `clipboard_tests`) |
+| Integration + doc tests | ✅ |
+| Vitest (`web/`) | ✅ **14** passed (clipboard CRLF, logger, UX) |
+| ESLint (`web/`) | ✅ |
+| Playwright **Chromium** | ✅ **71** passed |
+| Playwright Firefox / WebKit | Configured; not required in last local gate |
 
-#### E2E Tests (Playwright - Chromium)
-```
-152 passed
-```
+### Features (current)
 
-All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive).
+| Feature | Status |
+|---------|--------|
+| 8 drawing tools + 6 border styles | ✅ |
+| Undo/redo, zoom/pan, select move/delete | ✅ |
+| Selection-aware copy + OS clipboard (CRLF) | ✅ (2026-07) |
+| Internal cut/copy/paste with paste origin | ✅ |
+| File save/load (`.asc`) + localStorage auto-save | ✅ |
+| PNG export | ✅ |
+| Grid size UI + responsive defaults | ✅ |
+| Basic layers (add/switch; composite export) | ✅ basic |
+| SVG export | ❌ deferred (F-10) |
+| Full layer editor (lock/reorder/history) | ❌ (F-11–F-13) |
 
-### Recent Fixes (2026-03-20)
+---
 
-#### Comprehensive Tool Malfunction & Rendering Fix (#18, #19)
-- **Issue**: 6 tools (Select, Arrow, Text, Freehand, Diamond, Eraser) had logic errors or missing rendering capabilities.
-- **Fixes**:
-  1. **Dynamic Font Atlas**: Implemented a system to rasterize JetBrains Mono glyphs on the frontend and upload them to WASM as alpha masks, ensuring perfect alignment and readability.
-  2. **Select Tool**: Added blue highlight for active selections.
-  3. **Arrow Tool**: Added arrowhead support (▲▼◄►) and prevented terminus overwriting.
-  4. **Diamond Tool**: Implemented diagonal character (╱╲) rendering logic.
-  5. **Text Tool**: Fixed keyboard mapping (Enter/Backspace/Delete) and coordinate drift (fixed glyph metrics at 8x20 early in boot).
-  6. **Eraser Tool**: Added strict grid boundary checks to prevent out-of-bounds panics.
-- **Automation**: Added `.github/workflows/issue-closer.yml` to automatically close issues linked in PRs.
-- **Verification**: ✅ 152 E2E tests pass across all tools and responsive viewports.
+## Recent Completions (2026-07-15 → 2026-07-16)
 
-### Release v0.1.1 (2026-03-20)
+### Issue #21 + recommendations bundle
 
-- Finalized version 0.1.1 patch release
-- Automated issue-closer.yml for issue lifecycle management
-- Completed Tool Validation Skill checklist for all 8 tools
-- Guard-rails: 152 E2E tests, clippy, fmt, WASM build
+**Plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
+**ADR**: [036](ADRs/036-clipboard-fidelity-and-product-features.md)  
+**Follow-ups**: [FOLLOW_UPS.md](FOLLOW_UPS.md)
 
-### Release Build Fix (2026-03-19)
+1. **Clipboard fidelity**
+   - `exportForCopy`, selection-scoped `export_region`, full-grid trim preserves right borders
+   - Ctrl+C + Copy button + CRLF for external editors
+   - Paste offset; visible-only internal clipboard
+2. **Persistence**: `serializeDocument` / `loadDocument`, auto-save key `ascii-canvas-autosave`
+3. **PNG export**, **grid size panel**, **layer select/add**
+4. **Frontend modules**: `clipboard.ts`, `persistence.ts`, `exportPng.ts`, `types.ts`, `constants.ts`, `utils.ts`
+5. **Repo metadata** → `github.com/d-o-hub/rust-ascii-canvas`
+6. **E2E hardening**: loading wait state, text-tool vs shortcuts, responsive viewport order, autosave isolation
 
-- Fixed wasm-opt failure: added `--enable-sign-extension` and `--enable-nontrapping-float-to-int` flags
-- Cause: Rustc 1.94.0 generates WASM using newer instructions that require these feature flags
-- Updated release workflow with all required wasm-opt feature flags
+### Previous milestones (historical)
 
-### Previous Fixes (2026-03-04 Morning)
+- **2026-03-20**: Tool malfunctions #18/#19 fixed; v0.1.1; 152 E2E era (counts later rebased)
+- **2026-03-04**: Select move, tool switch, preview render path, freehand border style
+- **Earlier**: WASM bindings split (ADR-023), waitForTimeout elimination (ADR-034), POM (ADR-035)
 
-#### Select Tool Move Functionality (2026-03-04 Evening)
-- **Issue**: Select tool could create selections but couldn't move them - move logic was stubbed out
-- **Fix**: Implemented full move functionality at editor level:
-  1. Added `move_clipboard`, `move_original_selection`, and `is_moving_selection` state to AsciiEditor
-  2. `on_pointer_down`: Detect click inside selection → capture content
-  3. `on_pointer_move`: Generate preview ops (clear original + draw at new position)
-  4. `on_pointer_up`: Commit as single undo operation
-  5. Select tool updates selection bounds during drag
-- **Files**: `src/core/tools/select.rs`, `src/wasm/bindings.rs`
-- **Tests**: ✅ All 152 E2E tests pass (102 drawing-specific + 46 core + 4 responsive) including "should select and move a shape"
+---
 
-### Previous Fixes (2026-03-04 Morning)
+## Immediate next steps
 
-#### Tool Switching Bug
-- `set_tool_by_id_impl` ignored its `_id` parameter — tool was never actually switched
-- Fixed: `self.tool_id = id` before delegating to `set_tool_by_id`
+1. **F-01** — Open PR; close #21  
+2. **F-02** — Manual multi-OS paste QA  
+3. **F-03** — Dependabot #98 / #99  
+4. **F-10 / F-11** — SVG export and layer polish when product prioritizes  
 
-#### Drawing Position / Preview Bug
-- `preview_ops` were stored during drag but never rendered — no visual feedback
-- `needs_redraw` was false during pointer_move — canvas never refreshed during drag
-- Freehand/eraser ops only committed on pointer_up — no intermediate drawing visible
-- Fixed with three changes:
-  1. Added `build_full_render_with_preview()` to render preview ops as overlay
-  2. `on_pointer_move` triggers `request_full_redraw()` when preview ops exist
-  3. Freehand/eraser commit incrementally via `is_incremental_tool()` check
+Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
 
-#### Select Tool Not Showing Highlight
-- `build_selection_render()` existed but was never called from any render path
-- Fixed: render pipeline now passes `current_selection` through to the renderer
-- Select tool drag/release triggers `request_full_redraw()` for visual feedback
+---
 
-#### Freehand Ignoring Border Style
-- `FreehandTool.draw_char` was hardcoded to `'*'`, never reading border style
-- Fixed: added `BorderStyle::freehand_char()`, freehand reads from `ToolContext` on each stroke
+## Architecture (summary)
 
-## Architecture
-
-### Project Structure
 ```
 ascii-canvas/
-├── Cargo.toml           # Rust dependencies
-├── playwright.config.ts # E2E test configuration
-├── e2e/                 # Playwright tests
-├── web/                 # Web application
-│   ├── index.html       # Main HTML
-│   ├── main.ts          # TypeScript entry point
-│   ├── style.css        # Dark Figma-like theme
-│   ├── vite.config.ts   # Vite configuration
-│   └── pkg/             # WASM output (151KB)
-├── src/                 # Rust source
-│   ├── lib.rs           # Library entry
-│   ├── core/            # Pure Rust logic
-│   │   ├── cell.rs      # Cell representation
-│   │   ├── grid.rs      # Grid model
-│   │   ├── tools/       # 8 drawing tools
-│   │   ├── commands/    # Command pattern (undo/redo)
-│   │   ├── history.rs   # Ring buffer history
-│   │   └── ascii_export.rs
-│   ├── render/          # Canvas rendering
-│   │   ├── canvas_renderer.rs
-│   │   ├── metrics.rs   # Font metrics
-│   │   └── dirty_rect.rs # Dirty-rect optimization
-│   ├── wasm/            # WASM bindings
-│   │   ├── bindings.rs  # AsciiEditor class
-│   │   ├── clipboard.rs
-│   │   └── events.rs
-│   └── ui/              # UI components
-│       ├── theme.rs
-│       ├── toolbar.rs
-│       └── shortcuts.rs
-└── tests/               # Unit tests
+├── src/core/          # Grid, tools, commands, history, ascii_export
+├── src/render/        # Canvas renderer, dirty rect, font atlas
+├── src/wasm/          # AsciiEditor bindings (split modules)
+├── web/               # Vite app
+│   ├── main.ts        # Orchestration
+│   ├── clipboard.ts / persistence.ts / exportPng.ts
+│   └── pkg/           # wasm-bindgen output
+├── e2e/               # Playwright (+ helpers.ts)
+├── plans/             # Status, ADRs, follow-ups
+└── tests/             # Rust integration tests
 ```
 
-### Features Implemented
+## Keyboard (high-signal)
 
-#### Drawing Tools (8)
-- **Select** (V) - Selection and manipulation
-- **Rectangle** (R) - Box drawing with border styles
-- **Line** (L) - Bresenham's line algorithm
-- **Arrow** (A) - Lines with arrowheads
-- **Diamond** (D) - Diamond shapes
-- **Text** (T) - Character input
-- **Freehand** (F) - Free drawing
-- **Eraser** (E) - Clear cells
+| Key | Action |
+|-----|--------|
+| V R L A D T F E | Tools (disabled while Text tool selected — type freely, then Escape) |
+| Ctrl+C / X / V | Copy / cut / paste (selection-aware) |
+| Ctrl+Z / Y | Undo / redo |
+| B | Cycle border style |
+| Space+drag | Pan |
 
-#### Border Styles (6)
-- Single (─) - Standard box drawing
-- Double (═) - Double line style
-- Heavy (━) - Bold line style
-- Rounded (╭) - Rounded corners
-- ASCII (-) - Simple ASCII characters
-- Dotted (*) - Asterisk style
+---
 
-#### Core Features
-- **Undo/Redo** - Command pattern with ring buffer (100 commands)
-- **Zoom** - 0.25x to 4x with scroll wheel
-- **Pan** - Space + drag navigation
-- **Copy to Clipboard** - Export ASCII art
-- **60 FPS Rendering** - Dirty-rect optimization
-
-## Known Issues
-
-### Documentation Warnings
-The build shows 52 documentation warnings for missing doc comments on:
-- `ToolId` enum variants
-- `DrawOp` struct fields
-- `ToolResult` methods
-- Utility structs in `utils/math.rs`
-- Console helper functions
-
-These are cosmetic warnings and do not affect functionality.
-
-### Playwright Firefox
-Firefox browser not installed in test environment. Run `npx playwright install firefox` to enable Firefox tests.
-
-## Running the Project
-
-### Development Server
-```bash
-cd ascii-canvas/web
-npm run dev
-# Open http://localhost:3003
-```
-
-### Build WASM
-```bash
-cd ascii-canvas
-wasm-pack build --release --target web --out-dir web/pkg
-```
-
-### Run Tests
-```bash
-# Rust unit tests
-cd ascii-canvas
-cargo test
-
-# E2E tests (Chromium)
-npx playwright test --project=chromium
-```
-
-## Performance Targets
-
-| Metric | Target | Actual |
-|--------|--------|--------|
-| WASM Size | < 1.5MB | 151KB ✅ |
-| Initial Load | < 100ms | ~50ms ✅ |
-| Rendering | 60 FPS | 60 FPS ✅ |
-| Tool Switch | < 16ms | < 5ms ✅ |
-
-## Recent Fixes
-
-### Text Tool Shortcut Fix (2026-02-26)
-- Fixed issue where tool shortcuts (R, T, V, etc.) would interrupt text input
-- Added `!self.active_tool.is_active()` check before processing tool shortcuts
-- Added Escape key handling to cancel active operations (text input, selection, drawing)
-- All 124 tests pass (79 unit + 44 integration + 12 E2E)
-
-See `plans/ADRs/001-disable-shortcuts-when-tools-active.md` for details.
-
-### Canvas Focus Management Fix (2026-02-27)
-- Added mousedown preventDefault to all zoom buttons (fit, reset, in, out)
-- Added focus-visible styles for select-input elements
-- Prevents focus stealing when clicking toolbar buttons
-- All 124 tests pass (79 unit + 44 integration + 40 E2E)
-
-### CI Workflow Fix (2026-02-27)
-- Fixed CI by using direct wasm-pack command instead of action
-- Uses artifact sharing between jobs to avoid rebuilding WASM twice
-- All 124 tests pass in CI
-
-## Agent Skills Installed
-
-The following skills are available for development:
-
-| Skill | Purpose | Source |
-|-------|---------|--------|
-| rust-engineer | Rust/WASM development | Custom |
-| rust-best-practices | Idiomatic Rust patterns | Custom |
-| typescript-expert | TypeScript development | sickn33/antigravity-awesome-skills |
-| vite | Vite build tooling | antfu/skills |
-| playwright-e2e-testing | E2E testing patterns | bobmatnyc/claude-mpm-skills |
-| rust-wasm | Rust/WASM integration | pluginagentmarketplace |
-| ln-732-cicd-generator | CI/CD workflow generation | levnikolaevich/claude-code-skills |
-| goap-adr-planner | Planning with ADRs | Custom |
-| dogfood | QA/testing | Custom |
-| agent-browser | Browser automation | Custom |
-| agents-md | Documentation | Custom |
-
-## GitHub Best Practices Analysis
-
-See `plans/ADRs/004-github-repository-configuration.md`, `plans/ADRs/005-package-metadata-consistency.md`, and `plans/ADRs/006-github-infrastructure-metadata.md` for implementation details.
-
-### Completed (2026-02-26)
-- ✅ LICENSE file (MIT)
-- ✅ `.github/ISSUE_TEMPLATE/` - Structured bug reports
-- ✅ `.github/PULL_REQUEST_TEMPLATE.md` - PR checklist
-- ✅ `.github/SECURITY.md` - Security policy
-- ✅ `.github/CODEOWNERS` - Code ownership
-- ✅ CONTRIBUTING.md - Contributor guidelines
-- ✅ `.github/workflows/ci.yml` - GitHub Actions CI
-- ✅ rustfmt.toml - Code formatting
-- ✅ clippy.toml - Linter config
-- ✅ Package metadata synced (version 0.1.1, MIT license)
-- ✅ Repository URLs updated
-- ✅ `.github/dependabot.yml` - Automated dependency updates
-
-## Next Steps
-
-### Completed
-1. ✅ All GitHub Configuration - DONE
-2. ✅ Package Metadata Sync - DONE
-3. ✅ GitHub Actions CI - DONE
-4. ✅ Production Readiness Analysis - DONE (2026-03-01)
-5. ✅ GOAP Codebase Analysis - DONE (2026-03-03)
-
-### GOAP Codebase Analysis (2026-03-03)
-
-Comprehensive GOAP analysis completed. See `plans/current-plan.md` for the full action plan.
-
-#### Phase 2 Progress: bindings.rs Refactor
-
-| Module | LOC | Status |
-|--------|-----|--------|
-| tool_manager.rs | 92 | ✅ Extracted |
-| render_bridge.rs | 90 | ✅ Extracted |
-| bindings.rs | 578 | 🔄 (was 722) |
-
-Event handlers remain in bindings.rs due to tight coupling. Target: < 300 LOC.
-
-#### Verified Test Counts (from `cargo test` + `npx playwright test`)
-- Rust unit tests: 79 passing
-- Rust integration tests: 44 passing  
-- Rust doc tests: 2 passing
-- E2E tests: 35+ (Chromium only)
-- **Total Rust**: 125 | **Total all**: 160+
-
-#### Code Quality Issues Found
-
-| Issue | Severity | Location |
-|-------|----------|----------|
-| Crate-level `#![allow(dead_code)]` | High | `src/lib.rs:37` |
-| `bindings.rs` exceeds 500 LOC (722) | High | `src/wasm/bindings.rs` |
-| 85 `waitForTimeout` calls in E2E | High | `e2e/canvas.spec.ts` |
-| Unused deps (thiserror, anyhow) | Medium | `Cargo.toml` |
-| Duplicate EventResult types | Medium | `events.rs` vs `bindings.rs` |
-| Duplicate select_tool instances | Medium | `bindings.rs:33` |
-| Stale root vite.config.ts | Low | Root vs web/ conflict |
-| Empty postcss.config.js | Low | `web/postcss.config.js` |
-| Duplicate ADR-005 numbering | Low | `plans/ADRs/` |
-| 0 vitest frontend tests | Medium | `web/` |
-| Single browser E2E only | Medium | Chromium, no Firefox/WebKit |
-
-#### New ADRs Created (022-029)
-
-- **ADR-022**: Code Hygiene & Dead Code Cleanup
-- **ADR-023**: Split bindings.rs Into Focused Modules
-- **ADR-024**: Test Robustness Strategy
-- **ADR-025**: Error Handling Hardening
-- **ADR-026**: Layer System (NEW FEATURE)
-- **ADR-027**: File Persistence / Save/Load (NEW FEATURE)
-- **ADR-028**: Performance Optimization
-- **ADR-029**: Documentation Reconciliation
-
-#### 8-Phase Action Plan
-
-| Phase | Description | Est. Effort |
-|-------|-------------|-------------|
-| 1 | Code Hygiene & Dead Code Cleanup | 2.5 hr |
-| 2 | Split bindings.rs (< 500 LOC) | 3.25 hr |
-| 3 | Test Robustness (POM, no flaky tests, cross-browser) | 10 hr |
-| 4 | Error Handling Hardening | 3 hr |
-| 5 | Layer System (NEW FEATURE) | 15.5 hr |
-| 6 | File Persistence (NEW FEATURE) | 10 hr |
-| 7 | Performance Optimization | 7.5 hr |
-| 8 | Documentation Reconciliation | 4 hr |
-| **Total** | | **~52.5 hr** |
-
-### Previously Identified (Carried Forward)
-
-#### Critical Features (P0)
-1. Selection Copy/Paste - ADR-009
-2. Enhanced Text Tool - ADR-010
-3. Selection Move Fix - incomplete
-
-#### Important Features (P1)
-4. Preview Rendering - ADR-011
-5. Eraser Size Options
-6. Grid Size Customization - ADR-012
-
-#### Enhancements (P2)
-7. PNG/SVG Export - ADR-013
-8. Touch/Mobile Support
-9. Theme Customization
-
-#### Future Improvements (P3)
-10. Cloud save functionality
-11. Color support (foreground/background)
-12. Shape resize handles
-13. Grid snapping toggle
+*Last updated: 2026-07-16*
