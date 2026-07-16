@@ -1,7 +1,5 @@
 //! Rendering and pixel buffer API for WASM.
 
-#![allow(missing_docs)]
-
 use wasm_bindgen::prelude::*;
 
 use super::bindings::AsciiEditor;
@@ -12,6 +10,7 @@ use crate::wasm::render_bridge::{
 
 #[wasm_bindgen]
 impl AsciiEditor {
+    /// Exports the composited visible canvas layers as a raw ASCII text string.
     #[wasm_bindgen(js_name = exportAscii)]
     pub fn export_ascii(&self) -> String {
         // Composite all visible layers so export matches what users expect from multi-layer docs.
@@ -92,6 +91,7 @@ impl AsciiEditor {
         }
     }
 
+    /// Returns the full list of drawing instructions/commands to render the entire canvas in JS.
     #[wasm_bindgen(js_name = getRenderCommands)]
     pub fn get_render_commands(&mut self) -> JsValue {
         self.full_render_count += 1;
@@ -110,6 +110,7 @@ impl AsciiEditor {
         }
     }
 
+    /// Returns only the drawing instructions/commands for regions of the canvas that have changed.
     #[wasm_bindgen(js_name = getDirtyRenderCommands)]
     pub fn get_dirty_render_commands(&mut self) -> JsValue {
         if self.dirty_tracker.needs_full_redraw() {
@@ -125,37 +126,44 @@ impl AsciiEditor {
         )
     }
 
+    /// Returns the number of times a full render was requested and executed.
     #[wasm_bindgen(getter = fullRenderCount)]
     pub fn full_render_count(&self) -> u32 {
         self.full_render_count
     }
 
+    /// Returns the number of times a partial/dirty rect render was requested and executed.
     #[wasm_bindgen(getter = dirtyRenderCount)]
     pub fn dirty_render_count(&self) -> u32 {
         self.dirty_render_count
     }
 
+    /// Resets full and dirty render performance metric counters to zero.
     #[wasm_bindgen(js_name = resetPerformanceMetrics)]
     pub fn reset_performance_metrics(&mut self) {
         self.full_render_count = 0;
         self.dirty_render_count = 0;
     }
 
+    /// Returns whether the canvas currently needs to be redrawn.
     #[wasm_bindgen(getter = needsRedraw)]
     pub fn needs_redraw(&self) -> bool {
         needs_redraw(&self.dirty_tracker)
     }
 
+    /// Explicitly flags that the entire canvas needs to be redrawn on the next frame.
     #[wasm_bindgen(js_name = requestRedraw)]
     pub fn request_redraw(&mut self) {
         request_full_redraw(&mut self.dirty_tracker);
     }
 
+    /// Resets the dirty rendering rect and flag status.
     #[wasm_bindgen(js_name = clearDirtyState)]
     pub fn clear_dirty_state(&mut self) {
         self.dirty_tracker.clear();
     }
 
+    /// Updates the font atlas glyph data cache for a specific Unicode character.
     #[wasm_bindgen(js_name = updateFontAtlasGlyph)]
     pub fn update_font_atlas_glyph(&mut self, ch_code: u32, glyph_data: Vec<u8>) {
         if let Some(ch) = char::from_u32(ch_code) {
@@ -164,16 +172,19 @@ impl AsciiEditor {
         }
     }
 
+    /// Returns the pointer to the underlying raw pixel buffer (RGBA format).
     #[wasm_bindgen(js_name = getPixelBufferPtr)]
     pub fn get_pixel_buffer_ptr(&self) -> *const u8 {
         self.pixel_buffer.as_ptr()
     }
 
+    /// Returns the length of the raw pixel buffer in bytes.
     #[wasm_bindgen(js_name = getPixelBufferLen)]
     pub fn get_pixel_buffer_len(&self) -> usize {
         self.pixel_buffer.len()
     }
 
+    /// Renders the entire canvas layers and current selection highlights into the pixel buffer.
     #[wasm_bindgen(js_name = renderToPixelBuffer)]
     pub fn render_to_pixel_buffer(&mut self) {
         let grid_width = self.state.grid.width();
