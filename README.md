@@ -10,11 +10,15 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 - 🔠 **Dynamic Font Atlas**: High-fidelity character rendering using frontend rasterization (JetBrains Mono)
 - ↩️ **Full Undo/Redo**: Command pattern with configurable history depth
 - 🔍 **Zoom & Pan**: Mouse wheel zoom, Space+drag panning
-- 📋 **One-Click Copy**: Export trimmed ASCII to clipboard
+- 📋 **One-Click Copy**: Selection-aware ASCII export with CRLF for Windows editors
+- 💾 **Save / Load**: `.asc` JSON documents + localStorage auto-save
+- 🖼 **PNG Export**: Download the rendered canvas as an image
+- 📚 **Layers**: Multiple named layers with composite export
+- 📐 **Custom Grid Size**: Responsive defaults plus manual cols/rows
 - ⌨️ **Keyboard-First**: Full keyboard shortcut support
 - 🌙 **Dark Theme**: Professional Figma-inspired dark UI
 - ⚡ **60 FPS Rendering**: Dirty-rect optimization, high-performance WASM pixel buffer path
-- 📦 **Offline-First**: No external dependencies, works offline
+- 📦 **Offline-First**: Works offline after first load
 
 ## Quick Start
 
@@ -57,7 +61,11 @@ ascii-canvas/
 ├── web/
 │   ├── index.html          # HTML template
 │   ├── style.css           # Dark theme styles
-│   ├── main.ts             # TypeScript entry
+│   ├── main.ts             # TypeScript entry / orchestration
+│   ├── clipboard.ts        # OS clipboard + CRLF
+│   ├── persistence.ts      # Auto-save / .asc files
+│   ├── exportPng.ts        # PNG download
+│   ├── types.ts / constants.ts / utils.ts
 │   ├── package.json        # Frontend config
 │   └── vite.config.ts      # Vite build config
 ├── tests/                  # Rust integration tests

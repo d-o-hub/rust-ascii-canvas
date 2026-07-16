@@ -9,30 +9,31 @@ async function waitForRender(page: Page): Promise<void> {
     }, { timeout: 5000 });
 }
 
-async function waitForGridResize(page: Page): Promise<void> {
-    await page.waitForFunction(() => {
-        const el = document.querySelector('#grid-size');
-        return el && el.textContent && el.textContent.trim().length > 0;
-    }, { timeout: 5000 });
+async function openAtViewport(page: Page, width: number, height: number): Promise<void> {
+    await page.setViewportSize({ width, height });
+    await page.addInitScript(() => {
+        try {
+            localStorage.removeItem('ascii-canvas-autosave');
+        } catch {
+            /* ignore */
+        }
+    });
+    await page.goto(BASE_URL);
+    await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
+    await page.waitForSelector('#canvas', { timeout: 10000 });
+    await page.waitForFunction(() => window.editor !== null, null, { timeout: 15000 });
 }
 
 test.describe('Responsive Grid', () => {
-    test.beforeEach(async ({ page }) => {
-        await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
-        await page.waitForSelector('#canvas', { timeout: 10000 });
-    });
-
     test('should have a smaller grid on mobile viewport', async ({ page }) => {
-        await page.setViewportSize({ width: 375, height: 667 });
-        await waitForGridResize(page);
+        await openAtViewport(page, 375, 667);
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
         const match = text?.match(/(\d+) × (\d+)/);
         if (match) {
-            const cols = parseInt(match[1]);
-            const rows = parseInt(match[2]);
+            const cols = parseInt(match[1], 10);
+            const rows = parseInt(match[2], 10);
             expect(cols).toBeLessThanOrEqual(60);
             expect(rows).toBeLessThanOrEqual(30);
             console.log(`Mobile grid size: ${cols}x${rows}`);
@@ -42,15 +43,14 @@ test.describe('Responsive Grid', () => {
     });
 
     test('should have a medium grid on tablet viewport', async ({ page }) => {
-        await page.setViewportSize({ width: 768, height: 1024 });
-        await waitForGridResize(page);
+        await openAtViewport(page, 768, 1024);
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
         const match = text?.match(/(\d+) × (\d+)/);
         if (match) {
-            const cols = parseInt(match[1]);
-            const rows = parseInt(match[2]);
+            const cols = parseInt(match[1], 10);
+            const rows = parseInt(match[2], 10);
             expect(cols).toBeGreaterThan(60);
             expect(cols).toBeLessThanOrEqual(120);
             expect(rows).toBeLessThanOrEqual(50);
@@ -61,15 +61,14 @@ test.describe('Responsive Grid', () => {
     });
 
     test('should have a large grid on desktop viewport', async ({ page }) => {
-        await page.setViewportSize({ width: 1600, height: 1200 });
-        await waitForGridResize(page);
+        await openAtViewport(page, 1600, 1200);
 
         const gridSize = page.locator('#grid-size');
         const text = await gridSize.textContent();
         const match = text?.match(/(\d+) × (\d+)/);
         if (match) {
-            const cols = parseInt(match[1]);
-            const rows = parseInt(match[2]);
+            const cols = parseInt(match[1], 10);
+            const rows = parseInt(match[2], 10);
             expect(cols).toBeGreaterThan(120);
             expect(cols).toBeLessThanOrEqual(240);
             expect(rows).toBeGreaterThan(50);
@@ -81,15 +80,14 @@ test.describe('Responsive Grid', () => {
     });
 
     test('should allow drawing at the edges of the responsive grid', async ({ page }) => {
-        await page.setViewportSize({ width: 600, height: 600 });
-        await waitForGridResize(page);
+        await openAtViewport(page, 600, 600);
 
         const gridSizeText = await page.locator('#grid-size').textContent();
         const match = gridSizeText?.match(/(\d+) × (\d+)/);
         if (!match) throw new Error('Could not get grid size');
 
-        const cols = parseInt(match[1]);
-        const rows = parseInt(match[2]);
+        const cols = parseInt(match[1], 10);
+        const rows = parseInt(match[2], 10);
 
         await page.click('[data-tool="rectangle"]');
 
@@ -102,14 +100,17 @@ test.describe('Responsive Grid', () => {
 
         await page.mouse.move(box.x + 1, box.y + 1);
         await page.mouse.down();
-        await page.mouse.move(box.x + (cols - 1) * charWidth + 4, box.y + (rows - 1) * lineHeight + 10, { steps: 5 });
+        await page.mouse.move(
+            box.x + (cols - 1) * charWidth + 4,
+            box.y + (rows - 1) * lineHeight + 10,
+            { steps: 5 },
+        );
         await page.mouse.up();
 
         await waitForRender(page);
 
         const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
+            return window.editor!.exportAscii();
         });
 
         const lines = ascii.trimEnd().split('\n');

@@ -14,7 +14,82 @@ use crate::wasm::render_bridge::{
 impl AsciiEditor {
     #[wasm_bindgen(js_name = exportAscii)]
     pub fn export_ascii(&self) -> String {
-        export_ascii(&self.state.grid)
+        // Composite all visible layers so export matches what users expect from multi-layer docs.
+        export_ascii(&self.composite_visible_grid())
+    }
+
+    /// Selection-aware export for the OS clipboard (selection region or trimmed full grid).
+    #[wasm_bindgen(js_name = exportForCopy)]
+    pub fn export_for_copy_public(&self) -> String {
+        self.export_for_copy()
+    }
+
+    /// Serialize diagram to JSON (`.asc` format).
+    #[wasm_bindgen(js_name = serializeDocument)]
+    pub fn serialize_document(&self) -> String {
+        self.serialize_document_impl()
+    }
+
+    /// Load diagram from JSON (`.asc` format). Returns false on parse/schema errors.
+    #[wasm_bindgen(js_name = loadDocument)]
+    pub fn load_document(&mut self, json: String) -> bool {
+        self.load_document_impl(&json)
+    }
+
+    /// Number of layers.
+    #[wasm_bindgen(getter = layerCount)]
+    pub fn layer_count(&self) -> usize {
+        self.layers.len()
+    }
+
+    /// Active layer index.
+    #[wasm_bindgen(getter = activeLayer)]
+    pub fn active_layer_index(&self) -> usize {
+        self.active_layer
+    }
+
+    /// Layer name by index.
+    #[wasm_bindgen(js_name = layerName)]
+    pub fn layer_name(&self, index: usize) -> String {
+        self.layers
+            .get(index)
+            .map(|l| l.name.clone())
+            .unwrap_or_default()
+    }
+
+    /// Whether a layer is visible.
+    #[wasm_bindgen(js_name = layerVisible)]
+    pub fn layer_visible(&self, index: usize) -> bool {
+        self.layers.get(index).map(|l| l.visible).unwrap_or(false)
+    }
+
+    /// Set layer visibility.
+    #[wasm_bindgen(js_name = setLayerVisible)]
+    pub fn set_layer_visible(&mut self, index: usize, visible: bool) {
+        if let Some(layer) = self.layers.get_mut(index) {
+            layer.visible = visible;
+            self.dirty_tracker.request_full_redraw();
+        }
+    }
+
+    /// Switch active layer (saves current grid into previous layer).
+    #[wasm_bindgen(js_name = setActiveLayer)]
+    pub fn set_active_layer(&mut self, index: usize) -> bool {
+        self.set_active_layer_impl(index)
+    }
+
+    /// Add a new empty layer and switch to it.
+    #[wasm_bindgen(js_name = addLayer)]
+    pub fn add_layer(&mut self) -> usize {
+        self.add_layer_impl()
+    }
+
+    /// Rename a layer.
+    #[wasm_bindgen(js_name = renameLayer)]
+    pub fn rename_layer(&mut self, index: usize, name: String) {
+        if let Some(layer) = self.layers.get_mut(index) {
+            layer.name = name;
+        }
     }
 
     #[wasm_bindgen(js_name = getRenderCommands)]

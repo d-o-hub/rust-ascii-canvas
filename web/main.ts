@@ -6,75 +6,37 @@
 
 import init, { AsciiEditor } from './pkg/ascii_canvas.js';
 import { logger } from './logger.js';
-
-
-// Type definitions
-interface EventResult {
-    needs_redraw: boolean;
-    tool: string;
-    can_undo: boolean;
-    can_redo: boolean;
-    should_copy: boolean;
-    ascii: string | null;
-}
-
-interface RenderCommand {
-    type: string;
-    [key: string]: unknown;
-}
-
-// WASM AsciiEditor interface
-interface AsciiEditorInterface {
-    width: number;
-    height: number;
-    tool: string;
-    zoom: number;
-    pan: number[] | Float64Array;
-    can_undo: boolean;
-    can_redo: boolean;
-    setTool(toolId: string): void;
-    setBorderStyle(style: string): void;
-    setLineDirection(direction: string): void;
-    setZoom(zoom: number): void;
-    setPan(x: number, y: number): void;
-    setFontMetrics(charWidth: number, lineHeight: number, fontSize: number): void;
-    onPointerDown(x: number, y: number): EventResult | null;
-    onPointerMove(x: number, y: number): EventResult | null;
-    onPointerUp(x: number, y: number): EventResult | null;
-    onKeyDown(key: string, ctrl: boolean, shift: boolean): EventResult | null;
-    onKeyUp(key: string): void;
-    onWheel(delta: number, x: number, y: number): EventResult | null;
-    undo(): boolean;
-    redo(): boolean;
-    clear(): void;
-    selectAll(): void;
-    exportAscii(): string;
-    getRenderCommands(): RenderCommand[];
-    getDirtyRenderCommands(): RenderCommand[];
-    getPixelBufferPtr(): number;
-    getPixelBufferLen(): number;
-    renderToPixelBuffer(): void;
-    updateFontAtlasGlyph(chCode: number, glyphData: Uint8Array): void;
-    resize(width: number, height: number): void;
-    requestRedraw(): void;
-    clearDirtyState(): void;
-    readonly needsRedraw: boolean;
-    readonly fullRenderCount: number;
-    readonly dirtyRenderCount: number;
-}
+import type { AsciiEditorInterface, EventResult, RenderCommand } from './types.js';
+import {
+    FONT_SIZE,
+    MIN_COLS,
+    MIN_ROWS,
+    USE_PIXEL_BUFFER,
+    GLYPH_WIDTH,
+    GLYPH_HEIGHT,
+    TOOL_INFO,
+    BORDER_STYLES,
+} from './constants.js';
+import { capitalize, debounce, getElement } from './utils.js';
+import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
+import {
+    createAutoSaveScheduler,
+    downloadDocument,
+    openDocumentPicker,
+    tryRestoreAutoSave,
+} from './persistence.js';
+import { exportPng } from './exportPng.js';
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let wasmMemory: any = null;
+let wasmMemory: WebAssembly.Memory | null = null;
 let canvas: HTMLCanvasElement | null = null;
 let ctx: CanvasRenderingContext2D | null = null;
 let offscreenCanvas: HTMLCanvasElement | null = null;
 let offscreenCtx: CanvasRenderingContext2D | null = null;
 let animationFrameId: number | null = null;
-// Track initialization state
 let isInitialized = false;
-void isInitialized; // Suppress unused variable warning
+void isInitialized;
 
 // Expose editor for testing
 declare global {
@@ -84,10 +46,11 @@ declare global {
         lineHeight: number;
     }
 }
-window.editor = null;
 
-// Font metrics
-const FONT_SIZE = 14;
+if (typeof window !== 'undefined') {
+    window.editor = null;
+}
+
 let charWidth = 8.4;
 let lineHeight = 20;
 
@@ -117,51 +80,23 @@ let zoomInBtn: HTMLButtonElement;
 let lineDirectionGroup: HTMLDivElement;
 let directionBtns: NodeListOf<Element>;
 let mobileKeyboardProxy: HTMLInputElement;
+let saveBtn: HTMLButtonElement | null = null;
+let loadBtn: HTMLButtonElement | null = null;
+let pngBtn: HTMLButtonElement | null = null;
+let gridWidthInput: HTMLInputElement | null = null;
+let gridHeightInput: HTMLInputElement | null = null;
+let applyGridBtn: HTMLButtonElement | null = null;
+let layerSelect: HTMLSelectElement | null = null;
+let addLayerBtn: HTMLButtonElement | null = null;
 
 // Mobile state
 let lastTouchDistance: number | null = null;
 
-// Grid dimensions
-const MIN_COLS = 40;
-const MIN_ROWS = 20;
-
-// Rendering configuration
-const USE_PIXEL_BUFFER = true;
-const GLYPH_WIDTH = 8;
-const GLYPH_HEIGHT = 20;
-
-// Tool information for UX
-const TOOL_INFO: Record<string, { instruction: string; cursor: string; shortcut: string }> = {
-    'select': { instruction: 'Click to select, drag selection to move, or Del to erase', cursor: 'default', shortcut: 'V' },
-    'rectangle': { instruction: 'Drag to draw a rectangle', cursor: 'crosshair', shortcut: 'R' },
-    'line': { instruction: 'Drag to draw a line', cursor: 'crosshair', shortcut: 'L' },
-    'arrow': { instruction: 'Drag to draw an arrow', cursor: 'crosshair', shortcut: 'A' },
-    'diamond': { instruction: 'Drag to draw a diamond', cursor: 'crosshair', shortcut: 'D' },
-    'text': { instruction: 'Click to place cursor, then type', cursor: 'text', shortcut: 'T' },
-    'freehand': { instruction: 'Drag to draw freely', cursor: 'crosshair', shortcut: 'F' },
-    'eraser': { instruction: 'Drag to erase areas', cursor: 'crosshair', shortcut: 'E' },
-};
-
-// Border styles for cycling
-const BORDER_STYLES = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
 let currentBorderStyleIndex = 0;
-
-// Line direction options
-const LINE_DIRECTIONS = ['auto', 'horizontal', 'vertical'];
-void LINE_DIRECTIONS; // Suppress unused - reserved for future UI
 let currentLineDirection = 'auto';
-void currentLineDirection; // Suppress unused - state tracked via DOM
+void currentLineDirection;
 
-/**
- * Get DOM element with null check
- */
-function getElement<T extends HTMLElement>(id: string): T {
-    const el = document.getElementById(id);
-    if (!el) {
-        throw new Error(`Required element not found: ${id}`);
-    }
-    return el as T;
-}
+const scheduleAutoSave = createAutoSaveScheduler(() => editor);
 
 /**
  * Compute grid dimensions based on viewport
@@ -222,6 +157,16 @@ async function initialize() {
         mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
         mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection
 
+        // Optional feature controls (may be absent in older HTML snapshots)
+        saveBtn = document.getElementById('save-btn') as HTMLButtonElement | null;
+        loadBtn = document.getElementById('load-btn') as HTMLButtonElement | null;
+        pngBtn = document.getElementById('png-btn') as HTMLButtonElement | null;
+        gridWidthInput = document.getElementById('grid-width') as HTMLInputElement | null;
+        gridHeightInput = document.getElementById('grid-height') as HTMLInputElement | null;
+        applyGridBtn = document.getElementById('apply-grid-btn') as HTMLButtonElement | null;
+        layerSelect = document.getElementById('layer-select') as HTMLSelectElement | null;
+        addLayerBtn = document.getElementById('add-layer-btn') as HTMLButtonElement | null;
+
         // Get canvas and context
         canvas = getElement<HTMLCanvasElement>('canvas');
         const ctxResult = canvas.getContext('2d', { alpha: false });
@@ -238,7 +183,7 @@ async function initialize() {
 
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
-        editor = new AsciiEditor(width, height);
+        editor = new AsciiEditor(width, height) as unknown as AsciiEditorInterface;
         window.editor = editor;
 
         // Update editor with font metrics again after creation
@@ -246,11 +191,20 @@ async function initialize() {
             editor.setFontMetrics(charWidth, lineHeight, FONT_SIZE);
         }
 
+        // Restore auto-saved document if present
+        if (editor && tryRestoreAutoSave(editor)) {
+            logger.info('Restored auto-saved diagram');
+            offscreenCanvas = null;
+            offscreenCtx = null;
+        }
+
         // Set up event listeners
         setupEventListeners();
 
         // Update UI
         updateUI();
+        refreshLayerSelect();
+        syncGridInputs();
 
         // Initial render
         requestRender();
@@ -483,10 +437,86 @@ function setupEventListeners() {
             editor.clear();
             requestRender();
             updateUI();
+            scheduleAutoSave();
             showToast('Canvas cleared');
             if (canvas) canvas.focus();
         }
     });
+
+    if (saveBtn) {
+        saveBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        saveBtn.addEventListener('click', () => {
+            if (!editor) return;
+            downloadDocument(editor, showToast);
+            if (canvas) canvas.focus();
+        });
+    }
+
+    if (loadBtn) {
+        loadBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        loadBtn.addEventListener('click', () => {
+            if (!editor) return;
+            openDocumentPicker(editor, showToast, () => {
+                offscreenCanvas = null;
+                offscreenCtx = null;
+                refreshLayerSelect();
+                syncGridInputs();
+                requestRender();
+                updateUI();
+            });
+        });
+    }
+
+    if (pngBtn) {
+        pngBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        pngBtn.addEventListener('click', () => {
+            if (editor) {
+                editor.requestRedraw();
+                requestRender();
+                // Allow one frame so pixel buffer is fresh
+                requestAnimationFrame(() => {
+                    exportPng(offscreenCanvas, canvas, showToast);
+                });
+            }
+            if (canvas) canvas.focus();
+        });
+    }
+
+    if (applyGridBtn && gridWidthInput && gridHeightInput) {
+        applyGridBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        applyGridBtn.addEventListener('click', () => {
+            applyCustomGridSize();
+            if (canvas) canvas.focus();
+        });
+    }
+
+    if (layerSelect) {
+        layerSelect.addEventListener('change', () => {
+            if (!editor || !layerSelect) return;
+            const idx = parseInt(layerSelect.value, 10);
+            if (!Number.isNaN(idx)) {
+                editor.setActiveLayer(idx);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+            if (canvas) canvas.focus();
+        });
+    }
+
+    if (addLayerBtn) {
+        addLayerBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        addLayerBtn.addEventListener('click', () => {
+            if (!editor) return;
+            editor.addLayer();
+            refreshLayerSelect();
+            requestRender();
+            updateUI();
+            scheduleAutoSave();
+            showToast('Layer added');
+            if (canvas) canvas.focus();
+        });
+    }
 
     helpBtn.addEventListener('mousedown', (e) => e.preventDefault());
     helpBtn.addEventListener('click', showShortcutsModal);
@@ -732,10 +762,12 @@ function handleKeyDown(e: KeyboardEvent) {
 
     handleEventResult(result);
 
-    // Don't switch tools or cycle styles if we're currently typing in the Text tool
-    const isTypingText = editor.tool.toLowerCase() === 'text' && document.activeElement === mobileKeyboardProxy;
+    // While the Text tool is selected, letter keys must type characters — not switch tools
+    // (e.g. typing "HELLO" must not activate Eraser on 'E').
+    // Switch tools via the toolbar or press Escape first, then a shortcut.
+    const isTextTool = editor.tool.toLowerCase() === 'text';
 
-    if (!isTypingText) {
+    if (!isTextTool) {
         // Handle B key - cycle border styles
         if (key.toLowerCase() === 'b' && !ctrl && !shift) {
             cycleBorderStyle();
@@ -753,7 +785,7 @@ function handleKeyDown(e: KeyboardEvent) {
             showShortcutsModal();
         }
 
-        // Handle tool shortcuts
+        // Handle tool shortcuts (desktop + keyboard UI)
         const lowerKey = key.toLowerCase();
         for (const [toolName, info] of Object.entries(TOOL_INFO)) {
             if (info.shortcut.toLowerCase() === lowerKey && !ctrl && !shift) {
@@ -761,6 +793,8 @@ function handleKeyDown(e: KeyboardEvent) {
                 break;
             }
         }
+    } else if (key === '?' || (key === '/' && shift)) {
+        showShortcutsModal();
     }
 }
 
@@ -790,22 +824,26 @@ function handleEventResult(result: EventResult | null) {
         updateToolButtons(result.tool);
     }
 
-    // Handle mobile keyboard proxy
+    // Focus the mobile keyboard proxy only on coarse pointers (touch).
+    // Auto-focusing it on desktop steals focus from the canvas so tool shortcuts
+    // (e.g. E for eraser after T for text) never reach the editor.
     if (editor && editor.tool.toLowerCase() === 'text') {
-        if (document.activeElement !== mobileKeyboardProxy) {
+        const touchUi = typeof window.matchMedia === 'function'
+            && window.matchMedia('(pointer: coarse)').matches;
+        if (touchUi && document.activeElement !== mobileKeyboardProxy) {
             mobileKeyboardProxy.focus();
         }
-    } else {
-        if (document.activeElement === mobileKeyboardProxy) {
-            mobileKeyboardProxy.blur();
-        }
+    } else if (document.activeElement === mobileKeyboardProxy) {
+        mobileKeyboardProxy.blur();
+        if (canvas) canvas.focus();
     }
 
     if (result.should_copy && result.ascii) {
-        void copyAsciiToClipboard(result.ascii);
+        void copyAsciiToClipboard(result.ascii, showToast);
     }
 
     updateUI();
+    scheduleAutoSave();
 }
 
 /**
@@ -968,6 +1006,9 @@ function updateCursorIndicator(gridX: number, gridY: number) {
 function setTool(toolName: string) {
     if (!editor) {
         logger.error('Editor not initialized');
+        // Still focus canvas when present (unit tests / early UI)
+        const el = canvas ?? (document.getElementById('canvas') as HTMLCanvasElement | null);
+        el?.focus();
         return;
     }
     try {
@@ -975,16 +1016,21 @@ function setTool(toolName: string) {
         updateToolButtons(toolName);
         
         // Show/hide line direction options
-        if (toolName.toLowerCase() === 'line') {
-            lineDirectionGroup.style.display = 'flex';
-        } else {
-            lineDirectionGroup.style.display = 'none';
+        if (lineDirectionGroup) {
+            if (toolName.toLowerCase() === 'line') {
+                lineDirectionGroup.style.display = 'flex';
+            } else {
+                lineDirectionGroup.style.display = 'none';
+            }
         }
         
-        statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
+        if (statusToolEl) {
+            statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
+        }
 
         // Ensure canvas keeps focus for keyboard shortcuts
-        if (canvas) canvas.focus();
+        const el = canvas ?? (document.getElementById('canvas') as HTMLCanvasElement | null);
+        el?.focus();
     } catch (error) {
         logger.error('Failed to set tool:', error);
     }
@@ -996,7 +1042,10 @@ function setTool(toolName: string) {
 function updateToolButtons(activeTool: string) {
     const normalizedTool = activeTool.toLowerCase();
 
-    toolButtons.forEach(btn => {
+    const buttons = toolButtons?.length
+        ? toolButtons
+        : document.querySelectorAll('.tool-btn');
+    buttons.forEach(btn => {
         const tool = btn.getAttribute('data-tool');
         const isActive = tool?.toLowerCase() === normalizedTool;
         if (isActive) {
@@ -1007,26 +1056,28 @@ function updateToolButtons(activeTool: string) {
         btn.setAttribute('aria-pressed', isActive.toString());
     });
 
-    // Update instruction message
+    // Update instruction message (module ref or live DOM for unit tests)
     const info = TOOL_INFO[normalizedTool];
-    if (info && statusMessageEl) {
-        statusMessageEl.textContent = `[${info.shortcut}] ${info.instruction}`;
+    const statusEl = statusMessageEl ?? document.getElementById('status-message');
+    if (info && statusEl) {
+        statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
     }
 
     // Update cursor
-    if (canvasContainer && info) {
+    const container = canvasContainer ?? document.getElementById('canvas-container');
+    if (container && info) {
         // Clear previous tool classes
-        canvasContainer.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
+        container.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
         if (info.cursor === 'text') {
-            canvasContainer.classList.add('tool-text');
+            container.classList.add('tool-text');
         } else if (info.cursor === 'crosshair') {
             if (normalizedTool === 'eraser') {
-                canvasContainer.classList.add('tool-eraser');
+                container.classList.add('tool-eraser');
             } else {
-                canvasContainer.classList.add('tool-crosshair');
+                container.classList.add('tool-crosshair');
             }
         } else if (normalizedTool === 'select') {
-            canvasContainer.classList.add('tool-select');
+            container.classList.add('tool-select');
         }
     }
 }
@@ -1047,51 +1098,51 @@ function updateUI() {
 }
 
 /**
- * Copy ASCII to clipboard with both plain text and HTML formats
- * to preserve formatting in various editors.
- */
-async function copyAsciiToClipboard(text: string) {
-    try {
-        const plain = new Blob([text], { type: 'text/plain' });
-
-        // HTML version with specific font stack to preserve monospace layout
-        // Use DOM element to ensure robust sanitization of the ASCII text
-        const pre = document.createElement('pre');
-        pre.style.fontFamily = "'JetBrains Mono','Cascadia Code','Courier New',monospace";
-        pre.style.fontSize = '14px';
-        pre.style.lineHeight = '1.4';
-        pre.style.whiteSpace = 'pre';
-        pre.textContent = text;
-        const html = pre.outerHTML;
-        const rich = new Blob([html], { type: 'text/html' });
-
-        await navigator.clipboard.write([
-            new ClipboardItem({
-                'text/plain': plain,
-                'text/html': rich,
-            }),
-        ]);
-
-        showToast('Copied — paste in a monospace editor');
-    } catch (err) {
-        logger.error('Failed to copy:', err);
-        // Fallback to simple text copy if ClipboardItem is not supported
-        try {
-            await navigator.clipboard.writeText(text);
-            showToast('Copied — paste in a monospace editor');
-        } catch {
-            showToast('Failed to copy', true);
-        }
-    }
-}
-
-/**
- * Copy ASCII to clipboard
+ * Selection-aware copy to OS clipboard (CRLF + internal clipboard).
  */
 async function copyToClipboard() {
     if (!editor) return;
-    const ascii = editor.exportAscii();
-    await copyAsciiToClipboard(ascii);
+    await copySelectionAware(editor, showToast);
+}
+
+/**
+ * Apply custom grid dimensions from side-panel inputs.
+ */
+function applyCustomGridSize() {
+    if (!editor || !gridWidthInput || !gridHeightInput) return;
+    const w = Math.max(MIN_COLS, Math.min(400, parseInt(gridWidthInput.value, 10) || MIN_COLS));
+    const h = Math.max(MIN_ROWS, Math.min(200, parseInt(gridHeightInput.value, 10) || MIN_ROWS));
+    gridWidthInput.value = String(w);
+    gridHeightInput.value = String(h);
+    if (editor.width !== w || editor.height !== h) {
+        editor.resize(w, h);
+        offscreenCanvas = null;
+        offscreenCtx = null;
+        requestRender();
+        updateUI();
+        scheduleAutoSave();
+        showToast(`Grid: ${w} × ${h}`);
+    }
+}
+
+function syncGridInputs() {
+    if (!editor || !gridWidthInput || !gridHeightInput) return;
+    gridWidthInput.value = String(editor.width);
+    gridHeightInput.value = String(editor.height);
+}
+
+function refreshLayerSelect() {
+    if (!editor || !layerSelect || typeof editor.layerCount !== 'number') return;
+    const count = editor.layerCount;
+    const active = editor.activeLayer ?? 0;
+    layerSelect.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = editor.layerName(i) || `Layer ${i + 1}`;
+        if (i === active) opt.selected = true;
+        layerSelect.appendChild(opt);
+    }
 }
 
 /**
@@ -1236,24 +1287,6 @@ function uploadFontAtlas() {
 
     logger.debug(`Rasterized and uploaded ${charsToRasterize.length} glyphs to WASM atlas`);
     editor.requestRedraw();
-}
-
-/**
- * Capitalize first letter
- */
-function capitalize(str: string): string {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-/**
- * Debounce utility
- */
-function debounce<T extends (...args: unknown[]) => unknown>(fn: T, delay: number): T {
-    let timeout: ReturnType<typeof setTimeout>;
-    return ((...args: Parameters<T>) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => fn(...args), delay);
-    }) as T;
 }
 
 // Initialize when DOM is ready

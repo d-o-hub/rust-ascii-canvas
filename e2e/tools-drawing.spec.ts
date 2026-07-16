@@ -16,8 +16,11 @@ async function waitForRender(page: Page): Promise<void> {
 
 test.describe('Tool Drawing Verification', () => {
     test.beforeEach(async ({ page }) => {
+                await page.addInitScript(() => {
+            try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
         await expect(page.locator('#canvas')).toBeVisible();
     });
@@ -165,8 +168,11 @@ test.describe('Tool Drawing Verification', () => {
 
 test.describe('Select Tool Delete Functionality', () => {
     test.beforeEach(async ({ page }) => {
+                await page.addInitScript(() => {
+            try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -236,8 +242,11 @@ test.describe('Select Tool Delete Functionality', () => {
 
 test.describe('Edge Cases', () => {
     test.beforeEach(async ({ page }) => {
+                await page.addInitScript(() => {
+            try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -358,14 +367,18 @@ test.describe('Edge Cases', () => {
 
 test.describe('Keyboard Shortcuts', () => {
     test.beforeEach(async ({ page }) => {
+                await page.addInitScript(() => {
+            try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
     test('All tool shortcuts work', async ({ page }) => {
         const canvas = page.locator('#canvas');
         await canvas.click();
+        await canvas.focus();
         await waitForRender(page);
         
         const shortcuts: Array<{ key: string; tool: string }> = [
@@ -379,6 +392,7 @@ test.describe('Keyboard Shortcuts', () => {
         ];
         
         for (const { key, tool } of shortcuts) {
+            await canvas.focus();
             await page.keyboard.press(key);
             await expect(page.locator(`[data-tool="${tool}"]`)).toHaveClass(/active/, { timeout: 3000 });
         }

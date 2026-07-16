@@ -99,6 +99,18 @@
                     <span class="action-icon">⎘</span>
                     <span class="action-label">Copy</span>
                 </button>
+                <button id="save-btn" class="action-btn" title="Save diagram (.asc)" aria-label="Save diagram">
+                    <span class="action-icon">💾</span>
+                    <span class="action-label">Save</span>
+                </button>
+                <button id="load-btn" class="action-btn" title="Load diagram (.asc)" aria-label="Load diagram">
+                    <span class="action-icon">📂</span>
+                    <span class="action-label">Load</span>
+                </button>
+                <button id="png-btn" class="action-btn" title="Export PNG" aria-label="Export as PNG">
+                    <span class="action-icon">🖼</span>
+                    <span class="action-label">PNG</span>
+                </button>
                 <button id="clear-btn" class="action-btn" title="Clear Canvas" aria-label="Clear canvas">
                     <span class="action-icon">🗑</span>
                 </button>
@@ -152,6 +164,28 @@
                         <button class="zoom-btn" id="zoom-reset" title="Reset Zoom (100%)" aria-label="Reset zoom to 100%">1:1</button>
                         <button class="zoom-btn" id="zoom-out" title="Zoom Out (-)" aria-label="Zoom out" aria-keyshortcuts="-">-</button>
                         <button class="zoom-btn" id="zoom-in" title="Zoom In (+)" aria-label="Zoom in" aria-keyshortcuts="+">+</button>
+                    </div>
+                </section>
+
+                <!-- Grid Size -->
+                <section class="panel-section" aria-labelledby="grid-size-title">
+                    <h3 class="section-title" id="grid-size-title">Grid Size</h3>
+                    <div class="grid-size-controls">
+                        <label class="grid-size-label" for="grid-width">Cols</label>
+                        <input type="number" id="grid-width" class="grid-size-input" min="40" max="400" step="1" aria-label="Grid columns" />
+                        <label class="grid-size-label" for="grid-height">Rows</label>
+                        <input type="number" id="grid-height" class="grid-size-input" min="20" max="200" step="1" aria-label="Grid rows" />
+                        <button id="apply-grid-btn" class="zoom-btn" type="button" aria-label="Apply grid size">Apply</button>
+                    </div>
+                </section>
+
+                <!-- Layers -->
+                <section class="panel-section" aria-labelledby="layers-title">
+                    <h3 class="section-title" id="layers-title">Layers</h3>
+                    <div class="layer-controls">
+                        <label class="visually-hidden" for="layer-select">Active layer</label>
+                        <select id="layer-select" class="select-input" aria-label="Active layer"></select>
+                        <button id="add-layer-btn" class="zoom-btn" type="button" title="Add layer" aria-label="Add layer">+</button>
                     </div>
                 </section>
 
@@ -261,6 +295,8 @@
                         <div class="shortcut-row"><kbd>Ctrl+Shift+Z</kbd> / <kbd>Ctrl+Y</kbd> <span>Redo</span></div>
                         <div class="shortcut-row"><kbd>Ctrl+A</kbd> <span>Select All</span></div>
                         <div class="shortcut-row"><kbd>Ctrl+C</kbd> <span>Copy ASCII</span></div>
+                        <div class="shortcut-row"><kbd>Ctrl+V</kbd> <span>Paste</span></div>
+                        <div class="shortcut-row"><kbd>Ctrl+X</kbd> <span>Cut</span></div>
                         <div class="shortcut-row"><kbd>Space+Drag</kbd> <span>Pan Canvas</span></div>
                         <div class="shortcut-row"><kbd>Scroll</kbd> <span>Zoom In/Out</span></div>
                         <div class="shortcut-row"><kbd>0</kbd> <span>Reset Zoom</span></div>

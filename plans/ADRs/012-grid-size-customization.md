@@ -1,7 +1,7 @@
 # ADR-012: Grid Size Customization
 
 ## Status
-Proposed
+Accepted (implemented 2026-07-15 — side-panel cols/rows + responsive defaults)
 
 ## Context
 The grid size is hardcoded to 80x40 cells in `web/main.ts`. Users cannot create diagrams with different dimensions without modifying code.

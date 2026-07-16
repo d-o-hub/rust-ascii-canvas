@@ -26,8 +26,16 @@ async function waitForCursorUpdate(page: Page): Promise<void> {
 
 test.describe('ASCII Canvas Editor', () => {
     test.beforeEach(async ({ page }) => {
+        // Prevent autosaved diagrams from affecting deterministic tests
+        await page.addInitScript(() => {
+            try {
+                localStorage.removeItem('ascii-canvas-autosave');
+            } catch {
+                /* ignore */
+            }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -136,8 +144,11 @@ test.describe('ASCII Canvas Editor', () => {
 
 test.describe('Drawing Tools Interaction', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -460,8 +471,11 @@ test.describe('Drawing Tools Interaction', () => {
 
 test.describe('Undo/Redo', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -549,8 +563,11 @@ test.describe('Undo/Redo', () => {
 
 test.describe('Border Styles', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -581,8 +598,11 @@ test.describe('Border Styles', () => {
 
 test.describe('Zoom Controls', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
         
         await page.click('#zoom-reset');
@@ -639,8 +659,11 @@ test.describe('Zoom Controls', () => {
 
 test.describe('Keyboard Shortcuts', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -752,8 +775,11 @@ test.describe('Keyboard Shortcuts', () => {
 
 test.describe('Copy Functionality', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 
@@ -780,8 +806,11 @@ test.describe('Copy Functionality', () => {
 
 test.describe('Output Verification', () => {
     test.beforeEach(async ({ page }) => {
+        await page.addInitScript(() => {
+        try { localStorage.removeItem('ascii-canvas-autosave'); } catch { /* ignore */ }
+        });
         await page.goto(BASE_URL);
-        await page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await page.waitForSelector('#canvas', { timeout: 10000 });
     });
 

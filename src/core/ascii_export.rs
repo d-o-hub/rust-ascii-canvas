@@ -357,4 +357,66 @@ mod tests {
         // "   1 | A" is 8 chars, max_width 5 should truncate it
         assert_eq!(result, "   1 ");
     }
+
+    #[test]
+    fn test_export_trimmed_preserves_right_border() {
+        // ┌───┐
+        // │   │
+        // └───┘
+        let mut grid = Grid::new(10, 5);
+        grid.set_char(0, 0, '┌');
+        grid.set_char(1, 0, '─');
+        grid.set_char(2, 0, '─');
+        grid.set_char(3, 0, '─');
+        grid.set_char(4, 0, '┐');
+        grid.set_char(0, 1, '│');
+        grid.set_char(4, 1, '│');
+        grid.set_char(0, 2, '└');
+        grid.set_char(1, 2, '─');
+        grid.set_char(2, 2, '─');
+        grid.set_char(3, 2, '─');
+        grid.set_char(4, 2, '┘');
+
+        let options = ExportOptions::default();
+        let result = export_grid(&grid, &options);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 3);
+        assert!(lines[0].ends_with('┐'), "Top row must end with ┐, got: {:?}", lines[0]);
+        assert!(lines[1].ends_with('│'), "Middle row must end with │, got: {:?}", lines[1]);
+        assert!(lines[2].ends_with('┘'), "Bottom row must end with ┘, got: {:?}", lines[2]);
+        let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
+        assert!(
+            widths.windows(2).all(|w| w[0] == w[1]),
+            "All lines must be the same width: {:?}",
+            widths
+        );
+    }
+
+    #[test]
+    fn test_export_region_preserves_right_border() {
+        let mut grid = Grid::new(10, 5);
+        grid.set_char(0, 0, '┌');
+        grid.set_char(1, 0, '─');
+        grid.set_char(2, 0, '─');
+        grid.set_char(3, 0, '─');
+        grid.set_char(4, 0, '┐');
+        grid.set_char(0, 1, '│');
+        grid.set_char(4, 1, '│');
+        grid.set_char(0, 2, '└');
+        grid.set_char(1, 2, '─');
+        grid.set_char(2, 2, '─');
+        grid.set_char(3, 2, '─');
+        grid.set_char(4, 2, '┘');
+
+        let result = export_region(&grid, 0, 0, 4, 2);
+        let lines: Vec<&str> = result.lines().collect();
+
+        assert_eq!(lines.len(), 3);
+        assert!(lines[0].ends_with('┐'));
+        assert!(lines[1].ends_with('│'));
+        assert!(lines[2].ends_with('┘'));
+        let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
+        assert!(widths.windows(2).all(|w| w[0] == w[1]));
+    }
 }

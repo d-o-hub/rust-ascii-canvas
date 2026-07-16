@@ -34,9 +34,16 @@ pub async fn read_from_clipboard() -> Result<String, JsValue> {
 }
 
 /// Check if clipboard API is available.
+/// Requires a secure context (`https://` or `localhost`).
 #[wasm_bindgen(js_name = isClipboardAvailable)]
 pub fn is_clipboard_available() -> bool {
-    web_sys::window()
-        .map(|w| w.navigator().clipboard())
-        .is_some()
+    let window = match web_sys::window() {
+        Some(w) => w,
+        None => return false,
+    };
+    if !window.is_secure_context() {
+        return false;
+    }
+    // `navigator.clipboard()` is always present in modern browsers when secure.
+    true
 }

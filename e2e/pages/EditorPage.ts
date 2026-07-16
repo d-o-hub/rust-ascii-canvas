@@ -97,7 +97,7 @@ export class EditorPage {
     }
 
     async waitForLoad(): Promise<void> {
-        await this.page.waitForSelector('#loading.hidden', { timeout: 15000 });
+        await this.page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 15000 });
         await this.page.waitForSelector('#canvas', { timeout: 10000 });
     }
 

@@ -11,17 +11,17 @@
     "editor",
     "rust"
   ],
-  "author": "Anomaly",
+  "author": "d-o-hub",
   "repository": {
     "type": "git",
-    "url": "https://github.com/anomalyco/ascii-canvas.git"
+    "url": "https://github.com/d-o-hub/rust-ascii-canvas.git"
   },
   "bugs": {
-    "url": "https://github.com/anomalyco/ascii-canvas/issues"
+    "url": "https://github.com/d-o-hub/rust-ascii-canvas/issues"
   },
-  "homepage": "https://github.com/anomalyco/ascii-canvas#readme",
+  "homepage": "https://github.com/d-o-hub/rust-ascii-canvas#readme",
   "scripts": {
-    "build:wasm": "cargo build --target wasm32-unknown-unknown --release && wasm-bindgen target/wasm32-unknown-unknown/release/ascii_canvas.wasm --out-dir web/pkg --target web && wasm-opt --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext -O3 web/pkg/ascii_canvas_bg.wasm -o web/pkg/ascii_canvas_bg.wasm",
+    "build:wasm": "cargo build --target wasm32-unknown-unknown --release && wasm-bindgen target/wasm32-unknown-unknown/release/ascii_canvas.wasm --out-dir web/pkg --target web && (command -v wasm-opt >/dev/null && wasm-opt --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext -O3 web/pkg/ascii_canvas_bg.wasm -o web/pkg/ascii_canvas_bg.wasm || echo 'wasm-opt not found; skipping optimization')",
     "build:web": "cd web && pnpm run build",
     "build": "pnpm run build:wasm && pnpm run build:web",
     "netlify:build": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli --version 0.2.121 && npm install -g wasm-opt && pnpm install --frozen-lockfile && cd web && pnpm install --frozen-lockfile && cd .. && pnpm run build && pnpm run check-size",

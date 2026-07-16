@@ -1,5 +1,9 @@
 # ASCII Canvas - Gap Analysis & Enhancement Roadmap
 
+> **Status note (2026-07-16)**  
+> Many gaps below were closed by the recommendations bundle. Treat this file as **historical analysis**; for live backlog use [FOLLOW_UPS.md](FOLLOW_UPS.md) and [PROJECT_STATUS.md](PROJECT_STATUS.md).  
+> Closed since this doc was written: selection copy/paste, enhanced text keys, grid UI, PNG export, file persistence (basic), layers (basic), clipboard fidelity (#21).
+
 ## Executive Summary
 
 This document analyzes the ASCII Canvas Editor for missing features, incomplete implementations, and enhancement opportunities using GOAP (Goal-Oriented Action Planning) methodology.
@@ -8,18 +12,28 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 
 ## Current State Assessment
 
-### Implemented Features
+### Implemented Features (updated 2026-07-16)
 | Category | Feature | Status | Quality |
 |----------|---------|--------|---------|
 | Drawing Tools | Rectangle, Line, Arrow, Diamond, Text, Freehand, Eraser, Select | ✅ Complete | High |
 | Border Styles | Single, Double, Heavy, Rounded, ASCII, Dotted | ✅ Complete | High |
 | Core | Undo/Redo (100 commands), Zoom (0.3x-4x), Pan (Space+drag) | ✅ Complete | High |
-| Export | ASCII to clipboard | ✅ Complete | Medium |
-| UI | Toolbar, Status bar, Zoom controls, Shortcuts modal | ✅ Complete | Medium |
+| Export | ASCII clipboard (selection-aware, CRLF) + PNG | ✅ Complete | High |
+| Persistence | `.asc` save/load + localStorage auto-save | ✅ Complete | Medium |
+| Layers | Add/switch; composite export | ✅ Basic | Medium |
+| Grid | Responsive + manual size UI | ✅ Complete | Medium |
+| UI | Toolbar, Status bar, Zoom, Shortcuts, Save/Load/PNG | ✅ Complete | Medium |
 
-### Known Issues
-- 52 documentation warnings (cosmetic)
-- Firefox E2E tests need browser installation
+### Remaining gaps (see FOLLOW_UPS)
+- SVG export (F-10)
+- Layer polish + composite render + history (F-11–F-13)
+- Blue-tinted preview (F-15 / ADR-011)
+- Cross-browser CI E2E (F-21)
+- `main.ts` still large (F-20)
+
+### Known Issues (legacy notes; partially fixed)
+- Documentation warnings on wasm modules (`missing_docs` allow)
+- Firefox/WebKit E2E not always run in CI
 - Blue-tinted preview not implemented for drag operations
 
 ---
@@ -29,7 +43,9 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 ### 1. CRITICAL: Missing Core Features
 
 #### 1.1 Selection Copy/Paste Operations
-**Gap**: Select tool can select and move regions but cannot copy/paste.
+**Status (2026-07-16)**: ✅ **RESOLVED** — ADR-009 / #21 / ADR-036. Remaining: external manual QA (F-02).
+
+**Gap (historical)**: Select tool can select and move regions but cannot copy/paste.
 
 **Current State**: `src/core/tools/select.rs` supports:
 - Selection creation (drag)
@@ -45,7 +61,9 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 **Impact**: Users cannot duplicate shapes or move content between areas efficiently.
 
 #### 1.2 Text Tool Enhancements
-**Gap**: Text tool is minimal - single character placement.
+**Status (2026-07-16)**: 🟡 **PARTIAL** — multi-char typing, backspace/delete, Enter work; caret visualization / multi-line polish still open (F-14 / ADR-010).
+
+**Gap (historical)**: Text tool is minimal - single character placement.
 
 **Current State**: `src/core/tools/text.rs` supports:
 - Click to place single characters
@@ -61,7 +79,9 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 **Impact**: Users cannot efficiently type text labels or comments.
 
 #### 1.3 Grid Size Customization
-**Gap**: Grid is hardcoded to 80x40.
+**Status (2026-07-16)**: ✅ **RESOLVED** — responsive grid + side-panel cols/rows (ADR-012).
+
+**Gap (historical)**: Grid is hardcoded to 80x40.
 
 **Current State**: `web/main.ts:66-67` defines `GRID_WIDTH = 80` and `GRID_HEIGHT = 40`.
 
@@ -89,7 +109,9 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 **Impact**: Users cannot see what they're drawing before committing.
 
 #### 2.2 Selection Move Implementation
-**Gap**: Selection moving state tracked but not fully implemented.
+**Status (2026-07-16)**: ✅ **RESOLVED** (2026-03 move work + validation).
+
+**Gap (historical)**: Selection moving state tracked but not fully implemented.
 
 **Current State**: `src/core/tools/select.rs:83-85` sets `moving = true` but `on_pointer_move` returns empty result.
 
@@ -114,15 +136,15 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 ### 3. ENHANCEMENT: Quality of Life Improvements
 
 #### 3.1 Export Formats
-**Current**: ASCII text only via clipboard.
+**Status (2026-07-16)**: 🟡 **PARTIAL** — ASCII + PNG + `.asc` file I/O done; SVG still missing (F-10).
 
-**Missing**:
-- PNG export (render canvas to image)
+**Current**: ASCII clipboard + PNG download + `.asc` save/load.
+
+**Still missing**:
 - SVG export (vector representation)
-- Save to file (File System Access API)
-- Load from file
+- Optional File System Access API polish
 
-**Priority**: Medium - Many users want to embed diagrams in documents.
+**Priority**: Medium - SVG for design-tool import.
 
 #### 3.2 Touch/Mobile Support
 **Current**: Mouse/keyboard only.

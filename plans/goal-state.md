@@ -1,169 +1,125 @@
 # Goal State: Codebase Improvement & Feature Roadmap 2026
 
 ## Status: ACTIVE
-**Updated**: 2026-03-03
+**Updated**: 2026-07-16
 
 ---
 
 ## GOAP World State Model
 
-### Current State (Verified 2026-03-03)
+### Current State (Verified 2026-07-16)
 
 ```yaml
 code_quality:
   clippy_errors: 0
   clippy_warnings: 0
-  dead_code_allow: true          # crate-level #![allow(dead_code)]
-  unused_deps: [thiserror, anyhow]
-  duplicate_types: true          # EventResult vs EditorEventResult
-  max_file_loc: 722              # bindings.rs exceeds 500 LOC guideline
-  stale_configs: [root vite.config.ts, web/postcss.config.js]
+  dead_code_allow: false          # no crate-level allow (wasm modules still allow missing_docs)
+  unused_deps: []                 # thiserror/anyhow cleaned historically
+  duplicate_types: false          # EditorEventResult path in use
+  max_file_loc: ~1300             # web/main.ts still large (F-20)
+  stale_configs: []               # package metadata fixed to d-o-hub
 
 tests:
-  rust_unit: 79/79
-  rust_integration: 44/44
-  rust_doc: 2/2
-  e2e_chromium: 35+
-  e2e_firefox: 0                 # not configured
-  e2e_webkit: 0                  # not configured
-  vitest_frontend: 0             # dependency exists, no tests
-  flaky_patterns: 85             # waitForTimeout calls
-  page_object_model: false
+  rust_unit: 98/98
+  rust_integration: 45+
+  rust_doc: 2+
+  e2e_chromium: 71
+  e2e_firefox: configured         # not last-gate required
+  e2e_webkit: configured
+  vitest_frontend: 14
+  flaky_patterns: 0               # waitForTimeout eliminated
+  page_object_model: true
 
 error_handling:
-  unwrap_in_prod: ~4             # unwrap() calls outside test code
-  boundary_bugs: 3               # SelectTool, ArrowTool, TextTool
-  select_tool_duplicate: true    # Rc<RefCell<SelectTool>> never synced
+  clipboard_secure_context: true
+  paste_origin: true
+  boundary_bugs: 0                # known tool boundary issues from 2026-03 fixed
 
 features:
   drawing_tools: 8
   border_styles: 6
   undo_redo: true
   zoom_pan: true
-  clipboard_export: true
-  layers: false
-  file_persistence: false
-  png_svg_export: false
-  grid_customization: false
-  preview_rendering: false
+  clipboard_export: true          # selection-aware + CRLF
+  layers: true                    # basic add/switch/export composite
+  file_persistence: true          # .asc + localStorage
+  png_export: true
+  svg_export: false               # F-10
+  grid_customization: true
+  preview_rendering: false        # F-15 / ADR-011
 
 documentation:
-  adr_count: 22                  # 001-021 + duplicate 005
-  stale_adrs: 4                  # Proposed but actually implemented
-  test_count_contradictions: 5+
-  doc_warnings: ~52
+  adr_count: 36
+  plans_refreshed: 2026-07-16
+  follow_ups_file: true           # plans/FOLLOW_UPS.md
+  open_issue_21: fixed_unmerged   # F-01
 ```
 
-### Target State
+### Target State (next horizon)
 
 ```yaml
 code_quality:
-  clippy_errors: 0
-  clippy_warnings: 0
-  dead_code_allow: false         # REMOVED
-  unused_deps: []                # CLEANED
-  duplicate_types: false         # RESOLVED
-  max_file_loc: 500              # ALL files under limit
-  stale_configs: []              # REMOVED
+  max_file_loc: 500               # finish main.ts split
+  wasm_missing_docs_allow: false
 
 tests:
-  rust_unit: 85+                 # new tests for layers, persistence
-  rust_integration: 50+          # new integration tests
-  rust_doc: 5+                   # more doc tests
-  e2e_chromium: 40+
-  e2e_firefox: 40+               # ENABLED
-  e2e_webkit: 40+                # ENABLED
-  vitest_frontend: 20+           # NEW
-  flaky_patterns: 0              # ALL waitForTimeout REMOVED
-  page_object_model: true        # IMPLEMENTED
-
-error_handling:
-  unwrap_in_prod: 0              # ALL replaced
-  boundary_bugs: 0               # ALL fixed
-  select_tool_duplicate: false   # RESOLVED
+  e2e_firefox: in_ci
+  e2e_webkit: in_ci
+  vitest_frontend: 25+
 
 features:
-  drawing_tools: 8
-  border_styles: 6
-  undo_redo: true
-  zoom_pan: true
-  clipboard_export: true
-  layers: true                   # NEW
-  file_persistence: true         # NEW
-  png_svg_export: false          # DEFERRED (P2)
-  grid_customization: false      # DEFERRED (P1)
-  preview_rendering: false       # DEFERRED (P1)
+  layers: full                    # lock, reorder, composite render, history
+  svg_export: true
+  preview_rendering: true
+  enhanced_text_tool: true
 
-documentation:
-  adr_count: 30                  # 8 new ADRs (022-029)
-  stale_adrs: 0                  # ALL statuses correct
-  test_count_contradictions: 0   # ALL reconciled
-  doc_warnings: 0                # ALL documented
+process:
+  issue_21: closed
+  dependabot_prs: triaged
 ```
 
 ---
 
 ## Definition of Done
 
-### Tier 1: Code Quality (Must Have)
+### Tier 1: Code Quality
 
-- [ ] `cargo clippy --all-targets --all-features -- -D warnings` — 0 errors, 0 warnings
-- [ ] No `#![allow(dead_code)]` at crate level
-- [ ] All source files < 500 LOC
-- [ ] No unused dependencies in Cargo.toml
-- [ ] No duplicate type definitions
-- [ ] No stale configuration files
-- [ ] `cargo test` — 100% passing
-- [ ] `cargo doc` — 0 warnings
+- [x] `cargo clippy --all-targets --all-features -- -D warnings`
+- [x] `cargo test` (lib + integration) passing
+- [ ] All source files < 500 LOC (main.ts still over — F-20)
+- [ ] No `#![allow(missing_docs)]` on wasm (F-25)
 
-### Tier 2: Test Reliability (Must Have)
+### Tier 2: Test Reliability
 
-- [ ] 0 `waitForTimeout` calls in E2E tests
-- [ ] Page Object Model in `e2e/pages/`
-- [ ] Cross-browser: Chromium + Firefox + WebKit
-- [ ] Vitest unit tests for frontend TypeScript
-- [ ] ASCII output verification in E2E (draw → export → assert)
+- [x] Zero `waitForTimeout` flaky patterns
+- [x] Page Object Model present
+- [x] Vitest frontend tests
+- [x] Chromium E2E green (71)
+- [ ] Firefox + WebKit in CI (F-21)
 
-### Tier 3: Robustness (Must Have)
+### Tier 3: Features
 
-- [ ] 0 `unwrap()` outside `#[cfg(test)]` blocks
-- [ ] All known bugs fixed (SelectTool boundary, ArrowTool Bresenham, TextTool position)
-- [ ] No duplicate tool instances
+- [x] Selection copy/paste + external clipboard fidelity
+- [x] File persistence
+- [x] PNG export
+- [x] Grid customization
+- [x] Basic layers
+- [ ] SVG export (F-10)
+- [ ] Full layer system (F-11–F-13)
+- [ ] Preview rendering (F-15)
+- [ ] Enhanced text tool (F-14)
 
-### Tier 4: New Features (Should Have)
+### Tier 4: Process
 
-- [ ] Layer system with visibility, locking, reordering
-- [ ] File persistence (save/load with `.asc` format)
-- [ ] localStorage auto-save
-
-### Tier 5: Performance (Should Have)
-
-- [ ] No `.to_string()` allocations in hot paths
-- [ ] Sparse grid iteration
-- [ ] Content-bounds caching
-- [ ] Benchmark suite with `criterion`
-
-### Tier 6: Documentation (Must Have)
-
-- [ ] All ADR statuses accurate
-- [ ] PROJECT_STATUS.md reflects actual state
-- [ ] No contradictions across plan files
-- [ ] All public APIs documented
+- [x] Plans + FOLLOW_UPS updated for 2026-07 bundle
+- [ ] PR merged; #21 closed (F-01)
+- [ ] Dependabot #98/#99 resolved (F-03)
 
 ---
 
-## Success Metrics
+## References
 
-| Metric | Current | Target | Priority |
-|--------|---------|--------|----------|
-| Clippy issues | 0 | 0 | Maintain |
-| Source files > 500 LOC | 1 | 0 | High |
-| Unused deps | 2 | 0 | High |
-| `unwrap()` in prod | ~4 | 0 | High |
-| `waitForTimeout` calls | 85 | 0 | High |
-| Cross-browser E2E | 1/3 | 3/3 | High |
-| Vitest tests | 0 | 20+ | Medium |
-| Layers support | No | Yes | Medium |
-| File persistence | No | Yes | Medium |
-| Doc warnings | ~52 | 0 | Medium |
-| Stale ADR statuses | 4 | 0 | Medium |
+- [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
+- [FOLLOW_UPS.md](FOLLOW_UPS.md)
+- [PROJECT_STATUS.md](PROJECT_STATUS.md)
+- [ADR-036](ADRs/036-clipboard-fidelity-and-product-features.md)
