@@ -580,6 +580,25 @@ test.describe('Border Styles', () => {
     });
 });
 
+test.describe('Export Functionality', () => {
+    test.beforeEach(async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Export buttons are hidden on mobile viewports');
+        await openEditor(page);
+    });
+
+    test('should have SVG and PNG export buttons', async ({ page }) => {
+        await expect(page.locator('#png-btn')).toBeVisible();
+        await expect(page.locator('#svg-btn')).toBeVisible();
+    });
+
+    test('should trigger SVG export on click', async ({ page }) => {
+        const downloadPromise = page.waitForEvent('download');
+        await page.click('#svg-btn');
+        const download = await downloadPromise;
+        expect(download.suggestedFilename()).toBe('ascii-canvas.svg');
+    });
+});
+
 test.describe('Zoom Controls', () => {
     test.beforeEach(async ({ page, isMobile }) => {
         test.skip(isMobile, 'Zoom controls and indicators are hidden on mobile viewports');

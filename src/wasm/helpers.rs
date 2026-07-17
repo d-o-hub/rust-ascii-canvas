@@ -591,6 +591,21 @@ mod clipboard_tests {
     }
 
     #[test]
+    fn test_export_svg() {
+        let canvas = make_canvas_with_box();
+        let svg = canvas.export_svg();
+        assert!(svg.starts_with("<svg"));
+        assert!(svg.contains("<rect"));
+        assert!(svg.contains("<g fill="));
+        assert!(svg.contains("dominant-baseline=\"hanging\""));
+        assert!(svg.contains("┌"));
+        assert!(svg.contains("┐"));
+        assert!(svg.contains("┘"));
+        assert!(svg.contains("└"));
+        assert!(svg.ends_with("</g></svg>"));
+    }
+
+    #[test]
     fn test_copy_and_paste_at_selection_origin() {
         let mut canvas = make_canvas_with_box();
         canvas.set_selection_for_test(0, 0, 4, 2);

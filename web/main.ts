@@ -26,6 +26,7 @@ import {
     tryRestoreAutoSave,
 } from './persistence.js';
 import { exportPng } from './exportPng.js';
+import { exportSvg } from './exportSvg.js';
 
 // Global state
 let editor: AsciiEditorInterface | null = null;
@@ -492,6 +493,12 @@ function setupEventListeners() {
             requestAnimationFrame(() => {
                 exportPng(offscreenCanvas, canvas, showToast);
             });
+        }
+        if (canvas) canvas.focus();
+    });
+    wireOptionalButton('svg-btn', () => {
+        if (editor) {
+            exportSvg(editor, showToast);
         }
         if (canvas) canvas.focus();
     });
