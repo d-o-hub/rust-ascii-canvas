@@ -177,6 +177,17 @@ async function initialize() {
         // Set up canvas size first to have correct container rect
         resizeCanvas();
 
+        // If the container has collapsed height (e.g. layout pending on WebKit), wait for layout
+        let rect = canvasContainer.getBoundingClientRect();
+        if (rect.height < 50) {
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                resizeCanvas();
+                rect = canvasContainer.getBoundingClientRect();
+                if (rect.height >= 50) break;
+            }
+        }
+
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
         editor = new AsciiEditor(width, height) as unknown as AsciiEditorInterface;
@@ -210,6 +221,12 @@ async function initialize() {
 
         // Hide loading overlay
         loadingOverlay.classList.add('hidden');
+
+        // Dispatch a resize event to ensure WebKit viewport/layout is fully synchronized
+        window.dispatchEvent(new Event('resize'));
+        setTimeout(() => {
+            window.dispatchEvent(new Event('resize'));
+        }, 100);
 
         // Focus canvas
         canvas.focus();
