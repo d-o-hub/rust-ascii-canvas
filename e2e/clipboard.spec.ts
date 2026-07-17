@@ -89,7 +89,8 @@ test.describe('Copy / export fidelity', () => {
         expect(forCopy).toBe(full);
     });
 
-    test('copy button shows toast', async ({ page }) => {
+    test('copy button shows toast', async ({ page, isMobile }) => {
+        test.skip(isMobile, 'Copy button and status toast are hidden on mobile viewports');
         await page.click('#copy-btn');
         const toast = page.locator('#status-toast');
         await expect(toast).not.toHaveClass(/hidden/);
