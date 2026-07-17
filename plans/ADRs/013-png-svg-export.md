@@ -1,7 +1,7 @@
 # ADR-013: PNG/SVG Export
 
 ## Status
-Accepted (PNG implemented 2026-07-15; SVG deferred)
+Accepted (PNG implemented 2026-07-15; SVG implemented 2026-07-16)
 
 ## Context
 Currently, users can only export ASCII text via clipboard. They cannot save diagrams as images for embedding in documents, presentations, or sharing.
