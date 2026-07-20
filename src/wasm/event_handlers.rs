@@ -15,6 +15,9 @@ impl AsciiEditor {
             self.last_pan_pos = Some((screen_x, screen_y));
             return JsValue::NULL;
         }
+        if self.is_active_layer_locked() {
+            return self.js_event_result();
+        }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
         self.last_cursor = Some((x, y));
@@ -63,6 +66,9 @@ impl AsciiEditor {
             self.last_pan_pos = Some((screen_x, screen_y));
             return self.js_event_result();
         }
+        if self.is_active_layer_locked() {
+            return self.js_event_result();
+        }
 
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
         self.last_cursor = Some((x, y));
@@ -96,6 +102,9 @@ impl AsciiEditor {
         if self.is_panning {
             self.is_panning = false;
             self.last_pan_pos = None;
+            return self.js_event_result();
+        }
+        if self.is_active_layer_locked() {
             return self.js_event_result();
         }
 
@@ -184,6 +193,9 @@ impl AsciiEditor {
         }
 
         if !ctrl && (key == "Delete" || key == "Backspace") {
+            if self.is_active_layer_locked() {
+                return self.js_event_result();
+            }
             if self.tool_id == ToolId::Select
                 && self.current_selection.is_some()
                 && self.delete_selection_impl()
@@ -209,6 +221,9 @@ impl AsciiEditor {
         }
 
         if self.tool_id == ToolId::Text && self.active_tool.is_active() {
+            if self.is_active_layer_locked() {
+                return self.js_event_result();
+            }
             let ctx = self.create_tool_context();
             let result = self.active_tool.on_key(key_char, &ctx);
             if result.modified {

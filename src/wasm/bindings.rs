@@ -44,11 +44,25 @@ pub struct AsciiEditor {
 }
 
 /// Serializable layer metadata + content snapshot.
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) struct LayerData {
     pub name: String,
     pub visible: bool,
+    pub locked: bool,
     pub grid: crate::core::Grid,
+    pub history: History,
+}
+
+impl Clone for LayerData {
+    fn clone(&self) -> Self {
+        Self {
+            name: self.name.clone(),
+            visible: self.visible,
+            locked: self.locked,
+            grid: self.grid.clone(),
+            history: History::new(100),
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -83,7 +97,9 @@ impl AsciiEditor {
             layers: vec![LayerData {
                 name: "Layer 1".to_string(),
                 visible: true,
+                locked: false,
                 grid: crate::core::Grid::new(width, height),
+                history: History::new(100),
             }],
             active_layer: 0,
         }
@@ -204,6 +220,9 @@ impl AsciiEditor {
     /// Reverts the last drawing operation. Returns true if successful.
     #[wasm_bindgen]
     pub fn undo(&mut self) -> bool {
+        if self.is_active_layer_locked() {
+            return false;
+        }
         let result = self.history.undo(&mut self.state.grid);
         if result {
             self.dirty_tracker.request_full_redraw();
@@ -214,6 +233,9 @@ impl AsciiEditor {
     /// Re-applies a previously undone operation. Returns true if successful.
     #[wasm_bindgen]
     pub fn redo(&mut self) -> bool {
+        if self.is_active_layer_locked() {
+            return false;
+        }
         let result = self.history.redo(&mut self.state.grid);
         if result {
             self.dirty_tracker.request_full_redraw();
@@ -236,6 +258,9 @@ impl AsciiEditor {
     /// Clears the canvas, history, clipboard, and reset layers.
     #[wasm_bindgen]
     pub fn clear(&mut self) {
+        if self.is_active_layer_locked() {
+            return;
+        }
         self.state.grid.clear();
         if let Some(layer) = self.layers.get_mut(self.active_layer) {
             layer.grid.clear();

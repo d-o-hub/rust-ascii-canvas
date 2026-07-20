@@ -17,6 +17,16 @@ pub struct History {
     max_depth: usize,
 }
 
+impl std::fmt::Debug for History {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("History")
+            .field("max_depth", &self.max_depth)
+            .field("undo_count", &self.undo_stack.len())
+            .field("redo_count", &self.redo_stack.len())
+            .finish()
+    }
+}
+
 impl Default for History {
     fn default() -> Self {
         Self::new(DEFAULT_MAX_DEPTH)

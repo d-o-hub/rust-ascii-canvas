@@ -146,6 +146,44 @@ impl AsciiEditor {
         }
     }
 
+    /// Whether a layer is locked.
+    #[wasm_bindgen(js_name = layerLocked)]
+    pub fn layer_locked(&self, index: usize) -> bool {
+        self.layers.get(index).map(|l| l.locked).unwrap_or(false)
+    }
+
+    /// Set layer lock state.
+    #[wasm_bindgen(js_name = setLayerLocked)]
+    pub fn set_layer_locked(&mut self, index: usize, locked: bool) {
+        if let Some(layer) = self.layers.get_mut(index) {
+            layer.locked = locked;
+            self.dirty_tracker.request_full_redraw();
+        }
+    }
+
+    /// Move a layer to a new index in the stack.
+    #[wasm_bindgen(js_name = moveLayer)]
+    pub fn move_layer(&mut self, from_index: usize, to_index: usize) {
+        self.move_layer_impl(from_index, to_index);
+    }
+
+    /// Delete a layer.
+    #[wasm_bindgen(js_name = deleteLayer)]
+    pub fn delete_layer(&mut self, index: usize) -> bool {
+        self.delete_layer_impl(index)
+    }
+
+    /// Merge the specified layer down into the one below it.
+    #[wasm_bindgen(js_name = mergeLayerDown)]
+    pub fn merge_layer_down(&mut self, index: usize) -> bool {
+        self.merge_down_impl(index)
+    }
+
+    /// Returns whether the active layer is locked.
+    pub(crate) fn is_active_layer_locked(&self) -> bool {
+        self.layers.get(self.active_layer).map(|l| l.locked).unwrap_or(false)
+    }
+
     /// Returns the full list of drawing instructions/commands to render the entire canvas in JS.
     #[wasm_bindgen(js_name = getRenderCommands)]
     pub fn get_render_commands(&mut self) -> JsValue {
