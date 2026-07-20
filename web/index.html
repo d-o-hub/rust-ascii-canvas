@@ -186,10 +186,11 @@
                 <!-- Layers -->
                 <section class="panel-section" aria-labelledby="layers-title">
                     <h3 class="section-title" id="layers-title">Layers</h3>
-                    <div class="layer-controls">
-                        <label class="visually-hidden" for="layer-select">Active layer</label>
-                        <select id="layer-select" class="select-input" aria-label="Active layer"></select>
-                        <button id="add-layer-btn" class="zoom-btn" type="button" title="Add layer" aria-label="Add layer">+</button>
+                    <div class="layer-list-container">
+                        <div id="layer-list" class="layer-list" role="list" aria-label="Layers list"></div>
+                        <div class="layer-actions" style="margin-top: var(--spacing-sm); display: flex; gap: var(--spacing-xs);">
+                            <button id="add-layer-btn" class="zoom-btn" type="button" title="Add layer" aria-label="Add layer" style="flex: 1;">+ Add Layer</button>
+                        </div>
                     </div>
                 </section>
 

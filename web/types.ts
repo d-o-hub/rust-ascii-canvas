@@ -58,6 +58,11 @@ export interface AsciiEditorInterface {
     setActiveLayer(index: number): boolean;
     addLayer(): number;
     renameLayer(index: number, name: string): void;
+    layerLocked(index: number): boolean;
+    setLayerLocked(index: number, locked: boolean): void;
+    deleteLayer(index: number): boolean;
+    moveLayer(from_index: number, to_index: number): void;
+    mergeLayerDown(index: number): boolean;
     getRenderCommands(): RenderCommand[];
     getDirtyRenderCommands(): RenderCommand[];
     getPixelBufferPtr(): number;

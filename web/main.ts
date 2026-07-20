@@ -212,7 +212,6 @@ async function initialize() {
 
         // Update UI
         updateUI();
-        refreshLayerSelect();
         syncGridInputs();
 
         // Initial render
@@ -479,7 +478,6 @@ function setupEventListeners() {
             gridSizeLocked = true;
             offscreenCanvas = null;
             offscreenCtx = null;
-            refreshLayerSelect();
             syncGridInputs();
             requestRender();
             updateUI();
@@ -509,28 +507,12 @@ function setupEventListeners() {
     wireOptionalButton('add-layer-btn', () => {
         if (!editor) return;
         editor.addLayer();
-        refreshLayerSelect();
         requestRender();
         updateUI();
         scheduleAutoSave();
         showToast('Layer added');
         if (canvas) canvas.focus();
     });
-
-    const layerSelectEl = document.querySelector('#layer-select');
-    if (layerSelectEl instanceof HTMLSelectElement) {
-        layerSelectEl.addEventListener('change', () => {
-            if (!editor) return;
-            const idx = parseInt(layerSelectEl.value, 10);
-            if (!Number.isNaN(idx)) {
-                editor.setActiveLayer(idx);
-                requestRender();
-                updateUI();
-                scheduleAutoSave();
-            }
-            if (canvas) canvas.focus();
-        });
-    }
 
     helpBtn.addEventListener('mousedown', (e) => e.preventDefault());
     helpBtn.addEventListener('click', showShortcutsModal);
@@ -1123,6 +1105,7 @@ function updateUI() {
         redoBtn.disabled = !editor.can_redo;
         gridSizeEl.textContent = `${editor.width} × ${editor.height}`;
         statusToolEl.textContent = `Tool: ${capitalize(editor.tool)}`;
+        refreshLayerList();
     } catch (error) {
         logger.error('Failed to update UI:', error);
     }
@@ -1176,21 +1159,169 @@ function syncGridInputs() {
     gridHeightInput.value = String(editor.height);
 }
 
-function refreshLayerSelect() {
+function refreshLayerList() {
     if (!editor || typeof editor.layerCount !== 'number') return;
-    const layerSelect = document.querySelector('#layer-select');
-    if (!(layerSelect instanceof HTMLSelectElement)) return;
+    const layerList = document.querySelector('#layer-list');
+    if (!(layerList instanceof HTMLElement)) return;
+
+    // Clear list
+    while (layerList.firstChild) {
+        layerList.removeChild(layerList.firstChild);
+    }
+
     const count = editor.layerCount;
     const active = editor.activeLayer ?? 0;
-    while (layerSelect.firstChild) {
-        layerSelect.removeChild(layerSelect.firstChild);
-    }
-    for (let i = 0; i < count; i++) {
-        const opt = document.createElement('option');
-        opt.value = String(i);
-        opt.textContent = editor.layerName(i) || `Layer ${i + 1}`;
-        if (i === active) opt.selected = true;
-        layerSelect.appendChild(opt);
+
+    // Iterate through layers, displaying top layers first (index count - 1 to 0)
+    for (let i = count - 1; i >= 0; i--) {
+        const item = document.createElement('div');
+        item.className = 'layer-item';
+        if (i === active) item.classList.add('active');
+
+        // Select active layer on click
+        item.addEventListener('click', (e) => {
+            if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLInputElement) {
+                return;
+            }
+            if (editor) {
+                editor.setActiveLayer(i);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+        });
+
+        // Visibility Toggle Button
+        const visible = editor.layerVisible(i);
+        const visBtn = document.createElement('button');
+        visBtn.className = 'layer-item-btn';
+        if (visible) visBtn.classList.add('active');
+        visBtn.type = 'button';
+        visBtn.innerHTML = visible ? '👁' : '◌';
+        visBtn.title = visible ? 'Hide layer' : 'Show layer';
+        visBtn.setAttribute('aria-label', visible ? 'Hide layer' : 'Show layer');
+        visBtn.addEventListener('click', () => {
+            if (editor) {
+                editor.setLayerVisible(i, !visible);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+        });
+
+        // Lock Toggle Button
+        const locked = editor.layerLocked(i);
+        const lockBtn = document.createElement('button');
+        lockBtn.className = 'layer-item-btn';
+        if (locked) lockBtn.classList.add('active');
+        lockBtn.type = 'button';
+        lockBtn.innerHTML = locked ? '🔒' : '🔓';
+        lockBtn.title = locked ? 'Unlock layer' : 'Lock layer';
+        lockBtn.setAttribute('aria-label', locked ? 'Unlock layer' : 'Lock layer');
+        lockBtn.addEventListener('click', () => {
+            if (editor) {
+                editor.setLayerLocked(i, !locked);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+        });
+
+        // Layer Name Input
+        const nameInput = document.createElement('input');
+        nameInput.className = 'layer-name-input';
+        nameInput.type = 'text';
+        nameInput.value = editor.layerName(i) || `Layer ${i + 1}`;
+        nameInput.title = 'Edit layer name';
+        nameInput.addEventListener('change', () => {
+            if (editor) {
+                editor.renameLayer(i, nameInput.value);
+                scheduleAutoSave();
+            }
+        });
+
+        // Reorder Up Button
+        const upBtn = document.createElement('button');
+        upBtn.className = 'layer-item-btn';
+        upBtn.type = 'button';
+        upBtn.innerHTML = '↑';
+        upBtn.title = 'Move up';
+        upBtn.setAttribute('aria-label', 'Move up');
+        upBtn.disabled = i === count - 1;
+        upBtn.addEventListener('click', () => {
+            if (editor) {
+                editor.moveLayer(i, i + 1);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+        });
+
+        // Reorder Down Button
+        const downBtn = document.createElement('button');
+        downBtn.className = 'layer-item-btn';
+        downBtn.type = 'button';
+        downBtn.innerHTML = '↓';
+        downBtn.title = 'Move down';
+        downBtn.setAttribute('aria-label', 'Move down');
+        downBtn.disabled = i === 0;
+        downBtn.addEventListener('click', () => {
+            if (editor) {
+                editor.moveLayer(i, i - 1);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+            }
+        });
+
+        // Merge Down Button
+        const mergeBtn = document.createElement('button');
+        mergeBtn.className = 'layer-item-btn';
+        mergeBtn.type = 'button';
+        mergeBtn.innerHTML = '↴';
+        mergeBtn.title = 'Merge down';
+        mergeBtn.setAttribute('aria-label', 'Merge down');
+        mergeBtn.disabled = i === 0;
+        mergeBtn.addEventListener('click', () => {
+            if (editor) {
+                editor.mergeLayerDown(i);
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+                showToast('Merged layer down');
+            }
+        });
+
+        // Delete Button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'layer-item-btn';
+        delBtn.type = 'button';
+        delBtn.innerHTML = '🗑';
+        delBtn.title = 'Delete layer';
+        delBtn.setAttribute('aria-label', 'Delete layer');
+        delBtn.disabled = count <= 1;
+        delBtn.addEventListener('click', () => {
+            if (editor) {
+                if (confirm('Delete this layer? This cannot be undone.')) {
+                    editor.deleteLayer(i);
+                    requestRender();
+                    updateUI();
+                    scheduleAutoSave();
+                    showToast('Layer deleted');
+                }
+            }
+        });
+
+        // Append everything
+        item.appendChild(visBtn);
+        item.appendChild(lockBtn);
+        item.appendChild(nameInput);
+        item.appendChild(upBtn);
+        item.appendChild(downBtn);
+        item.appendChild(mergeBtn);
+        item.appendChild(delBtn);
+
+        layerList.appendChild(item);
     }
 }
 
