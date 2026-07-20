@@ -181,7 +181,10 @@ impl AsciiEditor {
 
     /// Returns whether the active layer is locked.
     pub(crate) fn is_active_layer_locked(&self) -> bool {
-        self.layers.get(self.active_layer).map(|l| l.locked).unwrap_or(false)
+        self.layers
+            .get(self.active_layer)
+            .map(|l| l.locked)
+            .unwrap_or(false)
     }
 
     /// Returns the full list of drawing instructions/commands to render the entire canvas in JS.
