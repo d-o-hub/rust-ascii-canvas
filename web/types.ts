@@ -47,6 +47,7 @@ export interface AsciiEditorInterface {
     selectAll(): void;
     exportAscii(): string;
     exportForCopy(): string;
+    exportSvg(): string;
     serializeDocument(): string;
     loadDocument(json: string): boolean;
     copySelection(): boolean;

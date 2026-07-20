@@ -17,6 +17,61 @@ impl AsciiEditor {
         export_ascii(&self.composite_visible_grid())
     }
 
+    /// Exports the composited visible canvas layers as an SVG vector image string.
+    #[wasm_bindgen(js_name = exportSvg)]
+    pub fn export_svg(&self) -> String {
+        let composite = self.composite_visible_grid();
+        let grid_width = composite.width();
+        let grid_height = composite.height();
+
+        let char_width = self.renderer.metrics().char_width;
+        let line_height = self.renderer.metrics().line_height;
+
+        let svg_width = grid_width as f64 * char_width;
+        let svg_height = grid_height as f64 * line_height;
+
+        let mut svg = String::new();
+        svg.push_str(&format!(
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">"##,
+            w = svg_width,
+            h = svg_height
+        ));
+
+        // Background
+        svg.push_str(&format!(
+            r##"<rect width="{w}" height="{h}" fill="#1e1e1e" />"##,
+            w = svg_width,
+            h = svg_height
+        ));
+
+        // Group with shared styling
+        svg.push_str(&format!(
+            r##"<g fill="#d4d4d4" font-family="JetBrains Mono, Fira Code, Consolas, monospace" font-size="{size}px">"##,
+            size = self.renderer.metrics().size
+        ));
+
+        for y in 0..grid_height {
+            for x in 0..grid_width {
+                if let Some(cell) = composite.get(x as i32, y as i32) {
+                    if cell.is_visible() {
+                        let px = x as f64 * char_width;
+                        let py = y as f64 * line_height;
+                        let escaped = escape_xml_char(cell.ch);
+                        svg.push_str(&format!(
+                            r##"<text x="{x}" y="{y}" dominant-baseline="hanging">{char}</text>"##,
+                            x = px,
+                            y = py,
+                            char = escaped
+                        ));
+                    }
+                }
+            }
+        }
+
+        svg.push_str("</g></svg>");
+        svg
+    }
+
     /// Selection-aware export for the OS clipboard (selection region or trimmed full grid).
     #[wasm_bindgen(js_name = exportForCopy)]
     pub fn export_for_copy_public(&self) -> String {
@@ -264,5 +319,17 @@ impl AsciiEditor {
                 );
             }
         }
+    }
+}
+
+/// Escapes special XML/SVG characters in text elements.
+fn escape_xml_char(c: char) -> String {
+    match c {
+        '<' => "&lt;".to_string(),
+        '>' => "&gt;".to_string(),
+        '&' => "&amp;".to_string(),
+        '"' => "&quot;".to_string(),
+        '\'' => "&apos;".to_string(),
+        _ => c.to_string(),
     }
 }
