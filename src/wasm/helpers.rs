@@ -385,7 +385,10 @@ impl AsciiEditor {
 
         // Swap active history into old active layer's history
         let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(&mut temp_history, &mut self.layers[self.active_layer].history);
+        std::mem::swap(
+            &mut temp_history,
+            &mut self.layers[self.active_layer].history,
+        );
 
         self.layers.push(super::bindings::LayerData {
             name,
@@ -405,23 +408,35 @@ impl AsciiEditor {
     }
 
     pub(crate) fn move_layer_impl(&mut self, from_index: usize, to_index: usize) {
-        if from_index >= self.layers.len() || to_index >= self.layers.len() || from_index == to_index {
+        if from_index >= self.layers.len()
+            || to_index >= self.layers.len()
+            || from_index == to_index
+        {
             return;
         }
         self.sync_active_layer();
 
         // Temporarily swap active history back to active layer for moving
         let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(&mut temp_history, &mut self.layers[self.active_layer].history);
+        std::mem::swap(
+            &mut temp_history,
+            &mut self.layers[self.active_layer].history,
+        );
 
         let layer = self.layers.remove(from_index);
         self.layers.insert(to_index, layer);
 
         if self.active_layer == from_index {
             self.active_layer = to_index;
-        } else if from_index < to_index && self.active_layer > from_index && self.active_layer <= to_index {
+        } else if from_index < to_index
+            && self.active_layer > from_index
+            && self.active_layer <= to_index
+        {
             self.active_layer -= 1;
-        } else if from_index > to_index && self.active_layer >= to_index && self.active_layer < from_index {
+        } else if from_index > to_index
+            && self.active_layer >= to_index
+            && self.active_layer < from_index
+        {
             self.active_layer += 1;
         }
 
