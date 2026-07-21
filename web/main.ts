@@ -1187,11 +1187,18 @@ function refreshLayerList() {
     let hasChanged = count !== lastLayerCount || active !== lastActiveLayer || currentStates.length !== lastLayersState.length;
     if (!hasChanged) {
         for (let i = 0; i < count; i++) {
-            if (
-                currentStates[i].name !== lastLayersState[i].name ||
-                currentStates[i].visible !== lastLayersState[i].visible ||
-                currentStates[i].locked !== lastLayersState[i].locked
-            ) {
+            const cur = currentStates.at(i);
+            const last = lastLayersState.at(i);
+            if (cur && last) {
+                if (
+                    cur.name !== last.name ||
+                    cur.visible !== last.visible ||
+                    cur.locked !== last.locked
+                ) {
+                    hasChanged = true;
+                    break;
+                }
+            } else {
                 hasChanged = true;
                 break;
             }
