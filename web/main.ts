@@ -80,9 +80,7 @@ let zoomFitBtn: HTMLButtonElement;
 let zoomResetBtn: HTMLButtonElement;
 let zoomOutBtn: HTMLButtonElement;
 let zoomInBtn: HTMLButtonElement;
-let lineDirectionGroup: HTMLDivElement;
 let directionBtns: NodeListOf<Element>;
-let eraserRadiusGroup: HTMLDivElement;
 let eraserRadiusSelect: HTMLSelectElement;
 let mobileKeyboardProxy: HTMLInputElement;
 
@@ -161,9 +159,7 @@ async function initialize() {
         zoomResetBtn = getElement<HTMLButtonElement>('zoom-reset');
         zoomOutBtn = getElement<HTMLButtonElement>('zoom-out');
         zoomInBtn = getElement<HTMLButtonElement>('zoom-in');
-        lineDirectionGroup = getElement<HTMLDivElement>('line-direction-group');
         directionBtns = document.querySelectorAll('.direction-btn');
-        eraserRadiusGroup = getElement<HTMLDivElement>('eraser-radius-group');
         eraserRadiusSelect = getElement<HTMLSelectElement>('eraser-radius');
         mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
         mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection

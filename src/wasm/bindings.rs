@@ -2,7 +2,7 @@
 
 use crate::core::history::{History, DEFAULT_MAX_DEPTH};
 use crate::core::selection::{Selection, SelectionClipboard};
-use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolId, EraserTool};
+use crate::core::tools::{DrawOp, EraserTool, RectangleTool, Tool, ToolId};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
 use crate::wasm::tool_manager::{
