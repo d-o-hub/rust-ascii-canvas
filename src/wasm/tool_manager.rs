@@ -27,6 +27,7 @@ pub(crate) fn set_tool_by_id(
     preview_ops: &mut Vec<crate::core::tools::DrawOp>,
     state: &mut EditorState,
     current_selection: &mut Option<crate::core::selection::Selection>,
+    eraser_size: i32,
 ) {
     active_tool.reset();
     preview_ops.clear();
@@ -60,7 +61,9 @@ pub(crate) fn set_tool_by_id(
             *active_tool = Box::new(SelectTool::new());
         }
         ToolId::Eraser => {
-            *active_tool = Box::new(EraserTool::new());
+            let mut eraser = EraserTool::new();
+            eraser.set_size(eraser_size);
+            *active_tool = Box::new(eraser);
         }
     }
 }

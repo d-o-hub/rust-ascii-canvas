@@ -2,7 +2,7 @@
 
 use crate::core::history::{History, DEFAULT_MAX_DEPTH};
 use crate::core::selection::{Selection, SelectionClipboard};
-use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolId};
+use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolId, EraserTool};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
 use crate::wasm::tool_manager::{
@@ -41,6 +41,7 @@ pub struct AsciiEditor {
     /// Named layers (background layers + active content mirrored in `state.grid`).
     pub(crate) layers: Vec<LayerData>,
     pub(crate) active_layer: usize,
+    pub(crate) eraser_size: i32,
 }
 
 /// Serializable layer metadata + content snapshot.
@@ -103,6 +104,7 @@ impl AsciiEditor {
                 history: History::new(DEFAULT_MAX_DEPTH),
             }],
             active_layer: 0,
+            eraser_size: 1,
         }
     }
 
@@ -146,6 +148,7 @@ impl AsciiEditor {
                 &mut self.preview_ops,
                 &mut self.state,
                 &mut self.current_selection,
+                self.eraser_size,
             );
         }
     }
@@ -162,6 +165,7 @@ impl AsciiEditor {
                 &mut self.preview_ops,
                 &mut self.state,
                 &mut self.current_selection,
+                self.eraser_size,
             );
             true
         } else {
@@ -179,6 +183,23 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = setLineDirection)]
     pub fn set_line_direction(&mut self, direction: String) {
         set_line_direction(self.tool_id, &mut self.active_tool, direction);
+    }
+
+    /// Sets the size (radius) of the eraser tool.
+    #[wasm_bindgen(js_name = setEraserSize)]
+    pub fn set_eraser_size(&mut self, size: i32) {
+        self.eraser_size = size;
+        if self.tool_id == ToolId::Eraser {
+            if let Some(eraser) = self.active_tool.as_any_mut().downcast_mut::<EraserTool>() {
+                eraser.set_size(size);
+            }
+        }
+    }
+
+    /// Gets the current size (radius) of the eraser tool.
+    #[wasm_bindgen(getter = eraserSize)]
+    pub fn eraser_size(&self) -> i32 {
+        self.eraser_size
     }
 
     /// Sets the zoom scale factor of the editor viewport.

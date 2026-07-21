@@ -82,6 +82,8 @@ let zoomOutBtn: HTMLButtonElement;
 let zoomInBtn: HTMLButtonElement;
 let lineDirectionGroup: HTMLDivElement;
 let directionBtns: NodeListOf<Element>;
+let eraserRadiusGroup: HTMLDivElement;
+let eraserRadiusSelect: HTMLSelectElement;
 let mobileKeyboardProxy: HTMLInputElement;
 
 
@@ -161,6 +163,8 @@ async function initialize() {
         zoomInBtn = getElement<HTMLButtonElement>('zoom-in');
         lineDirectionGroup = getElement<HTMLDivElement>('line-direction-group');
         directionBtns = document.querySelectorAll('.direction-btn');
+        eraserRadiusGroup = getElement<HTMLDivElement>('eraser-radius-group');
+        eraserRadiusSelect = getElement<HTMLSelectElement>('eraser-radius');
         mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
         mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection
 
@@ -391,6 +395,28 @@ function setupEventListeners() {
             }
         });
     });
+
+    // Eraser radius change listener
+    eraserRadiusSelect.addEventListener('change', () => {
+        if (editor) {
+            const val = eraserRadiusSelect.value;
+            let size = 1;
+            if (val === '1') size = 1;
+            else if (val === '3') size = 2;
+            else if (val === '5') size = 3;
+            editor.setEraserSize(size);
+        }
+    });
+
+    // Sync initial eraser radius
+    if (editor && eraserRadiusSelect) {
+        const val = eraserRadiusSelect.value;
+        let size = 1;
+        if (val === '1') size = 1;
+        else if (val === '3') size = 2;
+        else if (val === '5') size = 3;
+        editor.setEraserSize(size);
+    }
 
     // Border style - use click instead of mousedown to allow dropdown to open
     borderStyleSelect.addEventListener('click', () => {
@@ -1018,13 +1044,27 @@ function updateCursorIndicator(gridX: number, gridY: number) {
     const zoom = editor.zoom;
     const pan = editor.pan;
 
-    const screenX = gridX * charWidth * zoom + pan[0];
-    const screenY = gridY * lineHeight * zoom + pan[1];
+    let w = charWidth * zoom;
+    let h = lineHeight * zoom;
+    let xOffset = 0;
+    let yOffset = 0;
+
+    if (editor.tool.toLowerCase() === 'eraser') {
+        const size = editor.eraserSize || 1;
+        const radius = size - 1;
+        xOffset = -radius * charWidth * zoom;
+        yOffset = -radius * lineHeight * zoom;
+        w = (2 * size - 1) * charWidth * zoom;
+        h = (2 * size - 1) * lineHeight * zoom;
+    }
+
+    const screenX = gridX * charWidth * zoom + pan[0] + xOffset;
+    const screenY = gridY * lineHeight * zoom + pan[1] + yOffset;
 
     cursorIndicator.style.left = `${screenX}px`;
     cursorIndicator.style.top = `${screenY}px`;
-    cursorIndicator.style.width = `${charWidth * zoom}px`;
-    cursorIndicator.style.height = `${lineHeight * zoom}px`;
+    cursorIndicator.style.width = `${w}px`;
+    cursorIndicator.style.height = `${h}px`;
     cursorIndicator.classList.remove('hidden');
 }
 
@@ -1087,15 +1127,14 @@ function setTool(toolName: string) {
         logger.error('Editor not initialized');
         // Still focus canvas when present (unit tests / early UI)
         focusCanvasElement();
+        // Even when editor is not initialized, update UI elements like tool buttons & groups
+        updateToolButtons(toolName);
         return;
     }
     try {
         editor.setTool(toolName);
         updateToolButtons(toolName);
 
-        // Module refs are initialized before tools are interactive.
-        lineDirectionGroup.style.display =
-            toolName.toLowerCase() === 'line' ? 'flex' : 'none';
         statusToolEl.textContent = `Tool: ${capitalize(toolName)}`;
 
         // Ensure canvas keeps focus for keyboard shortcuts
@@ -1111,6 +1150,15 @@ function setTool(toolName: string) {
  */
 function updateToolButtons(activeTool: string) {
     const normalizedTool = activeTool.toLowerCase();
+
+    const lineGroup = document.getElementById('line-direction-group');
+    if (lineGroup) {
+        lineGroup.style.display = normalizedTool === 'line' ? 'flex' : 'none';
+    }
+    const eraserGroup = document.getElementById('eraser-radius-group');
+    if (eraserGroup) {
+        eraserGroup.style.display = normalizedTool === 'eraser' ? 'flex' : 'none';
+    }
 
     const buttons = document.querySelectorAll('.tool-btn');
     buttons.forEach(btn => {

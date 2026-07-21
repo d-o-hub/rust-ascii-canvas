@@ -31,6 +31,8 @@ export interface AsciiEditorInterface {
     activeLayer?: number;
     setTool(toolId: string): void;
     setBorderStyle(style: string): void;
+    setEraserSize(size: number): void;
+    readonly eraserSize: number;
     setLineDirection(direction: string): void;
     setZoom(zoom: number): void;
     setPan(x: number, y: number): void;
