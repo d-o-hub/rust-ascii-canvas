@@ -1159,8 +1159,54 @@ function syncGridInputs() {
     gridHeightInput.value = String(editor.height);
 }
 
+interface CachedLayerState {
+    name: string;
+    visible: boolean;
+    locked: boolean;
+}
+let lastLayerCount = 0;
+let lastActiveLayer = -1;
+let lastLayersState: CachedLayerState[] = [];
+
 function refreshLayerList() {
     if (!editor || typeof editor.layerCount !== 'number') return;
+    const count = editor.layerCount;
+    const active = editor.activeLayer ?? 0;
+
+    // Build current state to diff and prevent unnecessary DOM churn/input focus loss
+    const currentStates: CachedLayerState[] = [];
+    for (let i = 0; i < count; i++) {
+        currentStates.push({
+            name: editor.layerName(i),
+            visible: editor.layerVisible(i),
+            locked: editor.layerLocked(i),
+        });
+    }
+
+    // Diff states
+    let hasChanged = count !== lastLayerCount || active !== lastActiveLayer || currentStates.length !== lastLayersState.length;
+    if (!hasChanged) {
+        for (let i = 0; i < count; i++) {
+            if (
+                currentStates[i].name !== lastLayersState[i].name ||
+                currentStates[i].visible !== lastLayersState[i].visible ||
+                currentStates[i].locked !== lastLayersState[i].locked
+            ) {
+                hasChanged = true;
+                break;
+            }
+        }
+    }
+
+    if (!hasChanged) {
+        return;
+    }
+
+    // Update cache
+    lastLayerCount = count;
+    lastActiveLayer = active;
+    lastLayersState = currentStates;
+
     const layerList = document.querySelector('#layer-list');
     if (!(layerList instanceof HTMLElement)) return;
 
@@ -1168,9 +1214,6 @@ function refreshLayerList() {
     while (layerList.firstChild) {
         layerList.removeChild(layerList.firstChild);
     }
-
-    const count = editor.layerCount;
-    const active = editor.activeLayer ?? 0;
 
     // Iterate through layers, displaying top layers first (index count - 1 to 0)
     for (let i = count - 1; i >= 0; i--) {
@@ -1241,6 +1284,8 @@ function refreshLayerList() {
         });
 
         // Reorder Up Button
+        // Since the list renders descending (top layer first), "up" means moving the layer visually
+        // toward higher indices in the z-order stack, so we disable it if it is already the topmost layer.
         const upBtn = document.createElement('button');
         upBtn.className = 'layer-item-btn';
         upBtn.type = 'button';
@@ -1258,6 +1303,8 @@ function refreshLayerList() {
         });
 
         // Reorder Down Button
+        // "Down" visually moves the layer toward lower indices in the z-order stack, so we disable it
+        // if it is already the bottom-most layer (index 0).
         const downBtn = document.createElement('button');
         downBtn.className = 'layer-item-btn';
         downBtn.type = 'button';
