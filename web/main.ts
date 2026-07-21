@@ -1197,7 +1197,7 @@ function refreshLayerList() {
         visBtn.className = 'layer-item-btn';
         if (visible) visBtn.classList.add('active');
         visBtn.type = 'button';
-        visBtn.innerHTML = visible ? '👁' : '◌';
+        visBtn.textContent = visible ? '👁' : '◌';
         visBtn.title = visible ? 'Hide layer' : 'Show layer';
         visBtn.setAttribute('aria-label', visible ? 'Hide layer' : 'Show layer');
         visBtn.addEventListener('click', () => {
@@ -1215,7 +1215,7 @@ function refreshLayerList() {
         lockBtn.className = 'layer-item-btn';
         if (locked) lockBtn.classList.add('active');
         lockBtn.type = 'button';
-        lockBtn.innerHTML = locked ? '🔒' : '🔓';
+        lockBtn.textContent = locked ? '🔒' : '🔓';
         lockBtn.title = locked ? 'Unlock layer' : 'Lock layer';
         lockBtn.setAttribute('aria-label', locked ? 'Unlock layer' : 'Lock layer');
         lockBtn.addEventListener('click', () => {
@@ -1244,7 +1244,7 @@ function refreshLayerList() {
         const upBtn = document.createElement('button');
         upBtn.className = 'layer-item-btn';
         upBtn.type = 'button';
-        upBtn.innerHTML = '↑';
+        upBtn.textContent = '↑';
         upBtn.title = 'Move up';
         upBtn.setAttribute('aria-label', 'Move up');
         upBtn.disabled = i === count - 1;
@@ -1261,7 +1261,7 @@ function refreshLayerList() {
         const downBtn = document.createElement('button');
         downBtn.className = 'layer-item-btn';
         downBtn.type = 'button';
-        downBtn.innerHTML = '↓';
+        downBtn.textContent = '↓';
         downBtn.title = 'Move down';
         downBtn.setAttribute('aria-label', 'Move down');
         downBtn.disabled = i === 0;
@@ -1278,7 +1278,7 @@ function refreshLayerList() {
         const mergeBtn = document.createElement('button');
         mergeBtn.className = 'layer-item-btn';
         mergeBtn.type = 'button';
-        mergeBtn.innerHTML = '↴';
+        mergeBtn.textContent = '↴';
         mergeBtn.title = 'Merge down';
         mergeBtn.setAttribute('aria-label', 'Merge down');
         mergeBtn.disabled = i === 0;
@@ -1296,7 +1296,7 @@ function refreshLayerList() {
         const delBtn = document.createElement('button');
         delBtn.className = 'layer-item-btn';
         delBtn.type = 'button';
-        delBtn.innerHTML = '🗑';
+        delBtn.textContent = '🗑';
         delBtn.title = 'Delete layer';
         delBtn.setAttribute('aria-label', 'Delete layer');
         delBtn.disabled = count <= 1;
