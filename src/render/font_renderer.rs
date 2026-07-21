@@ -110,19 +110,19 @@ impl FontAtlas {
                         let pixel_idx = buffer_row_start + gx * 4;
 
                         if pixel_idx + 3 < buffer.len() {
-                            if mask == 255 {
+                            let effective_alpha = (mask as f32 / 255.0) * (color[3] as f32 / 255.0);
+                            if effective_alpha >= 1.0 {
                                 buffer[pixel_idx..pixel_idx + 3].copy_from_slice(&color[0..3]);
                             } else {
-                                let alpha = mask as f32 / 255.0;
-                                let inv_alpha = 1.0 - alpha;
+                                let inv_alpha = 1.0 - effective_alpha;
 
-                                buffer[pixel_idx] = (color_f[0] * alpha
+                                buffer[pixel_idx] = (color_f[0] * effective_alpha
                                     + buffer[pixel_idx] as f32 * inv_alpha)
                                     as u8;
-                                buffer[pixel_idx + 1] = (color_f[1] * alpha
+                                buffer[pixel_idx + 1] = (color_f[1] * effective_alpha
                                     + buffer[pixel_idx + 1] as f32 * inv_alpha)
                                     as u8;
-                                buffer[pixel_idx + 2] = (color_f[2] * alpha
+                                buffer[pixel_idx + 2] = (color_f[2] * effective_alpha
                                     + buffer[pixel_idx + 2] as f32 * inv_alpha)
                                     as u8;
                             }
@@ -332,5 +332,26 @@ mod tests {
         assert_eq!(buffer[5], (fg_color[1] as f32 * alpha) as u8);
         assert_eq!(buffer[6], (fg_color[2] as f32 * alpha) as u8);
         assert_eq!(buffer[7], 255);
+    }
+
+    #[test]
+    fn test_render_glyph_semi_transparent() {
+        let mut atlas = FontAtlas::new();
+        let mut custom_mask = vec![0u8; 8 * 20];
+        custom_mask[0] = 255; // Mask is opaque
+        atlas.update_glyph('?', &custom_mask);
+
+        let mut buffer = vec![0u8; 8 * 20 * 4];
+        let fg_color = [200, 100, 50, 128]; // Semi-transparent (approx 50% opacity)
+
+        atlas.render_glyph(&mut buffer, 8, 0, 0, '?', fg_color);
+
+        // effective_alpha = 1.0 * (128.0 / 255.0) approx 0.50196
+        let effective_alpha = 128.0 / 255.0;
+        // Background is 0, so expected = fg_color * effective_alpha
+        assert_eq!(buffer[0], (fg_color[0] as f32 * effective_alpha) as u8);
+        assert_eq!(buffer[1], (fg_color[1] as f32 * effective_alpha) as u8);
+        assert_eq!(buffer[2], (fg_color[2] as f32 * effective_alpha) as u8);
+        assert_eq!(buffer[3], 255);
     }
 }
