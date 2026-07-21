@@ -49,21 +49,21 @@ impl TextTool {
     }
 
     /// Handle delete - remove character at cursor position.
-    /// Delete removes the character AFTER the cursor (if any).
     pub fn delete(&mut self) -> Option<DrawOp> {
-        if let (Some((x, y)), Some(start)) = (self.cursor, self.start_pos) {
-            let start_x = start.0;
-            let relative_pos = x - start_x;
-            let buffer_len = self.buffer.len() as i32;
+        if let Some((x, y)) = self.cursor {
+            if let Some(start) = self.start_pos {
+                let start_x = start.0;
+                let relative_pos = x - start_x;
+                let buffer_len = self.buffer.len() as i32;
 
-            // Check there's a character after cursor to delete
-            if relative_pos >= 0 && relative_pos < buffer_len {
-                let idx = relative_pos as usize;
-                if idx < self.buffer.len() {
-                    self.buffer.remove(idx);
-                    return Some(DrawOp::new(x, y, ' '));
+                if relative_pos >= 0 && relative_pos < buffer_len {
+                    let idx = relative_pos as usize;
+                    if idx < self.buffer.len() {
+                        self.buffer.remove(idx);
+                    }
                 }
             }
+            return Some(DrawOp::new(x, y, ' '));
         }
         None
     }
@@ -121,8 +121,10 @@ impl Tool for TextTool {
 
             // Handle special characters
             if ch == '\n' || ch == '\r' {
-                // Move to next line
+                // Move to next line and reset the line buffer/start pos
                 self.cursor = Some((start_x, y + 1));
+                self.start_pos = Some((start_x, y + 1));
+                self.buffer.clear();
                 return ToolResult::new();
             }
 
@@ -208,5 +210,95 @@ mod tests {
         assert!(result.modified);
         assert_eq!(result.ops.len(), 1);
         assert_eq!(result.ops[0].cell.ch, 'H');
+    }
+
+    #[test]
+    fn test_text_backspace() {
+        let mut tool = TextTool::new();
+        let ctx = ToolContext {
+            grid_width: 80,
+            grid_height: 40,
+            border_style: Default::default(),
+        };
+
+        tool.on_pointer_down(5, 5, &ctx);
+        tool.on_key('A', &ctx);
+        tool.on_key('B', &ctx);
+
+        assert_eq!(tool.cursor_position(), Some((7, 5)));
+
+        // Backspace once
+        let result = tool.on_key('\x08', &ctx);
+        assert!(result.modified);
+        assert_eq!(result.ops.len(), 1);
+        assert_eq!(result.ops[0].cell.ch, ' ');
+        assert_eq!(result.ops[0].x, 6);
+        assert_eq!(tool.cursor_position(), Some((6, 5)));
+
+        // Backspace again
+        let result = tool.on_key('\x08', &ctx);
+        assert!(result.modified);
+        assert_eq!(result.ops[0].x, 5);
+        assert_eq!(tool.cursor_position(), Some((5, 5)));
+
+        // Backspace a third time (at start_pos, should do nothing)
+        let result = tool.on_key('\x08', &ctx);
+        assert!(!result.modified);
+        assert_eq!(tool.cursor_position(), Some((5, 5)));
+    }
+
+    #[test]
+    fn test_text_delete() {
+        let mut tool = TextTool::new();
+        let ctx = ToolContext {
+            grid_width: 80,
+            grid_height: 40,
+            border_style: Default::default(),
+        };
+
+        tool.on_pointer_down(5, 5, &ctx);
+        tool.on_key('A', &ctx);
+        tool.on_key('B', &ctx);
+
+        // Delete should overwrite at current cursor with space and update buffer
+        let result = tool.on_key('\0', &ctx);
+        assert!(result.modified);
+        assert_eq!(result.ops[0].cell.ch, ' ');
+        assert_eq!(result.ops[0].x, 7);
+    }
+
+    #[test]
+    fn test_text_enter_multiline() {
+        let mut tool = TextTool::new();
+        let ctx = ToolContext {
+            grid_width: 80,
+            grid_height: 40,
+            border_style: Default::default(),
+        };
+
+        tool.on_pointer_down(5, 5, &ctx);
+        tool.on_key('A', &ctx);
+        tool.on_key('B', &ctx);
+
+        // Press enter
+        let result = tool.on_key('\n', &ctx);
+        assert!(!result.modified); // Enter doesn't draw anything by itself
+        assert_eq!(tool.cursor_position(), Some((5, 6)));
+
+        // Type on the new line
+        let result = tool.on_key('C', &ctx);
+        assert!(result.modified);
+        assert_eq!(result.ops[0].cell.ch, 'C');
+        assert_eq!(result.ops[0].x, 5);
+        assert_eq!(result.ops[0].y, 6);
+        assert_eq!(tool.cursor_position(), Some((6, 6)));
+
+        // Backspace on the new line
+        let result = tool.on_key('\x08', &ctx);
+        assert!(result.modified);
+        assert_eq!(result.ops[0].cell.ch, ' ');
+        assert_eq!(result.ops[0].x, 5);
+        assert_eq!(result.ops[0].y, 6);
+        assert_eq!(tool.cursor_position(), Some((5, 6)));
     }
 }

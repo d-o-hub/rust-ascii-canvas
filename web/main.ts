@@ -582,7 +582,12 @@ function handlePointerMove(e: PointerEvent) {
     cursorPosEl.textContent = `${gridX}, ${gridY}`;
 
     // Update cursor indicator
-    updateCursorIndicator(gridX, gridY);
+    const hasTextCursor = editor.tool.toLowerCase() === 'text' && typeof editor.textCursorPosition === 'function' && editor.textCursorPosition() !== null;
+    if (!hasTextCursor) {
+        updateCursorIndicator(gridX, gridY);
+    } else {
+        updateIndicator();
+    }
 
     const result = editor.onPointerMove(x, y);
     // Do not auto-save on pointermove (pan/hover/preview) — avoids thrashing and empty saves.
@@ -646,7 +651,12 @@ function handleTouchMove(e: TouchEvent) {
         const pan = editor.pan as number[] | Float64Array;
         const gridX = Math.floor((x - pan[0]) / editor.zoom / charWidth);
         const gridY = Math.floor((y - pan[1]) / editor.zoom / lineHeight);
-        updateCursorIndicator(gridX, gridY);
+        const hasTextCursor = editor.tool.toLowerCase() === 'text' && typeof editor.textCursorPosition === 'function' && editor.textCursorPosition() !== null;
+        if (!hasTextCursor) {
+            updateCursorIndicator(gridX, gridY);
+        } else {
+            updateIndicator();
+        }
 
         const result = editor.onPointerMove(x, y);
         handleEventResult(result, { persist: false });
@@ -716,7 +726,10 @@ function handleMobileInput(e: Event) {
  * Handle pointer leave event
  */
 function handlePointerLeave() {
-    cursorIndicator.classList.add('hidden');
+    const hasTextCursor = editor && editor.tool.toLowerCase() === 'text' && typeof editor.textCursorPosition === 'function' && editor.textCursorPosition() !== null;
+    if (!hasTextCursor) {
+        cursorIndicator.classList.add('hidden');
+    }
 }
 
 /**
@@ -815,7 +828,10 @@ function handleKeyUp(e: KeyboardEvent) {
  *   navigation-only paths (pointermove, wheel, pan) so we do not serialize on every hover.
  */
 function handleEventResult(result: EventResult | null, options: { persist?: boolean } = {}) {
-    if (!result) return;
+    if (!result) {
+        updateIndicator();
+        return;
+    }
     const persist = options.persist !== false;
 
     if (result.needs_redraw) {
@@ -848,6 +864,7 @@ function handleEventResult(result: EventResult | null, options: { persist?: bool
     if (persist) {
         scheduleAutoSave();
     }
+    updateIndicator();
 }
 
 /**
@@ -919,6 +936,8 @@ function render() {
             executeRenderCommand(cmd as RenderCommand);
         }
     }
+
+    updateIndicator();
 
     // Update zoom display
     zoomLevelEl.textContent = `${Math.round(editor.zoom * 100)}%`;
@@ -1002,6 +1021,36 @@ function updateCursorIndicator(gridX: number, gridY: number) {
     cursorIndicator.style.width = `${charWidth * zoom}px`;
     cursorIndicator.style.height = `${lineHeight * zoom}px`;
     cursorIndicator.classList.remove('hidden');
+}
+
+/**
+ * Update text caret cursor position and visibility if active
+ */
+function updateIndicator() {
+    if (!editor || !cursorIndicator) return;
+
+    let textPos: number[] | null = null;
+    if (editor.tool.toLowerCase() === 'text' && typeof editor.textCursorPosition === 'function') {
+        textPos = editor.textCursorPosition();
+    }
+
+    if (textPos) {
+        const [gridX, gridY] = textPos;
+        const zoom = editor.zoom;
+        const pan = editor.pan as number[] | Float64Array;
+
+        const screenX = gridX * charWidth * zoom + pan[0];
+        const screenY = gridY * lineHeight * zoom + pan[1];
+
+        cursorIndicator.style.left = `${screenX}px`;
+        cursorIndicator.style.top = `${screenY}px`;
+        cursorIndicator.style.width = `${charWidth * zoom}px`;
+        cursorIndicator.style.height = `${lineHeight * zoom}px`;
+        cursorIndicator.classList.add('caret');
+        cursorIndicator.classList.remove('hidden');
+    } else {
+        cursorIndicator.classList.remove('caret');
+    }
 }
 
 /**

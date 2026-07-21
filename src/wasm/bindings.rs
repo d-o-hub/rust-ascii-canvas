@@ -270,4 +270,19 @@ impl AsciiEditor {
         self.clipboard.clear();
         self.dirty_tracker.request_full_redraw();
     }
+
+    /// Gets the current text tool cursor position if the text tool is active.
+    #[wasm_bindgen(js_name = textCursorPosition)]
+    pub fn text_cursor_position(&mut self) -> Option<Vec<i32>> {
+        if self.tool_id == ToolId::Text {
+            if let Some(text_tool) = self
+                .active_tool
+                .as_any_mut()
+                .downcast_mut::<crate::core::tools::TextTool>()
+            {
+                return text_tool.cursor_position().map(|(x, y)| vec![x, y]);
+            }
+        }
+        None
+    }
 }

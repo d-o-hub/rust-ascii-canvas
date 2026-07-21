@@ -116,6 +116,85 @@ test.describe('Tool Drawing Verification', () => {
         await page.screenshot({ path: 'test-results/text-drawing.png' });
     });
 
+    test('Text tool backspace and delete behavior', async ({ page }) => {
+        await page.click('[data-tool="text"]');
+        await expect(page.locator('[data-tool="text"]')).toHaveClass(/active/);
+
+        const canvas = page.locator('#canvas');
+        const box = await canvas.boundingBox();
+        if (!box) return;
+
+        await page.mouse.click(box.x + 150, box.y + 150);
+        await waitForRender(page);
+
+        // Type HELLO
+        await page.keyboard.type('HELLO');
+        await waitForRender(page);
+
+        // Backspace twice -> should become HEL
+        await page.keyboard.press('Backspace');
+        await page.keyboard.press('Backspace');
+        await waitForRender(page);
+
+        // Escape to commit
+        await page.keyboard.press('Escape');
+        await waitForRender(page);
+
+        const ascii = await getAsciiContent(page);
+        expect(ascii).toContain('HEL');
+        expect(ascii).not.toContain('HELLO');
+
+        // Start typing again at another place
+        await page.mouse.click(box.x + 150, box.y + 180);
+        await waitForRender(page);
+        await page.keyboard.type('WORLD');
+        await waitForRender(page);
+
+        // Backspace twice to get WOR, then press Delete (which overwrites cursor position at end)
+        await page.keyboard.press('Backspace');
+        await page.keyboard.press('Backspace');
+        await page.keyboard.press('Delete');
+        await waitForRender(page);
+
+        await page.keyboard.press('Escape');
+        await waitForRender(page);
+
+        const ascii2 = await getAsciiContent(page);
+        expect(ascii2).toContain('WOR');
+        expect(ascii2).not.toContain('WORLD');
+    });
+
+    test('Text tool multiline enter behavior', async ({ page }) => {
+        await page.click('[data-tool="text"]');
+        await expect(page.locator('[data-tool="text"]')).toHaveClass(/active/);
+
+        const canvas = page.locator('#canvas');
+        const box = await canvas.boundingBox();
+        if (!box) return;
+
+        await page.mouse.click(box.x + 200, box.y + 200);
+        await waitForRender(page);
+
+        // Type FIRST
+        await page.keyboard.type('FIRST');
+        await waitForRender(page);
+
+        // Press Enter
+        await page.keyboard.press('Enter');
+        await waitForRender(page);
+
+        // Type SECOND
+        await page.keyboard.type('SECOND');
+        await waitForRender(page);
+
+        await page.keyboard.press('Escape');
+        await waitForRender(page);
+
+        const ascii = await getAsciiContent(page);
+        expect(ascii).toContain('FIRST');
+        expect(ascii).toContain('SECOND');
+    });
+
     test('Freehand tool draws at dragged positions', async ({ page }) => {
         await page.click('[data-tool="freehand"]');
         await expect(page.locator('[data-tool="freehand"]')).toHaveClass(/active/);

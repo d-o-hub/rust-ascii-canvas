@@ -44,6 +44,7 @@ export interface AsciiEditorInterface {
     undo(): boolean;
     redo(): boolean;
     clear(): void;
+    textCursorPosition(): number[] | null;
     selectAll(): void;
     exportAscii(): string;
     exportForCopy(): string;
