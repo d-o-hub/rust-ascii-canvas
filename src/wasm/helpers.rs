@@ -2,7 +2,7 @@
 
 use crate::core::ascii_export::export_region;
 use crate::core::commands::{Command, DrawCommand};
-use crate::core::history::History;
+use crate::core::history::{History, DEFAULT_MAX_DEPTH};
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, SelectTool, ToolContext, ToolId};
 use crate::wasm::render_bridge::{
@@ -395,12 +395,12 @@ impl AsciiEditor {
             visible: true,
             locked: false,
             grid: crate::core::Grid::new(w, h),
-            history: History::new(100),
+            history: History::new(DEFAULT_MAX_DEPTH),
         });
         let index = self.layers.len() - 1;
         self.active_layer = index;
         self.state.grid = crate::core::Grid::new(w, h);
-        self.history = History::new(100); // fresh history for the new layer
+        self.history = History::new(DEFAULT_MAX_DEPTH); // fresh history for the new layer
         self.current_selection = None;
         self.preview_ops.clear();
         self.dirty_tracker.request_full_redraw();
@@ -454,10 +454,21 @@ impl AsciiEditor {
         }
         self.sync_active_layer();
 
+        // Temporarily swap active history back to active layer before structural changes
+        let mut temp_history = std::mem::take(&mut self.history);
+        std::mem::swap(
+            &mut temp_history,
+            &mut self.layers[self.active_layer].history,
+        );
+
         self.layers.remove(index);
 
-        if self.active_layer >= self.layers.len() {
-            self.active_layer = self.layers.len() - 1;
+        if self.active_layer == index {
+            if self.active_layer >= self.layers.len() {
+                self.active_layer = self.layers.len() - 1;
+            }
+        } else if self.active_layer > index {
+            self.active_layer -= 1;
         }
 
         // Restore active grid and history
@@ -475,6 +486,13 @@ impl AsciiEditor {
             return false;
         }
         self.sync_active_layer();
+
+        // Temporarily swap active history back to active layer before structural changes
+        let mut temp_history = std::mem::take(&mut self.history);
+        std::mem::swap(
+            &mut temp_history,
+            &mut self.layers[self.active_layer].history,
+        );
 
         // Clone upper layer's grid
         let upper_grid = self.layers[index].grid.clone();
@@ -675,7 +693,7 @@ impl AsciiEditor {
                 visible: layer.visible,
                 locked: layer.locked,
                 grid,
-                history: History::new(100),
+                history: History::new(DEFAULT_MAX_DEPTH),
             });
         }
 
@@ -862,18 +880,32 @@ mod clipboard_tests {
     #[test]
     fn test_layer_lock_prevents_draw_ops() {
         let mut canvas = AsciiEditor::new(10, 10);
+        // Pre-populate a cell
+        use crate::core::tools::DrawOp;
+        canvas.commit_ops(&[DrawOp::new(1, 1, 'A')]);
+        assert_eq!(canvas.state.grid.get(1, 1).unwrap().ch, 'A');
+
         // Lock the layer
         canvas.set_layer_locked(0, true);
         assert!(canvas.layer_locked(0));
 
-        // Try to write a character (e.g. via commit_ops)
-        use crate::core::tools::DrawOp;
-        canvas.commit_ops(&[DrawOp::new(1, 1, 'X')]);
-        // Cell should remain empty
-        assert_eq!(canvas.state.grid.get(1, 1).unwrap().ch, ' ');
+        // Try to write a character (e.g. via commit_ops) while locked
+        canvas.commit_ops(&[DrawOp::new(2, 2, 'X')]);
+        // Cell (2, 2) should remain empty
+        assert_eq!(canvas.state.grid.get(2, 2).unwrap().ch, ' ');
 
-        // Try to clear
+        // Try to clear while locked
         canvas.clear();
+        // Cell (1, 1) should STILL be 'A' because clear was blocked by lock
+        assert_eq!(canvas.state.grid.get(1, 1).unwrap().ch, 'A');
+
+        // Unlock the layer
+        canvas.set_layer_locked(0, false);
+        assert!(!canvas.layer_locked(0));
+
+        // Try clearing now that it is unlocked
+        canvas.clear();
+        // Cell should now be cleared
         assert!(!canvas.state.grid.get(1, 1).unwrap().is_visible());
     }
 

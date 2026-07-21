@@ -5,7 +5,7 @@ use crate::core::grid::Grid;
 use std::collections::VecDeque;
 
 /// Maximum history depth.
-const DEFAULT_MAX_DEPTH: usize = 100;
+pub const DEFAULT_MAX_DEPTH: usize = 100;
 
 /// Undo/Redo history manager.
 pub struct History {

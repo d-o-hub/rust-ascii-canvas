@@ -61,7 +61,7 @@ export interface AsciiEditorInterface {
     layerLocked(index: number): boolean;
     setLayerLocked(index: number, locked: boolean): void;
     deleteLayer(index: number): boolean;
-    moveLayer(from_index: number, to_index: number): void;
+    moveLayer(fromIndex: number, toIndex: number): void;
     mergeLayerDown(index: number): boolean;
     getRenderCommands(): RenderCommand[];
     getDirtyRenderCommands(): RenderCommand[];

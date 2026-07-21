@@ -1,6 +1,6 @@
 //! WASM bindings - struct definition, constructor, and core methods.
 
-use crate::core::history::History;
+use crate::core::history::{History, DEFAULT_MAX_DEPTH};
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, RectangleTool, Tool, ToolId};
 use crate::core::EditorState;
@@ -54,13 +54,14 @@ pub(crate) struct LayerData {
 }
 
 impl Clone for LayerData {
+    // NOTE: history is intentionally reset on clone to avoid sharing undo history state.
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
             visible: self.visible,
             locked: self.locked,
             grid: self.grid.clone(),
-            history: History::new(100),
+            history: History::new(DEFAULT_MAX_DEPTH),
         }
     }
 }
@@ -75,7 +76,7 @@ impl AsciiEditor {
 
         Self {
             state,
-            history: History::new(100),
+            history: History::new(DEFAULT_MAX_DEPTH),
             renderer,
             dirty_tracker: DirtyTracker::new(),
             active_tool: Box::new(RectangleTool::new()),
@@ -99,7 +100,7 @@ impl AsciiEditor {
                 visible: true,
                 locked: false,
                 grid: crate::core::Grid::new(width, height),
-                history: History::new(100),
+                history: History::new(DEFAULT_MAX_DEPTH),
             }],
             active_layer: 0,
         }

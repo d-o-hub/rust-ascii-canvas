@@ -481,6 +481,16 @@ body {
     cursor: not-allowed;
 }
 
+.layer-actions {
+    margin-top: var(--spacing-sm);
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.layer-actions .zoom-btn {
+    flex: 1;
+}
+
 .visually-hidden {
     position: absolute;
     width: 1px;
