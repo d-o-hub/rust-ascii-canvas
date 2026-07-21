@@ -1,3 +1,7 @@
+## 2026-07-21 - [Visible Text Caret and Multi-Line Polish]
+**Learning:** Visual text cursor (caret) feedback is critical in text input flows to provide immediately clear positioning to the user. Additionally, multi-line editing states (like typing list labels or multiline annotations) are much more intuitive and reliable when the local line buffer and start positions are isolated per line on Enter, preventing keystroke desyncs when backspacing.
+**Action:** When designing canvas-based text inputs, implement a visible, blinking caret and reset typing parameters (start position, line-local buffers) per-line when the user creates a newline.
+
 ## 2026-07-16 - [Cross-Editor Clipboard Fidelity]
 **Learning:** Proper clipboard integration with external editors (Windows Notepad, macOS TextEdit, VS Code) requires complete CRLF (`\r\n`) normalization, exact preservation of right box borders, and uniform line widths. Validating this across targets through automated headless testing combined with manual copy-paste checks ensures that high-fidelity ASCII shapes can be used seamlessly in external environments without visual degradation.
 **Action:** Always normalize external exports to CRLF and maintain rigid character bounding geometries to avoid rendering glitches when drawings are pasted in environments with varying newline/monospace line-wrapping rules.

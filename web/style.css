@@ -372,6 +372,24 @@ body {
     background-color: rgba(242, 72, 34, 0.2);
 }
 
+/* Caret blink animation */
+@keyframes caret-blink {
+    0%, 100% {
+        opacity: 0.9;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+.cursor-indicator.caret {
+    border: 1.5px solid var(--accent);
+    background-color: rgba(13, 153, 255, 0.25);
+    animation: caret-blink 1.2s step-end infinite;
+    opacity: 0.9;
+    transition: none; /* disable transition for immediate caret blink */
+}
+
 /* Grid size / layer controls */
 .grid-size-controls {
     display: flex;
