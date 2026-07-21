@@ -186,3 +186,29 @@ fn test_eraser_tool() {
     assert!(!result.ops.is_empty());
     assert!(result.ops[0].cell.is_empty());
 }
+
+#[test]
+fn test_adjustable_eraser() {
+    let mut tool = EraserTool::new();
+    let ctx = create_context();
+
+    // Verify default size
+    assert_eq!(tool.size(), 1);
+
+    // Test setting to size 2 (representing width 3)
+    tool.set_size(2);
+    assert_eq!(tool.size(), 2);
+
+    // Let's test on_pointer_down at 0, 0 (partially out of bounds but should not write OOB)
+    let result = tool.on_pointer_down(0, 0, &ctx);
+    // Area is 3x3 centered at 0, 0:
+    // dx in -1..2 -> -1, 0, 1
+    // dy in -1..2 -> -1, 0, 1
+    // Valid coordinates within (80, 40) are: (0,0), (0,1), (1,0), (1,1) -> 4 cells
+    assert_eq!(result.ops.len(), 4);
+    for op in result.ops {
+        assert!(op.x >= 0 && op.x < 80);
+        assert!(op.y >= 0 && op.y < 40);
+        assert!(op.cell.is_empty());
+    }
+}

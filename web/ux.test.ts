@@ -8,6 +8,14 @@ describe('UX Improvements', () => {
             <div id="canvas-container"></div>
             <div id="status-message"></div>
             <div id="status-tool"></div>
+            <div id="line-direction-group" style="display: none;"></div>
+            <div id="eraser-radius-group" style="display: none;">
+                <select id="eraser-radius">
+                    <option value="1">1 Cell</option>
+                    <option value="3">3 Cells</option>
+                    <option value="5">5 Cells</option>
+                </select>
+            </div>
             <button class="tool-btn" data-tool="rectangle"></button>
             <button class="tool-btn" data-tool="text"></button>
             <button class="tool-btn" data-tool="select"></button>
@@ -77,5 +85,14 @@ describe('UX Improvements', () => {
             expect(TOOL_INFO[tool].instruction).toBeTruthy();
             expect(TOOL_INFO[tool].cursor).toBeTruthy();
         });
+    });
+
+    it('should toggle visibility of eraser radius group on tool change', () => {
+        setTool('eraser');
+        const eraserGroup = document.getElementById('eraser-radius-group');
+        expect(eraserGroup?.style.display).toBe('flex');
+
+        setTool('rectangle');
+        expect(eraserGroup?.style.display).toBe('none');
     });
 });

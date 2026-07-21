@@ -74,6 +74,7 @@ impl AsciiEditor {
             &mut self.preview_ops,
             &mut self.state,
             &mut self.current_selection,
+            self.eraser_size,
         );
     }
 
