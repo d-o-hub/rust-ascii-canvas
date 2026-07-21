@@ -223,7 +223,7 @@ impl CanvasRenderer {
         for op in preview_ops {
             if op.cell.is_visible() {
                 let (sx, sy) = self.grid_to_screen(op.x, op.y);
-                commands.push(RenderCommand::DrawChar {
+                commands.push(RenderCommand::DrawPreviewChar {
                     x: sx,
                     y: sy + self.metrics.baseline * self.zoom,
                     char: op.cell.ch,
@@ -279,9 +279,24 @@ pub enum RenderCommand {
     SetFont { font: String, scale: f64 },
     /// Draw a character at position
     DrawChar {
+        /// X coordinate of the character
         x: f64,
+        /// Y coordinate of the character
         y: f64,
+        /// The character to draw
         char: char,
+        /// Font scaling factor
+        scale: f64,
+    },
+    /// Draw a preview character at position
+    DrawPreviewChar {
+        /// X coordinate of the preview character
+        x: f64,
+        /// Y coordinate of the preview character
+        y: f64,
+        /// The character to draw
+        char: char,
+        /// Font scaling factor
         scale: f64,
     },
     /// Draw a rectangle (for selection)
@@ -344,5 +359,27 @@ mod tests {
 
         let commands = renderer.build_render_commands(&grid, &dirty);
         assert!(commands.is_empty());
+    }
+
+    #[test]
+    fn test_build_full_render_with_preview() {
+        let renderer = CanvasRenderer::new();
+        let grid = Grid::new(10, 10);
+        let preview_ops = vec![crate::core::tools::DrawOp::new(
+            2,
+            3,
+            'X',
+        )];
+
+        let commands = renderer.build_full_render_with_preview_and_selection(&grid, &preview_ops, None);
+
+        let mut found_preview = false;
+        for cmd in commands {
+            if let RenderCommand::DrawPreviewChar { char, .. } = cmd {
+                assert_eq!(char, 'X');
+                found_preview = true;
+            }
+        }
+        assert!(found_preview, "Should have found a DrawPreviewChar command");
     }
 }

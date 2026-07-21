@@ -348,6 +348,7 @@ impl AsciiEditor {
             }
         }
 
+        let preview_color = [86, 156, 214, 179]; // rgba(86, 156, 214, 0.7)
         for op in &self.preview_ops {
             if op.cell.is_visible() {
                 self.font_atlas.render_glyph(
@@ -356,7 +357,7 @@ impl AsciiEditor {
                     op.x as usize * glyph_w,
                     op.y as usize * glyph_h,
                     op.cell.ch,
-                    fg_color,
+                    preview_color,
                 );
             }
         }

@@ -972,6 +972,11 @@ function executeRenderCommand(cmd: RenderCommand) {
             ctx.fillText(cmd.char as string, cmd.x as number, cmd.y as number);
             break;
 
+        case 'DrawPreviewChar':
+            ctx.fillStyle = 'rgba(86, 156, 214, 0.7)';
+            ctx.fillText(cmd.char as string, cmd.x as number, cmd.y as number);
+            break;
+
         case 'DrawRect':
             ctx.fillStyle = cmd.color as string || '#264f78';
             ctx.fillRect(cmd.x as number, cmd.y as number, cmd.width as number, cmd.height as number);
