@@ -365,13 +365,10 @@ mod tests {
     fn test_build_full_render_with_preview() {
         let renderer = CanvasRenderer::new();
         let grid = Grid::new(10, 10);
-        let preview_ops = vec![crate::core::tools::DrawOp::new(
-            2,
-            3,
-            'X',
-        )];
+        let preview_ops = vec![crate::core::tools::DrawOp::new(2, 3, 'X')];
 
-        let commands = renderer.build_full_render_with_preview_and_selection(&grid, &preview_ops, None);
+        let commands =
+            renderer.build_full_render_with_preview_and_selection(&grid, &preview_ops, None);
 
         let mut found_preview = false;
         for cmd in commands {
