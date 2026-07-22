@@ -405,7 +405,7 @@ function setupEventListeners() {
     });
 
     // Sync initial eraser radius
-    if (editor && eraserRadiusSelect) {
+    if (editor) {
         const val = eraserRadiusSelect.value;
         let size = 1;
         if (val === '1') size = 1;
