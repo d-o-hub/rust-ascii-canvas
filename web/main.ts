@@ -357,6 +357,9 @@ function setupEventListeners() {
     canvas.addEventListener('keydown', handleKeyDown);
     canvas.addEventListener('keyup', handleKeyUp);
 
+    // Clipboard paste event
+    window.addEventListener('paste', handlePasteEvent);
+
     // Global keyboard listener for modal
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -770,6 +773,34 @@ function handleWheel(e: WheelEvent) {
 }
 
 /**
+ * Handle browser paste event.
+ */
+function handlePasteEvent(e: ClipboardEvent): void {
+    if (!editor) return;
+
+    // Prevent default browser paste behavior
+    e.preventDefault();
+
+    const text = e.clipboardData?.getData('text/plain');
+    if (text) {
+        const success = editor.pasteText(text);
+        if (success) {
+            requestRender();
+            updateUI();
+            scheduleAutoSave();
+        }
+    } else {
+        // Fall back to internal clipboard
+        const success = editor.paste();
+        if (success) {
+            requestRender();
+            updateUI();
+            scheduleAutoSave();
+        }
+    }
+}
+
+/**
  * Handle key down event
  */
 function handleKeyDown(e: KeyboardEvent) {
@@ -782,8 +813,14 @@ function handleKeyDown(e: KeyboardEvent) {
     if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', 'b', ' ', 'escape', '?'].includes(key.toLowerCase()) && !ctrl) {
         e.preventDefault();
     }
-    if (ctrl && ['z', 'y', 'c', 'a', 'x', 'v'].includes(key.toLowerCase())) {
+    // Prevent default for Ctrl shortcuts except Ctrl+V (which is handled by window 'paste' event)
+    if (ctrl && ['z', 'y', 'c', 'a', 'x'].includes(key.toLowerCase())) {
         e.preventDefault();
+    }
+
+    if (ctrl && key.toLowerCase() === 'v') {
+        // Let standard browser paste event trigger
+        return;
     }
 
     const result = editor.onKeyDown(key, ctrl, shift);
