@@ -1,3 +1,7 @@
+## 2026-07-22 - [Asynchronous Feedback and Robust Dialog Focus Traps]
+**Learning:** Visual feedback states (such as clipboard success indicators) must always be bound to the successful resolution of the underlying asynchronous operation to prevent false status contradictions. Additionally, dialog focus traps should dynamically query focusable elements to support backwards/forwards tab navigation and adapt seamlessly to future UI additions.
+**Action:** Always return promise outcomes from async handlers to coordinate visual state changes, and implement dynamic focus-cycling logic for keyboard-trapped modal dialogs.
+
 ## 2026-07-21 - [Visible Text Caret and Multi-Line Polish]
 **Learning:** Visual text cursor (caret) feedback is critical in text input flows to provide immediately clear positioning to the user. Additionally, multi-line editing states (like typing list labels or multiline annotations) are much more intuitive and reliable when the local line buffer and start positions are isolated per line on Enter, preventing keystroke desyncs when backspacing.
 **Action:** When designing canvas-based text inputs, implement a visible, blinking caret and reset typing parameters (start position, line-local buffers) per-line when the user creates a newline.

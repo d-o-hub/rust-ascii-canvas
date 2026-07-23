@@ -382,6 +382,28 @@ function setupEventListeners() {
                 hideShortcutsModal();
             }
         });
+        shortcutsModal.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab') {
+                const focusableElements = shortcutsModal.querySelectorAll(
+                    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+                );
+                if (focusableElements.length === 0) return;
+                const firstElement = focusableElements[0] as HTMLElement;
+                const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                if (e.shiftKey) {
+                    if (document.activeElement === firstElement) {
+                        lastElement.focus();
+                        e.preventDefault();
+                    }
+                } else {
+                    if (document.activeElement === lastElement) {
+                        firstElement.focus();
+                        e.preventDefault();
+                    }
+                }
+            }
+        });
     }
 
     // Tool buttons
@@ -472,8 +494,22 @@ function setupEventListeners() {
     });
 
     copyBtn.addEventListener('mousedown', (e) => e.preventDefault());
-    copyBtn.addEventListener('click', () => {
-        void copyToClipboard();
+    copyBtn.addEventListener('click', async () => {
+        const success = await copyToClipboard();
+        if (success) {
+            const label = copyBtn.querySelector('.action-label');
+            const icon = copyBtn.querySelector('.action-icon');
+            if (label && icon) {
+                const originalText = label.textContent;
+                const originalIcon = icon.textContent;
+                label.textContent = 'Copied!';
+                icon.textContent = '✓';
+                setTimeout(() => {
+                    label.textContent = originalText;
+                    icon.textContent = originalIcon;
+                }, 2000);
+            }
+        }
         if (canvas) canvas.focus();
     });
 
@@ -1249,9 +1285,9 @@ function updateUI() {
 /**
  * Selection-aware copy to OS clipboard (CRLF + internal clipboard).
  */
-async function copyToClipboard() {
-    if (!editor) return;
-    await copySelectionAware(editor, showToast);
+async function copyToClipboard(): Promise<boolean> {
+    if (!editor) return false;
+    return await copySelectionAware(editor, showToast);
 }
 
 /**
