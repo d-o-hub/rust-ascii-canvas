@@ -36,7 +36,6 @@ import type { EventResult } from './types.js';
 
 export const { schedule: scheduleAutoSave, flush: flushAutoSave } = createAutoSaveScheduler(() => state.editor);
 
-// Bind to state
 state.scheduleAutoSave = scheduleAutoSave;
 
 export function onPageHideFlushAutoSave(): void {
@@ -49,7 +48,7 @@ export function onVisibilityChangeFlushAutoSave(): void {
     }
 }
 
-export function handlePointerDown(e: PointerEvent) {
+export function handlePointerDown(e: PointerEvent): void {
     if (!state.editor || !state.canvas) return;
     if (e.pointerType === 'touch') return;
     e.preventDefault();
@@ -64,7 +63,7 @@ export function handlePointerDown(e: PointerEvent) {
     handleEventResult(result);
 }
 
-export function handlePointerMove(e: PointerEvent) {
+export function handlePointerMove(e: PointerEvent): void {
     if (!state.editor || !state.canvas) return;
     if (e.pointerType === 'touch') return;
     const rect = state.canvas.getBoundingClientRect();
@@ -89,7 +88,7 @@ export function handlePointerMove(e: PointerEvent) {
     handleEventResult(result, { persist: false });
 }
 
-export function handlePointerUp(e: PointerEvent) {
+export function handlePointerUp(e: PointerEvent): void {
     if (!state.editor || !state.canvas) return;
     if (e.pointerType === 'touch') return;
     e.preventDefault();
@@ -103,7 +102,7 @@ export function handlePointerUp(e: PointerEvent) {
     handleEventResult(result, { persist: true });
 }
 
-export function handleTouchStart(e: TouchEvent) {
+export function handleTouchStart(e: TouchEvent): void {
     if (!state.editor || !state.canvas) return;
     e.preventDefault();
     state.canvas.focus();
@@ -123,7 +122,7 @@ export function handleTouchStart(e: TouchEvent) {
     }
 }
 
-export function handleTouchMove(e: TouchEvent) {
+export function handleTouchMove(e: TouchEvent): void {
     if (!state.editor || !state.canvas) return;
     e.preventDefault();
 
@@ -164,7 +163,7 @@ export function handleTouchMove(e: TouchEvent) {
     }
 }
 
-export function handleTouchEnd(e: TouchEvent) {
+export function handleTouchEnd(e: TouchEvent): void {
     if (!state.editor || !state.canvas) return;
     e.preventDefault();
 
@@ -179,7 +178,7 @@ export function handleTouchEnd(e: TouchEvent) {
     state.lastTouchDistance = null;
 }
 
-export function handleMobileInput(e: Event) {
+export function handleMobileInput(e: Event): void {
     if (!state.editor) return;
     const input = e.target as HTMLInputElement;
     const value = input.value;
@@ -198,14 +197,14 @@ export function handleMobileInput(e: Event) {
     }
 }
 
-export function handlePointerLeave() {
+export function handlePointerLeave(): void {
     const hasTextCursor = state.editor && state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
     if (!hasTextCursor && state.cursorIndicator) {
         state.cursorIndicator.classList.add('hidden');
     }
 }
 
-export function handleWheel(e: WheelEvent) {
+export function handleWheel(e: WheelEvent): void {
     if (!state.editor || !state.canvas) return;
     e.preventDefault();
 
@@ -240,7 +239,7 @@ export function handlePasteEvent(e: ClipboardEvent): void {
     }
 }
 
-export function handleKeyDown(e: KeyboardEvent) {
+export function handleKeyDown(e: KeyboardEvent): void {
     if (!state.editor) return;
     const key = e.key;
     const ctrl = e.ctrlKey || e.metaKey;
@@ -296,7 +295,7 @@ export function handleKeyDown(e: KeyboardEvent) {
     }
 }
 
-export function handleKeyUp(e: KeyboardEvent) {
+export function handleKeyUp(e: KeyboardEvent): void {
     if (!state.editor) return;
     state.editor.onKeyUp(e.key);
 
@@ -305,7 +304,7 @@ export function handleKeyUp(e: KeyboardEvent) {
     }
 }
 
-export function handleEventResult(result: EventResult | null, options: { persist?: boolean } = {}) {
+export function handleEventResult(result: EventResult | null, options: { persist?: boolean } = {}): void {
     if (!result) {
         updateIndicator();
         return;
@@ -342,12 +341,12 @@ export function handleEventResult(result: EventResult | null, options: { persist
     updateIndicator();
 }
 
-export async function copyToClipboard() {
+export async function copyToClipboard(): Promise<void> {
     if (!state.editor) return;
     await copySelectionAware(state.editor, showToast);
 }
 
-export function applyCustomGridSize() {
+export function applyCustomGridSize(): void {
     if (!state.editor) return;
     const gridWidthInput = document.querySelector('#grid-width');
     const gridHeightInput = document.querySelector('#grid-height');
@@ -382,7 +381,7 @@ export function wireOptionalButton(id: string, onClick: () => void): void {
     el.addEventListener('click', onClick);
 }
 
-export function setupEventListeners() {
+export function setupEventListeners(): void {
     if (!state.canvas) return;
 
     window.addEventListener('resize', debouncedResizeCanvas);

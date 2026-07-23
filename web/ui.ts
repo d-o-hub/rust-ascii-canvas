@@ -18,7 +18,7 @@ export function focusCanvasElement(): void {
     }
 }
 
-export function setTool(toolName: string) {
+export function setTool(toolName: string): void {
     if (!state.editor) {
         logger.error('Editor not initialized');
         focusCanvasElement();
@@ -39,7 +39,7 @@ export function setTool(toolName: string) {
     }
 }
 
-export function updateToolButtons(activeTool: string) {
+export function updateToolButtons(activeTool: string): void {
     const normalizedTool = activeTool.toLowerCase();
 
     const lineGroup = document.getElementById('line-direction-group');
@@ -86,7 +86,7 @@ export function updateToolButtons(activeTool: string) {
     }
 }
 
-export function showToast(message: string, isError = false) {
+export function showToast(message: string, isError = false): void {
     if (!state.statusToast) return;
     state.statusToast.textContent = message;
     state.statusToast.classList.toggle('error', isError);
@@ -99,7 +99,7 @@ export function showToast(message: string, isError = false) {
     }, 2000);
 }
 
-export function setZoom(zoom: number) {
+export function setZoom(zoom: number): void {
     if (!state.editor) return;
     const clampedZoom = Math.max(0.3, Math.min(4.0, zoom));
     state.editor.setZoom(clampedZoom);
@@ -110,7 +110,7 @@ export function setZoom(zoom: number) {
     }
 }
 
-export function resetZoom() {
+export function resetZoom(): void {
     if (!state.editor || !state.canvasContainer) return;
 
     const containerRect = state.canvasContainer.getBoundingClientRect();
@@ -127,7 +127,7 @@ export function resetZoom() {
     showToast('Zoom reset to 100%');
 }
 
-export function fitZoom() {
+export function fitZoom(): void {
     if (!state.editor || !state.canvasContainer) return;
 
     const containerRect = state.canvasContainer.getBoundingClientRect();
@@ -148,7 +148,7 @@ export function fitZoom() {
     showToast('Zoom fitted to view');
 }
 
-export function cycleBorderStyle() {
+export function cycleBorderStyle(): void {
     if (!state.editor) return;
     state.currentBorderStyleIndex = (state.currentBorderStyleIndex + 1) % BORDER_STYLES.length;
     const style = BORDER_STYLES[state.currentBorderStyleIndex];
@@ -159,7 +159,7 @@ export function cycleBorderStyle() {
     showToast(`Border: ${style}`);
 }
 
-export function showShortcutsModal() {
+export function showShortcutsModal(): void {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
         state.lastFocusedElement = document.activeElement as HTMLElement;
@@ -171,7 +171,7 @@ export function showShortcutsModal() {
     }
 }
 
-export function hideShortcutsModal() {
+export function hideShortcutsModal(): void {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
         modal.classList.add('hidden');
@@ -182,7 +182,7 @@ export function hideShortcutsModal() {
     }
 }
 
-export function syncGridInputs() {
+export function syncGridInputs(): void {
     if (!state.editor) return;
     const gridWidthInput = document.querySelector('#grid-width');
     const gridHeightInput = document.querySelector('#grid-height');
@@ -202,7 +202,7 @@ let lastLayerCount = 0;
 let lastActiveLayer = -1;
 let lastLayersState: CachedLayerState[] = [];
 
-export function refreshLayerList() {
+export function refreshLayerList(): void {
     if (!state.editor || typeof state.editor.layerCount !== 'number') return;
     const count = state.editor.layerCount;
     const active = state.editor.activeLayer ?? 0;
@@ -395,7 +395,7 @@ export function refreshLayerList() {
     }
 }
 
-export function updateUI() {
+export function updateUI(): void {
     if (!state.editor) return;
     try {
         if (state.undoBtn) state.undoBtn.disabled = !state.editor.can_undo;

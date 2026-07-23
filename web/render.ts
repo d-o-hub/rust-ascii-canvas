@@ -34,7 +34,7 @@ export function computeGridDimensions(): { width: number; height: number } {
     };
 }
 
-export function measureFont() {
+export function measureFont(): void {
     if (!state.ctx) return;
 
     if (USE_PIXEL_BUFFER) {
@@ -57,7 +57,7 @@ export function measureFont() {
     }
 }
 
-export function resizeCanvas() {
+export function resizeCanvas(): void {
     if (!state.canvas || !state.ctx || !state.canvasContainer) return;
 
     const dpr = window.devicePixelRatio || 1;
@@ -90,7 +90,7 @@ export function resizeCanvas() {
 // Export a debounced version of resizeCanvas
 export const debouncedResizeCanvas = debounce(resizeCanvas, 100);
 
-export function requestRender() {
+export function requestRender(): void {
     if (state.animationFrameId === null) {
         state.animationFrameId = requestAnimationFrame(render);
     }
@@ -99,7 +99,7 @@ export function requestRender() {
 // Bind to state
 state.requestRender = requestRender;
 
-export function render() {
+export function render(): void {
     if (!state.editor || !state.canvas || !state.ctx) return;
     state.animationFrameId = null;
 
@@ -169,7 +169,7 @@ export function render() {
     }
 }
 
-export function executeRenderCommand(cmd: RenderCommand) {
+export function executeRenderCommand(cmd: RenderCommand): void {
     if (!state.ctx || !state.canvas) return;
 
     switch (cmd.type || Object.keys(cmd)[0]) {
@@ -224,7 +224,7 @@ export function executeRenderCommand(cmd: RenderCommand) {
     }
 }
 
-export function updateCursorIndicator(gridX: number, gridY: number) {
+export function updateCursorIndicator(gridX: number, gridY: number): void {
     if (!state.editor || !state.cursorIndicator) return;
     const zoom = state.editor.zoom;
     const pan = state.editor.pan;
@@ -253,7 +253,7 @@ export function updateCursorIndicator(gridX: number, gridY: number) {
     state.cursorIndicator.classList.remove('hidden');
 }
 
-export function updateIndicator() {
+export function updateIndicator(): void {
     if (!state.editor || !state.cursorIndicator) return;
 
     let textPos: number[] | null = null;
@@ -280,7 +280,7 @@ export function updateIndicator() {
     }
 }
 
-export function uploadFontAtlas() {
+export function uploadFontAtlas(): void {
     if (!state.editor) return;
 
     const canvas = document.createElement('canvas');
