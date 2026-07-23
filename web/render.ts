@@ -13,7 +13,7 @@ import {
 } from './constants.js';
 import { logger } from './logger.js';
 import { debounce } from './utils.js';
-import type { RenderCommand } from './types.js';
+import type { RenderCommand, AsciiEditorInterface } from './types.js';
 
 export function computeGridDimensions(): { width: number; height: number } {
     if (!state.canvasContainer) return { width: MIN_COLS, height: MIN_ROWS };
@@ -34,7 +34,7 @@ export function computeGridDimensions(): { width: number; height: number } {
     };
 }
 
-export function measureFont(): void {
+export function measureFont(activeEditor?: AsciiEditorInterface | null): void {
     if (!state.ctx) return;
 
     if (USE_PIXEL_BUFFER) {
@@ -47,9 +47,7 @@ export function measureFont(): void {
         state.lineHeight = FONT_SIZE * 1.4;
     }
 
-    const editorKey = 'editor' as const;
-    const activeEditor = state[editorKey];
-    if (activeEditor !== null) {
+    if (activeEditor) {
         activeEditor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
     }
 
@@ -72,7 +70,7 @@ export function resizeCanvas(): void {
 
     state.ctx.scale(dpr, dpr);
 
-    measureFont();
+    measureFont(state.editor);
 
     if (state.editor) {
         if (!state.gridSizeLocked) {
