@@ -7,6 +7,8 @@ import { BORDER_STYLES, TOOL_INFO } from './constants.js';
 import { capitalize } from './utils.js';
 import { logger } from './logger.js';
 
+const VALID_TOOLS = new Set(Object.keys(TOOL_INFO));
+
 export function focusCanvasElement(): void {
     if (state.canvas) {
         state.canvas.focus();
@@ -63,8 +65,8 @@ export function updateToolButtons(activeTool: string): void {
         btn.setAttribute('aria-pressed', isActive.toString());
     });
 
-    if (Object.prototype.hasOwnProperty.call(TOOL_INFO, normalizedTool)) {
-        const info = TOOL_INFO[normalizedTool];
+    if (VALID_TOOLS.has(normalizedTool)) {
+        const info = TOOL_INFO[normalizedTool as keyof typeof TOOL_INFO];
         const statusEl = document.querySelector('#status-message');
         if (statusEl instanceof HTMLElement) {
             statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
@@ -164,11 +166,11 @@ export function cycleBorderStyle(): void {
 export function showShortcutsModal(): void {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
-        state.lastFocusedElement = document.activeElement as HTMLElement;
+        state.lastFocusedHtmlElement = document.activeElement as HTMLElement;
         modal.classList.remove('hidden');
-        const closeBtn = modal.querySelector('.modal-close') as HTMLElement;
-        if (closeBtn) {
-            closeBtn.focus();
+        const closeButtonHtmlElement = modal.querySelector('.modal-close') as HTMLElement | null;
+        if (closeButtonHtmlElement !== null) {
+            closeButtonHtmlElement.focus();
         }
     }
 }
@@ -177,9 +179,9 @@ export function hideShortcutsModal(): void {
     const modal = document.getElementById('shortcuts-modal');
     if (modal) {
         modal.classList.add('hidden');
-        if (state.lastFocusedElement) {
-            state.lastFocusedElement.focus();
-            state.lastFocusedElement = null;
+        if (state.lastFocusedHtmlElement) {
+            state.lastFocusedHtmlElement.focus();
+            state.lastFocusedHtmlElement = null;
         }
     }
 }

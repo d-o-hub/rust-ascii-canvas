@@ -47,8 +47,9 @@ export function measureFont(): void {
         state.lineHeight = FONT_SIZE * 1.4;
     }
 
-    if (state.editor) {
-        state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
+    const activeEditor = state.editor;
+    if (activeEditor !== null) {
+        activeEditor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
     }
 
     if (typeof window !== 'undefined') {
