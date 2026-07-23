@@ -385,17 +385,17 @@ function setupEventListeners() {
                     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
                 );
                 if (focusableElements.length === 0) return;
-                const firstEl = focusableElements[0] as HTMLElement;
-                const lastEl = focusableElements[focusableElements.length - 1] as HTMLElement;
+                const firstFocusableHtml = focusableElements[0] as HTMLElement;
+                const lastFocusableHtml = focusableElements[focusableElements.length - 1] as HTMLElement;
 
                 if (e.shiftKey) {
-                    if (document.activeElement === firstEl) {
-                        lastEl.focus();
+                    if (document.activeElement === firstFocusableHtml) {
+                        lastFocusableHtml.focus();
                         e.preventDefault();
                     }
                 } else {
-                    if (document.activeElement === lastEl) {
-                        firstEl.focus();
+                    if (document.activeElement === lastFocusableHtml) {
+                        firstFocusableHtml.focus();
                         e.preventDefault();
                     }
                 }
