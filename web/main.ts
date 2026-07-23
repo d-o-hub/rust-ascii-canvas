@@ -357,9 +357,6 @@ function setupEventListeners() {
     canvas.addEventListener('keydown', handleKeyDown);
     canvas.addEventListener('keyup', handleKeyUp);
 
-    // Clipboard paste event
-    window.addEventListener('paste', handlePasteEvent);
-
     // Global keyboard listener for modal
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -388,17 +385,17 @@ function setupEventListeners() {
                     'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
                 );
                 if (focusableElements.length === 0) return;
-                const firstElement = focusableElements[0] as HTMLElement;
-                const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+                const firstEl = focusableElements[0] as HTMLElement;
+                const lastEl = focusableElements[focusableElements.length - 1] as HTMLElement;
 
                 if (e.shiftKey) {
-                    if (document.activeElement === firstElement) {
-                        lastElement.focus();
+                    if (document.activeElement === firstEl) {
+                        lastEl.focus();
                         e.preventDefault();
                     }
                 } else {
-                    if (document.activeElement === lastElement) {
-                        firstElement.focus();
+                    if (document.activeElement === lastEl) {
+                        firstEl.focus();
                         e.preventDefault();
                     }
                 }
@@ -494,22 +491,27 @@ function setupEventListeners() {
     });
 
     copyBtn.addEventListener('mousedown', (e) => e.preventDefault());
-    copyBtn.addEventListener('click', async () => {
-        const success = await copyToClipboard();
-        if (success) {
-            const label = copyBtn.querySelector('.action-label');
-            const icon = copyBtn.querySelector('.action-icon');
-            if (label && icon) {
-                const originalText = label.textContent;
-                const originalIcon = icon.textContent;
-                label.textContent = 'Copied!';
-                icon.textContent = '✓';
-                setTimeout(() => {
-                    label.textContent = originalText;
-                    icon.textContent = originalIcon;
-                }, 2000);
-            }
-        }
+    copyBtn.addEventListener('click', () => {
+        copyToClipboard()
+            .then((success) => {
+                if (success) {
+                    const label = copyBtn.querySelector('.action-label');
+                    const icon = copyBtn.querySelector('.action-icon');
+                    if (label && icon) {
+                        const originalText = label.textContent;
+                        const originalIcon = icon.textContent;
+                        label.textContent = 'Copied!';
+                        icon.textContent = '✓';
+                        setTimeout(() => {
+                            label.textContent = originalText;
+                            icon.textContent = originalIcon;
+                        }, 2000);
+                    }
+                }
+            })
+            .catch((err) => {
+                logger.error('Failed to handle copy click:', err);
+            });
         if (canvas) canvas.focus();
     });
 
@@ -809,34 +811,6 @@ function handleWheel(e: WheelEvent) {
 }
 
 /**
- * Handle browser paste event.
- */
-function handlePasteEvent(e: ClipboardEvent): void {
-    if (!editor) return;
-
-    // Prevent default browser paste behavior
-    e.preventDefault();
-
-    const text = e.clipboardData?.getData('text/plain');
-    if (text) {
-        const success = editor.pasteText(text);
-        if (success) {
-            requestRender();
-            updateUI();
-            scheduleAutoSave();
-        }
-    } else {
-        // Fall back to internal clipboard
-        const success = editor.paste();
-        if (success) {
-            requestRender();
-            updateUI();
-            scheduleAutoSave();
-        }
-    }
-}
-
-/**
  * Handle key down event
  */
 function handleKeyDown(e: KeyboardEvent) {
@@ -849,14 +823,8 @@ function handleKeyDown(e: KeyboardEvent) {
     if (['r', 'l', 'a', 'd', 't', 'f', 'v', 'e', 'b', ' ', 'escape', '?'].includes(key.toLowerCase()) && !ctrl) {
         e.preventDefault();
     }
-    // Prevent default for Ctrl shortcuts except Ctrl+V (which is handled by window 'paste' event)
-    if (ctrl && ['z', 'y', 'c', 'a', 'x'].includes(key.toLowerCase())) {
+    if (ctrl && ['z', 'y', 'c', 'a', 'x', 'v'].includes(key.toLowerCase())) {
         e.preventDefault();
-    }
-
-    if (ctrl && key.toLowerCase() === 'v') {
-        // Let standard browser paste event trigger
-        return;
     }
 
     const result = editor.onKeyDown(key, ctrl, shift);

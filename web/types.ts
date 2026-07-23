@@ -55,7 +55,6 @@ export interface AsciiEditorInterface {
     loadDocument(json: string): boolean;
     copySelection(): boolean;
     paste(): boolean;
-    pasteText(text: string): boolean;
     layerName(index: number): string;
     layerVisible(index: number): boolean;
     setLayerVisible(index: number, visible: boolean): void;
