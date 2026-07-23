@@ -79,8 +79,9 @@ export function resizeCanvas(): void {
                 state.editor.resize(width, height);
                 state.offscreenCanvas = null;
                 state.offscreenCtx = null;
-                const updateUIModule = import('./ui.js');
-                updateUIModule.then(m => m.updateUI());
+                void import('./ui.js').then(m => {
+                    m.updateUI();
+                });
             }
         }
         requestRender();
@@ -103,7 +104,7 @@ export function render(): void {
     if (!state.editor || !state.canvas || !state.ctx) return;
     state.animationFrameId = null;
 
-    if (USE_PIXEL_BUFFER && state.wasmMemory) {
+    if (state.wasmMemory) {
         const bufferWidth = state.editor.width * 8;
         const bufferHeight = state.editor.height * 20;
 
@@ -294,7 +295,7 @@ export function uploadFontAtlas(): void {
     ctx.textBaseline = 'top';
     ctx.fillStyle = 'white';
 
-    const charsToRasterize = [];
+    const charsToRasterize: string[] = [];
     for (let i = 32; i < 127; i++) {
         charsToRasterize.push(String.fromCharCode(i));
     }

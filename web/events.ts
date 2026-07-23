@@ -180,20 +180,20 @@ export function handleTouchEnd(e: TouchEvent): void {
 
 export function handleMobileInput(e: Event): void {
     if (!state.editor) return;
-    const input = e.target as HTMLInputElement;
-    const value = input.value;
+    const inputEl = e.target as HTMLInputElement;
+    const value = inputEl.value;
 
     if (value.length === 0) {
         const result = state.editor.onKeyDown('Backspace', false, false);
         handleEventResult(result);
-        input.value = ' ';
+        inputEl.value = ' ';
     } else if (value.length > 1) {
         const newChars = value.substring(1);
         for (const char of newChars) {
             const result = state.editor.onKeyDown(char, false, false);
             handleEventResult(result);
         }
-        input.value = ' ';
+        inputEl.value = ' ';
     }
 }
 
@@ -411,7 +411,7 @@ export function setupEventListeners(): void {
         state.mobileKeyboardProxy.addEventListener('input', handleMobileInput);
     }
 
-    state.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+    state.canvas.addEventListener('contextmenu', (e) => { e.preventDefault(); });
 
     state.canvas.addEventListener('wheel', handleWheel, { passive: false });
 
@@ -444,7 +444,7 @@ export function setupEventListeners(): void {
 
     if (state.toolButtons) {
         state.toolButtons.forEach(btn => {
-            btn.addEventListener('mousedown', (e) => e.preventDefault());
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
             btn.addEventListener('click', () => {
                 const tool = btn.getAttribute('data-tool');
                 if (tool) {
@@ -489,7 +489,7 @@ export function setupEventListeners(): void {
 
     if (state.directionBtns) {
         state.directionBtns.forEach(btn => {
-            btn.addEventListener('mousedown', (e) => e.preventDefault());
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); });
             btn.addEventListener('click', () => {
                 const direction = btn.getAttribute('data-direction');
                 if (direction === null) return;
@@ -513,7 +513,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.undoBtn) {
-        state.undoBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.undoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.undoBtn.addEventListener('click', () => {
             if (!state.editor) return;
             state.editor.undo();
@@ -524,7 +524,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.redoBtn) {
-        state.redoBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.redoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.redoBtn.addEventListener('click', () => {
             if (!state.editor) return;
             state.editor.redo();
@@ -535,7 +535,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.copyBtn) {
-        state.copyBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.copyBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.copyBtn.addEventListener('click', () => {
             void copyToClipboard();
             if (state.canvas) state.canvas.focus();
@@ -543,7 +543,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.clearBtn) {
-        state.clearBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.clearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.clearBtn.addEventListener('click', () => {
             if (!state.editor) return;
             if (confirm('Clear the canvas? This cannot be undone.')) {
@@ -605,12 +605,12 @@ export function setupEventListeners(): void {
     });
 
     if (state.helpBtn) {
-        state.helpBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.helpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.helpBtn.addEventListener('click', showShortcutsModal);
     }
 
     if (state.zoomFitBtn) {
-        state.zoomFitBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.zoomFitBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.zoomFitBtn.addEventListener('click', () => {
             if (!state.editor) return;
             fitZoom();
@@ -619,7 +619,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.zoomResetBtn) {
-        state.zoomResetBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.zoomResetBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.zoomResetBtn.addEventListener('click', () => {
             if (!state.editor) return;
             resetZoom();
@@ -628,7 +628,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.zoomOutBtn) {
-        state.zoomOutBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.zoomOutBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.zoomOutBtn.addEventListener('click', () => {
             if (!state.editor) return;
             setZoom(state.editor.zoom * 0.8);
@@ -637,7 +637,7 @@ export function setupEventListeners(): void {
     }
 
     if (state.zoomInBtn) {
-        state.zoomInBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        state.zoomInBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.zoomInBtn.addEventListener('click', () => {
             if (!state.editor) return;
             setZoom(state.editor.zoom * 1.25);

@@ -95,9 +95,8 @@ async function initialize() {
         state.directionBtns = document.querySelectorAll('.direction-btn');
         state.eraserRadiusSelect = getElement<HTMLSelectElement>('eraser-radius');
         state.mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
-        if (state.mobileKeyboardProxy) {
-            state.mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection
-        }
+
+        state.mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection
 
         // Get canvas and context
         state.canvas = getElement<HTMLCanvasElement>('canvas');
@@ -119,15 +118,13 @@ async function initialize() {
         resizeCanvas();
 
         // If the container has collapsed height (e.g. layout pending on WebKit), wait for layout
-        if (state.canvasContainer) {
-            let rect = state.canvasContainer.getBoundingClientRect();
-            if (rect.height < 50) {
-                for (let i = 0; i < 5; i++) {
-                    await new Promise(resolve => requestAnimationFrame(resolve));
-                    resizeCanvas();
-                    rect = state.canvasContainer.getBoundingClientRect();
-                    if (rect.height >= 50) break;
-                }
+        let rect = state.canvasContainer.getBoundingClientRect();
+        if (rect.height < 50) {
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                resizeCanvas();
+                rect = state.canvasContainer.getBoundingClientRect();
+                if (rect.height >= 50) break;
             }
         }
 
@@ -137,9 +134,7 @@ async function initialize() {
         editor = state.editor; // Sync with legacy export
 
         // Update editor with font metrics again after creation
-        if (state.editor) {
-            state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
-        }
+        state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
 
         // Restore auto-saved document if present (locks grid so resize cannot crop it).
         if (tryRestoreAutoSave(state.editor)) {
@@ -162,9 +157,7 @@ async function initialize() {
         state.isInitialized = true;
 
         // Hide loading overlay
-        if (state.loadingOverlay) {
-            state.loadingOverlay.classList.add('hidden');
-        }
+        state.loadingOverlay.classList.add('hidden');
 
         // Dispatch a resize event to ensure WebKit viewport/layout is fully synchronized
         window.dispatchEvent(new Event('resize'));
@@ -173,9 +166,7 @@ async function initialize() {
         }, 100);
 
         // Focus canvas
-        if (state.canvas) {
-            state.canvas.focus();
-        }
+        state.canvas.focus();
 
         // Rasterize and upload font atlas
         document.fonts.ready.then(() => {

@@ -63,25 +63,27 @@ export function updateToolButtons(activeTool: string): void {
         btn.setAttribute('aria-pressed', isActive.toString());
     });
 
-    const info = TOOL_INFO[normalizedTool];
-    const statusEl = document.querySelector('#status-message');
-    if (statusEl instanceof HTMLElement && info) {
-        statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
-    }
+    if (Object.prototype.hasOwnProperty.call(TOOL_INFO, normalizedTool)) {
+        const info = TOOL_INFO[normalizedTool];
+        const statusEl = document.querySelector('#status-message');
+        if (statusEl instanceof HTMLElement) {
+            statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;
+        }
 
-    const container = document.querySelector('#canvas-container');
-    if (container instanceof HTMLElement && info) {
-        container.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
-        if (info.cursor === 'text') {
-            container.classList.add('tool-text');
-        } else if (info.cursor === 'crosshair') {
-            if (normalizedTool === 'eraser') {
-                container.classList.add('tool-eraser');
-            } else {
-                container.classList.add('tool-crosshair');
+        const container = document.querySelector('#canvas-container');
+        if (container instanceof HTMLElement) {
+            container.classList.remove('tool-text', 'tool-select', 'tool-crosshair', 'tool-eraser');
+            if (info.cursor === 'text') {
+                container.classList.add('tool-text');
+            } else if (info.cursor === 'crosshair') {
+                if (normalizedTool === 'eraser') {
+                    container.classList.add('tool-eraser');
+                } else {
+                    container.classList.add('tool-crosshair');
+                }
+            } else if (normalizedTool === 'select') {
+                container.classList.add('tool-select');
             }
-        } else if (normalizedTool === 'select') {
-            container.classList.add('tool-select');
         }
     }
 }
