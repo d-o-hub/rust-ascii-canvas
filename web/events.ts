@@ -180,20 +180,21 @@ export function handleTouchEnd(e: TouchEvent): void {
 
 export function handleMobileInput(e: Event): void {
     if (!state.editor) return;
-    const proxyInputElement = e.target as HTMLInputElement;
-    const value = proxyInputElement.value;
+    if (e.target instanceof HTMLInputElement) {
+        const value = e.target.value;
 
-    if (value.length === 0) {
-        const result = state.editor.onKeyDown('Backspace', false, false);
-        handleEventResult(result);
-        proxyInputElement.value = ' ';
-    } else if (value.length > 1) {
-        const newChars = value.substring(1);
-        for (const char of newChars) {
-            const result = state.editor.onKeyDown(char, false, false);
+        if (value.length === 0) {
+            const result = state.editor.onKeyDown('Backspace', false, false);
             handleEventResult(result);
+            e.target.value = ' ';
+        } else if (value.length > 1) {
+            const newChars = value.substring(1);
+            for (const char of newChars) {
+                const result = state.editor.onKeyDown(char, false, false);
+                handleEventResult(result);
+            }
+            e.target.value = ' ';
         }
-        proxyInputElement.value = ' ';
     }
 }
 
