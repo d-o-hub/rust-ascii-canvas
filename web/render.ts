@@ -34,10 +34,14 @@ export function computeGridDimensions(): { width: number; height: number } {
     };
 }
 
+function getUsePixelBuffer(): boolean {
+    return USE_PIXEL_BUFFER;
+}
+
 export function measureFont(activeEditor?: AsciiEditorInterface | null): void {
     if (!state.ctx) return;
 
-    if (USE_PIXEL_BUFFER) {
+    if (getUsePixelBuffer()) {
         state.charWidth = GLYPH_WIDTH;
         state.lineHeight = GLYPH_HEIGHT;
     } else {
