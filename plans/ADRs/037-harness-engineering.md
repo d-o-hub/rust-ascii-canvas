@@ -1,10 +1,7 @@
 # ADR-037: Harness Engineering for Coding Agents
 
 ## Status
-Accepted
-
-## Date
-2026-07-16
+Accepted - 2026-07-16
 
 ## Context
 

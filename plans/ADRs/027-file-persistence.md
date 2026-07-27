@@ -3,6 +3,8 @@
 ## Status
 Implemented - 2026-07-15
 
+## Notes
+Implementation: `.asc` format + localStorage persistence.
 
 
 ## Context

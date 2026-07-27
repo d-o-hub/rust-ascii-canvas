@@ -126,3 +126,13 @@ Append here when the same class of failure hits CI or agents twice (or once with
 |--|--|
 | **Symptom** | Frontend-only PRs got no meaningful CI (path filter was Rust-only). |
 | **Prevention** | Path filters `rust` / `web` / `product` / `harness`; web + wasm + e2e wired to those outputs. |
+
+### L-003 — `plans/` changes invisible to CI (PR #147, 2026-07-27)
+
+| | |
+|--|--|
+| **Symptom** | ADR-only PR #147 triggered zero CI jobs — `plans/` was not in any path filter. CI reported green without running any checks. |
+| **Root cause** | Path filters in `.github/workflows/ci.yml` omitted `plans/**` from `harness` and `product` categories. |
+| **Why harness failed** | No sensor fired on docs-only changes. The architecture and format of ADR files had no automated validation. |
+| **Prevention** | (1) Added `plans/**` to `harness` path filter so fmt, clippy, and architecture checks run on ADR changes. (2) AGENTS.md now requires human review for bot-generated ADR PRs. (3) ADR status changes must be verified against actual commits. |
+| **Agent rule** | After touching `plans/ADRs/`, run `git log --oneline` to confirm status dates match real commit history. Do not mark ADRs as `Implemented` without corroborating evidence. |

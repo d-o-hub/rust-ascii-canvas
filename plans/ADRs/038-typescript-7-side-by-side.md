@@ -1,7 +1,7 @@
 # ADR-038: TypeScript 7 Side-by-Side Migration
 
 ## Status
-Proposed
+Proposed - 2026-07-27
 
 ## Context
 

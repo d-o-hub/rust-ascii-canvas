@@ -1,10 +1,7 @@
 # ADR-039: PR #146 Remediation — WASM Type Contract, Abstraction Hygiene & Script Separation
 
 ## Status
-Proposed
-
-## Date
-2026-07-27
+Proposed - 2026-07-27
 
 ## Context
 

@@ -3,6 +3,8 @@
 ## Status
 Implemented - 2026-07-15
 
+## Notes
+Basic layer stack only — add/switch/visibility. History clears on layer switch.
 
 
 ## Context

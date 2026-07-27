@@ -105,6 +105,14 @@ Use the `tool-validation` skill for the full procedure.
 - [Responsive grid](agents-docs/responsive-grid.md)
 - ADRs: `plans/ADRs/` (see **037-harness-engineering**)
 
+## Bot-generated PRs
+
+- Automated PRs (e.g., from Jules, Dependabot, or other bots) must be reviewed by a human before merge.
+- ADR-only PRs must have status changes verified against actual commit history — not just PROJECT_STATUS.md.
+- ADR `## Status` changes must preserve cross-references and implementation scope notes.
+- `plans/` changes trigger harness CI checks (fmt, architecture, lint).
+- Learn observed bot failures in `agents-docs/harness.md` (steering log).
+
 ## PR / handoff
 
 - Fast gates green on every push-worthy change; full gates green before review.

@@ -1,8 +1,10 @@
 # ADR-033: TypeScript Type Safety Hardening
 
 ## Status
-Implemented - 2026-07-27
+Partially Implemented - 2026-07-27
 
+## Notes
+See ADR-039 for remediation scope — only Category 1 (WASM-generated types) is implemented. Categories 2-5 (dead variables, `@ts-ignore`, `(window as any)`, untyped `RenderCommand`) remain open.
 
 
 ## Context
