@@ -13,7 +13,7 @@ import {
 } from './constants.js';
 import { logger } from './logger.js';
 import { debounce } from './utils.js';
-import type { RenderCommand, AsciiEditorInterface } from './types.js';
+import type { RenderCommand, AsciiEditor } from './types.js';
 
 export function computeGridDimensions(): { width: number; height: number } {
     if (!state.canvasContainer) return { width: MIN_COLS, height: MIN_ROWS };
@@ -38,7 +38,7 @@ function getUsePixelBuffer(): boolean {
     return USE_PIXEL_BUFFER;
 }
 
-export function measureFont(activeEditor?: AsciiEditorInterface | null): void {
+export function measureFont(activeEditor?: AsciiEditor | null): void {
     if (!state.ctx) return;
 
     if (getUsePixelBuffer()) {
@@ -261,9 +261,10 @@ export function updateCursorIndicator(gridX: number, gridY: number): void {
 export function updateIndicator(): void {
     if (!state.editor || !state.cursorIndicator) return;
 
-    let textPos: number[] | null = null;
+    let textPos: number[] | Int32Array | null = null;
     if (state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function') {
-        textPos = state.editor.textCursorPosition();
+        const pos = state.editor.textCursorPosition();
+        textPos = pos ? pos : null;
     }
 
     if (textPos) {

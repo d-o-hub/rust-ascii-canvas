@@ -4,11 +4,11 @@
 
 import { AUTOSAVE_KEY } from './constants.js';
 import { logger } from './logger.js';
-import type { AsciiEditorInterface } from './types.js';
+import type { AsciiEditor } from './types.js';
 import type { ToastFn } from './clipboard.js';
 
 /** Save current document JSON to localStorage. */
-export function autoSave(editor: AsciiEditorInterface): void {
+export function autoSave(editor: AsciiEditor): void {
     try {
         const json = editor.serializeDocument();
         localStorage.setItem(AUTOSAVE_KEY, json);
@@ -18,7 +18,7 @@ export function autoSave(editor: AsciiEditorInterface): void {
 }
 
 /** Load autosaved document if present. Returns true if restored. */
-export function tryRestoreAutoSave(editor: AsciiEditorInterface): boolean {
+export function tryRestoreAutoSave(editor: AsciiEditor): boolean {
     try {
         const json = localStorage.getItem(AUTOSAVE_KEY);
         if (!json) return false;
@@ -30,7 +30,7 @@ export function tryRestoreAutoSave(editor: AsciiEditorInterface): boolean {
 }
 
 /** Download current document as a `.asc` JSON file. */
-export function downloadDocument(editor: AsciiEditorInterface, showToast: ToastFn): void {
+export function downloadDocument(editor: AsciiEditor, showToast: ToastFn): void {
     try {
         const json = editor.serializeDocument();
         const blob = new Blob([json], { type: 'application/json' });
@@ -49,7 +49,7 @@ export function downloadDocument(editor: AsciiEditorInterface, showToast: ToastF
 
 /** Open a file picker and load a `.asc` / JSON document. */
 export function openDocumentPicker(
-    editor: AsciiEditorInterface,
+    editor: AsciiEditor,
     showToast: ToastFn,
     onLoaded: () => void,
 ): void {
@@ -86,7 +86,7 @@ export interface AutoSaveScheduler {
 
 /** Debounced auto-save helper with immediate flush for unload paths. */
 export function createAutoSaveScheduler(
-    getEditor: () => AsciiEditorInterface | null,
+    getEditor: () => AsciiEditor | null,
     delayMs = 1500,
 ): AutoSaveScheduler {
     let timer: ReturnType<typeof setTimeout> | null = null;

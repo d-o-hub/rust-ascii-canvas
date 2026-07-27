@@ -4,7 +4,7 @@
 
 import { logger } from './logger.js';
 import { normalizeToCRLF } from './utils.js';
-import type { AsciiEditorInterface } from './types.js';
+import type { AsciiEditor } from './types.js';
 
 export type ToastFn = (message: string, isError?: boolean) => void;
 
@@ -30,7 +30,7 @@ export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Pr
  * Selection-aware copy: fills internal clipboard and writes OS clipboard text.
  */
 export async function copyToClipboard(
-    editor: AsciiEditorInterface,
+    editor: AsciiEditor,
     showToast: ToastFn,
 ): Promise<void> {
     // Populate internal SelectionClipboard for Ctrl+V paste inside the editor.
