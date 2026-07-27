@@ -50,7 +50,7 @@ End-to-End tests in browser environments are inherently vulnerable to transient 
 
 ## Mobile Skip Policy
 
-The ASCII Canvas Editor uses a highly responsive CSS grid design. On viewports with width $\le$ 768px (which includes the `mobile-chrome` and `mobile-safari` profiles), the following visual sections are hidden to optimize smaller screens:
+The ASCII Canvas Editor uses a highly responsive CSS grid design. On viewports with width ≤ 768px (which includes the `mobile-chrome` and `mobile-safari` profiles), the following visual sections are hidden to optimize smaller screens:
 - **Side Panel** (`.side-panel`) — Zoom indicators, Grid size inputs, Layers, and the Shortcuts list.
 - **Toolbar Left/Right** (`.toolbar-left`, `.toolbar-right`) — Logo, Undo/Redo, Copy, Save, Load, PNG export, Clear Canvas, and Help buttons.
 - **Status Bar** (`.status-bar`) — Active tool description and dynamic status toasts.

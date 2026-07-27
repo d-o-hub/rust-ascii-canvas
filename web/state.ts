@@ -40,6 +40,8 @@ export interface AppState {
     statusToast: HTMLElement | null;
     undoBtn: HTMLButtonElement | null;
     redoBtn: HTMLButtonElement | null;
+    mobileUndoBtn: HTMLButtonElement | null;
+    mobileRedoBtn: HTMLButtonElement | null;
     copyBtn: HTMLButtonElement | null;
     clearBtn: HTMLButtonElement | null;
     helpBtn: HTMLButtonElement | null;
@@ -92,6 +94,8 @@ export const state: AppState = {
     statusToast: null,
     undoBtn: null,
     redoBtn: null,
+    mobileUndoBtn: null,
+    mobileRedoBtn: null,
     copyBtn: null,
     clearBtn: null,
     helpBtn: null,

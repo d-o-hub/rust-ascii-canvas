@@ -255,7 +255,7 @@ The final static assets will be in the `dist/` directory.
 
 ASCII Canvas features a highly polished, fully optimized, responsive mobile UX with native-like features:
 
-- **Adaptive Toolbar & Layout**: On mobile screens ($\le$ 768px), the main toolbar moves to the bottom for comfortable thumb reach.
+- **Adaptive Toolbar & Layout**: On mobile screens (≤ 768px), the main toolbar moves to the bottom for comfortable thumb reach.
 - **Slide-Out Panels Drawer**: Triggered by the bottom **Menu (☰)** button, a side drawer slides in gracefully from the right. It provides full access to:
   - **Mobile Actions Grid**: 10 essential actions (Undo, Redo, Copy ASCII, Save Diagram, Load Diagram, Export PNG/SVG, Theme toggle, Help modal) arranged in a spacious 2-column grid.
   - **View & Zoom Controls**: Responsive buttons for Reset (1:1), Fit to View, Zoom In, and Zoom Out.

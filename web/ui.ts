@@ -407,11 +407,8 @@ export function updateUI(): void {
 
         if (state.undoBtn) state.undoBtn.disabled = !canUndo;
         if (state.redoBtn) state.redoBtn.disabled = !canRedo;
-
-        const mobileUndoBtn = document.getElementById('mobile-undo-btn') as HTMLButtonElement | null;
-        const mobileRedoBtn = document.getElementById('mobile-redo-btn') as HTMLButtonElement | null;
-        if (mobileUndoBtn) mobileUndoBtn.disabled = !canUndo;
-        if (mobileRedoBtn) mobileRedoBtn.disabled = !canRedo;
+        if (state.mobileUndoBtn) state.mobileUndoBtn.disabled = !canUndo;
+        if (state.mobileRedoBtn) state.mobileRedoBtn.disabled = !canRedo;
 
         if (state.gridSizeEl) state.gridSizeEl.textContent = `${state.editor.width} × ${state.editor.height}`;
         if (state.statusToolEl) state.statusToolEl.textContent = `Tool: ${capitalize(state.editor.tool)}`;
@@ -419,4 +416,32 @@ export function updateUI(): void {
     } catch (error) {
         logger.error('Failed to update UI:', error);
     }
+}
+
+export function toggleTheme(): void {
+    const currentTheme = localStorage.getItem('ascii-canvas-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('ascii-canvas-theme', newTheme);
+
+    const mobileThemeIcon = document.getElementById('mobile-theme-icon');
+
+    if (newTheme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+        if (state.themeIcon) state.themeIcon.textContent = '☀️';
+        if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
+        if (state.editor) state.editor.setTheme('Light');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        if (state.themeIcon) state.themeIcon.textContent = '🌙';
+        if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
+        if (state.editor) state.editor.setTheme('Figma Dark');
+    }
+
+    if (state.editor) {
+        state.editor.requestRedraw();
+    }
+    if (state.requestRender) {
+        state.requestRender();
+    }
+    showToast(`Theme: ${newTheme === 'light' ? 'Light' : 'Dark'}`);
 }
