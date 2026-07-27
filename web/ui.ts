@@ -402,8 +402,17 @@ export function refreshLayerList(): void {
 export function updateUI(): void {
     if (!state.editor) return;
     try {
-        if (state.undoBtn) state.undoBtn.disabled = !state.editor.can_undo;
-        if (state.redoBtn) state.redoBtn.disabled = !state.editor.can_redo;
+        const canUndo = state.editor.can_undo;
+        const canRedo = state.editor.can_redo;
+
+        if (state.undoBtn) state.undoBtn.disabled = !canUndo;
+        if (state.redoBtn) state.redoBtn.disabled = !canRedo;
+
+        const mobileUndoBtn = document.getElementById('mobile-undo-btn') as HTMLButtonElement | null;
+        const mobileRedoBtn = document.getElementById('mobile-redo-btn') as HTMLButtonElement | null;
+        if (mobileUndoBtn) mobileUndoBtn.disabled = !canUndo;
+        if (mobileRedoBtn) mobileRedoBtn.disabled = !canRedo;
+
         if (state.gridSizeEl) state.gridSizeEl.textContent = `${state.editor.width} × ${state.editor.height}`;
         if (state.statusToolEl) state.statusToolEl.textContent = `Tool: ${capitalize(state.editor.tool)}`;
         refreshLayerList();

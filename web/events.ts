@@ -693,4 +693,167 @@ export function setupEventListeners(): void {
             if (state.canvas) state.canvas.focus();
         });
     }
+
+    // Mobile Drawer Setup
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const closeDrawerBtn = document.getElementById('close-drawer-btn');
+    const drawerOverlay = document.getElementById('drawer-overlay');
+    const sidePanel = document.getElementById('side-panel');
+
+    const closeDrawer = () => {
+        if (sidePanel) sidePanel.classList.remove('open');
+        if (drawerOverlay) drawerOverlay.classList.remove('open');
+    };
+
+    if (mobileMenuBtn && sidePanel && drawerOverlay) {
+        mobileMenuBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        mobileMenuBtn.addEventListener('click', () => {
+            sidePanel.classList.toggle('open');
+            drawerOverlay.classList.toggle('open');
+        });
+    }
+
+    if (closeDrawerBtn) {
+        closeDrawerBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        closeDrawerBtn.addEventListener('click', closeDrawer);
+    }
+
+    if (drawerOverlay) {
+        drawerOverlay.addEventListener('click', closeDrawer);
+    }
+
+    // Mobile Action Button Listeners
+    const mobileUndoBtn = document.getElementById('mobile-undo-btn');
+    if (mobileUndoBtn) {
+        mobileUndoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        mobileUndoBtn.addEventListener('click', () => {
+            if (!state.editor) return;
+            state.editor.undo();
+            requestRender();
+            updateUI();
+            closeDrawer();
+            if (state.canvas) state.canvas.focus();
+        });
+    }
+
+    const mobileRedoBtn = document.getElementById('mobile-redo-btn');
+    if (mobileRedoBtn) {
+        mobileRedoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        mobileRedoBtn.addEventListener('click', () => {
+            if (!state.editor) return;
+            state.editor.redo();
+            requestRender();
+            updateUI();
+            closeDrawer();
+            if (state.canvas) state.canvas.focus();
+        });
+    }
+
+    const mobileCopyBtn = document.getElementById('mobile-copy-btn');
+    if (mobileCopyBtn) {
+        mobileCopyBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        mobileCopyBtn.addEventListener('click', () => {
+            void copyToClipboard();
+            closeDrawer();
+            if (state.canvas) state.canvas.focus();
+        });
+    }
+
+    const mobileClearBtn = document.getElementById('mobile-clear-btn');
+    if (mobileClearBtn) {
+        mobileClearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        mobileClearBtn.addEventListener('click', () => {
+            if (!state.editor) return;
+            if (confirm('Clear the canvas? This cannot be undone.')) {
+                state.editor.clear();
+                requestRender();
+                updateUI();
+                scheduleAutoSave();
+                showToast('Canvas cleared');
+                closeDrawer();
+                if (state.canvas) state.canvas.focus();
+            }
+        });
+    }
+
+    wireOptionalButton('mobile-save-btn', () => {
+        if (!state.editor) return;
+        downloadDocument(state.editor, showToast);
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
+
+    wireOptionalButton('mobile-load-btn', () => {
+        if (!state.editor) return;
+        openDocumentPicker(state.editor, showToast, () => {
+            state.gridSizeLocked = true;
+            state.offscreenCanvas = null;
+            state.offscreenCtx = null;
+            syncGridInputs();
+            requestRender();
+            updateUI();
+            flushAutoSave();
+        });
+        closeDrawer();
+    });
+
+    wireOptionalButton('mobile-png-btn', () => {
+        if (state.editor) {
+            state.editor.requestRedraw();
+            requestRender();
+            requestAnimationFrame(() => {
+                exportPng(state.offscreenCanvas, state.canvas, showToast);
+            });
+        }
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
+
+    wireOptionalButton('mobile-svg-btn', () => {
+        if (state.editor) {
+            exportSvg(state.editor, showToast);
+        }
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
+
+    const mobileThemeBtn = document.getElementById('mobile-theme-btn');
+    const mobileThemeIcon = document.getElementById('mobile-theme-icon');
+    if (mobileThemeBtn) {
+        mobileThemeBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        mobileThemeBtn.addEventListener('click', () => {
+            const currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem(THEME_KEY, newTheme);
+
+            if (newTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (state.themeIcon) state.themeIcon.textContent = '☀️';
+                if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
+                if (state.editor) state.editor.setTheme('Light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                if (state.themeIcon) state.themeIcon.textContent = '🌙';
+                if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
+                if (state.editor) state.editor.setTheme('Figma Dark');
+            }
+
+            if (state.editor) {
+                state.editor.requestRedraw();
+            }
+            requestRender();
+            closeDrawer();
+            if (state.canvas) state.canvas.focus();
+            showToast(`Theme: ${newTheme === 'light' ? 'Light' : 'Dark'}`);
+        });
+    }
+
+    const mobileHelpBtn = document.getElementById('mobile-help-btn');
+    if (mobileHelpBtn) {
+        mobileHelpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        mobileHelpBtn.addEventListener('click', () => {
+            showShortcutsModal();
+            closeDrawer();
+        });
+    }
 }

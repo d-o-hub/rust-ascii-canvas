@@ -251,6 +251,22 @@ The final static assets will be in the `dist/` directory.
 - **Instrumentation**: `AsciiEditor` tracks `fullRenderCount` and `dirtyRenderCount` for performance auditing.
 - **History Coalescing**: Consecutive small draw operations (like freehand drawing) are automatically coalesced into single undo/redo steps.
 
+## Mobile Support
+
+ASCII Canvas features a highly polished, fully optimized, responsive mobile UX with native-like features:
+
+- **Adaptive Toolbar & Layout**: On mobile screens ($\le$ 768px), the main toolbar moves to the bottom for comfortable thumb reach.
+- **Slide-Out Panels Drawer**: Triggered by the bottom **Menu (☰)** button, a side drawer slides in gracefully from the right. It provides full access to:
+  - **Mobile Actions Grid**: 10 essential actions (Undo, Redo, Copy ASCII, Save Diagram, Load Diagram, Export PNG/SVG, Theme toggle, Help modal) arranged in a spacious 2-column grid.
+  - **View & Zoom Controls**: Responsive buttons for Reset (1:1), Fit to View, Zoom In, and Zoom Out.
+  - **Grid Size Inputs**: Adjust Cols and Rows with touch-friendly dimensions.
+  - **Layers Panel**: Create, rename, hide, lock, reorder, merge, or delete layers directly.
+- **Enhanced Touch Targets**: Touch targets across the entire interface (drawing tools, layers list buttons, action and zoom controls) are enlarged to at least **44px** (and **36px** for layer actions) to ensure high-accuracy tapping and comply with mobile usability guidelines.
+- **Supported Touch Gestures**:
+  - **Single-finger Drag**: Tap and drag on the canvas to draw shapes, lines, arrows, diamonds, freehand, or move selections.
+  - **Two-finger Pinch-to-Zoom**: Pinch-in or pinch-out with two fingers anywhere on the canvas to zoom.
+  - **Two-finger Drag-to-Pan**: Move two fingers together to pan/scroll across the grid.
+
 ## Browser Support
 
 - Chrome 80+
