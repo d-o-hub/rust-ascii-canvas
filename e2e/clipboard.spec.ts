@@ -212,10 +212,11 @@ test.describe('Copy / export fidelity', () => {
 
         // Verify clipboard content via navigator.clipboard.readText() - must succeed on Chromium
         const clipboardText = await page.evaluate(async () => {
-            if (!navigator.clipboard || typeof navigator.clipboard.readText !== 'function') {
+            const cb = navigator.clipboard;
+            if (!cb) {
                 throw new Error('Clipboard API unsupported');
             }
-            return await navigator.clipboard.readText();
+            return await cb.readText();
         });
 
         // Normalize line endings to LF to perform line-by-line geometry comparison
@@ -225,10 +226,7 @@ test.describe('Copy / export fidelity', () => {
         const exportedLines = normExported.split('\n').filter(l => l.length > 0);
         const clipboardLines = normClipboard.split('\n').filter(l => l.length > 0);
 
-        expect(clipboardLines.length).toBe(exportedLines.length);
-
-        for (let i = 0; i < exportedLines.length; i++) {
-            expect(clipboardLines[i]).toBe(exportedLines[i]);
-        }
+        // Directly compare arrays to prevent any bracket notation/index access warning (L231)
+        expect(clipboardLines).toEqual(exportedLines);
     });
 });
