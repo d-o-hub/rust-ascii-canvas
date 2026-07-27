@@ -31,8 +31,8 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
   - Install mise by following the [mise installation instructions](https://mise.jdx.dev/getting-started.html).
   - Run `mise install` in the project root to install all required tools automatically.
 - **WASM Optimizer**: [binaryen (`wasm-opt`)](https://github.com/WebAssembly/binaryen) is **required** to compile optimized release builds of the WASM module.
-  - If using `mise`, it is automatically installed as part of the toolchain setup.
-  - Alternatively, you can install it globally via npm: `npm install -g wasm-opt`.
+  - If using `mise`, it is automatically installed as part of the toolchain setup (defined in `mise.toml`).
+  - Alternatively, you can install it globally via npm using the canonical `binaryen` package: `npm install -g binaryen`.
   - Or manually install the `binaryen` package via your system package manager (e.g., `brew install binaryen` or `apt-get install binaryen`).
 
 ### Build
