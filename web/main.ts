@@ -130,17 +130,13 @@ async function initialize() {
         const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
         if (savedTheme === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
-            if (state.themeIcon) {
-                state.themeIcon.textContent = '☀️';
-            }
+            state.themeIcon.textContent = '☀️';
             if (state.editor) {
                 state.editor.setTheme('Light');
             }
         } else {
             document.documentElement.removeAttribute('data-theme');
-            if (state.themeIcon) {
-                state.themeIcon.textContent = '🌙';
-            }
+            state.themeIcon.textContent = '🌙';
             if (state.editor) {
                 state.editor.setTheme('Figma Dark');
             }
