@@ -679,10 +679,10 @@ export function setupEventListeners(): void {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
 
-    const closeDrawer = () => {
+    function closeDrawer(): void {
         if (sidePanel) sidePanel.classList.remove('open');
         if (drawerOverlay) drawerOverlay.classList.remove('open');
-    };
+    }
 
     if (mobileMenuBtn && sidePanel && drawerOverlay) {
         mobileMenuBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
