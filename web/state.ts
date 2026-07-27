@@ -2,10 +2,10 @@
  * ASCII Canvas Editor - Shared Application State
  */
 
-import type { AsciiEditorInterface } from './types.js';
+import type { AsciiEditor } from './types.js';
 
 export interface AppState {
-    editor: AsciiEditorInterface | null;
+    editor: AsciiEditor | null;
     wasmMemory: WebAssembly.Memory | null;
     canvas: HTMLCanvasElement | null;
     ctx: CanvasRenderingContext2D | null;

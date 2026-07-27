@@ -4,13 +4,13 @@
 
 import { logger } from './logger.js';
 import type { ToastFn } from './clipboard.js';
-import type { AsciiEditorInterface } from './types.js';
+import type { AsciiEditor } from './types.js';
 
 /**
  * Export the current ASCII canvas as SVG and trigger download.
  */
 export function exportSvg(
-    editor: AsciiEditorInterface,
+    editor: AsciiEditor,
     showToast: ToastFn,
     filename = 'ascii-canvas.svg',
 ): void {

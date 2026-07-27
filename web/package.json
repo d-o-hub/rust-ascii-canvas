@@ -13,7 +13,7 @@
     "test:watch": "vitest",
     "e2e": "cd .. && npx playwright test --config playwright.config.ts",
     "e2e:ui": "cd .. && npx playwright test --config playwright.config.ts --ui",
-    "lint": "eslint ."
+    "lint": "eslint . && tsc --noEmit"
   },
   "keywords": [
     "ascii",

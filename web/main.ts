@@ -6,7 +6,7 @@
 
 import init, { AsciiEditor } from './pkg/ascii_canvas.js';
 import { logger } from './logger.js';
-import type { AsciiEditorInterface } from './types.js';
+import type { AsciiEditor as AsciiEditorType } from './types.js';
 import { FONT_SIZE, TOOL_INFO } from './constants.js';
 import { getElement } from './utils.js';
 import { tryRestoreAutoSave } from './persistence.js';
@@ -29,7 +29,7 @@ import { setupEventListeners } from './events.js';
 // Expose editor for testing
 declare global {
     interface Window {
-        editor: AsciiEditorInterface | null;
+        editor: AsciiEditorType | null;
         charWidth: number;
         lineHeight: number;
     }
@@ -119,7 +119,7 @@ async function initialize() {
 
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
-        state.editor = new AsciiEditor(width, height) as unknown as AsciiEditorInterface;
+        state.editor = new AsciiEditor(width, height);
 
         // Update editor with font metrics again after creation
         state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
