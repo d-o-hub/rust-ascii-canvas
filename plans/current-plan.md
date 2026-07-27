@@ -11,6 +11,22 @@
 
 ---
 
+## Latest: PR #146 Post-Merge Remediation (2026-07-27)
+
+**Swarm-based review** identified 5 issues in merged PR #146 (F-22 WASM types):
+
+| # | Finding | Severity | ADR |
+|---|---------|----------|-----|
+| 1 | Redundant dual import + alias in `main.ts` | Low | 039 |
+| 2 | Type-inaccurate `textCursorPosition` (`number[]` vs `Int32Array`) | Medium | 039 |
+| 3 | Dead ternary in `render.ts` textPos assignment | Low | 039 |
+| 4 | `tsc --noEmit` mixed into `lint` script — should be separate `typecheck` | Medium | 039 |
+| 5 | Lost interface contract documentation | Low | 039 |
+
+**Execution plan**: See ADR-039 for detailed fix steps. Priority: 4 → 2 → 1 → 3 → 5.
+
+---
+
 ## World State (Current — Verified 2026-07-16)
 
 | Property | Value |
