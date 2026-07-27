@@ -8,7 +8,6 @@ import {
     TOOL_INFO,
     MIN_COLS,
     MIN_ROWS,
-    THEME_KEY,
 } from './constants.js';
 import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
 import { createAutoSaveScheduler, downloadDocument, openDocumentPicker } from './persistence.js';
@@ -30,6 +29,7 @@ import {
     showShortcutsModal,
     showToast,
     syncGridInputs,
+    toggleTheme,
     updateToolButtons,
     updateUI,
 } from './ui.js';
@@ -632,31 +632,10 @@ export function setupEventListeners(): void {
         state.helpBtn.addEventListener('click', showShortcutsModal);
     }
 
-    if (state.themeBtn) {
-        state.themeBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        state.themeBtn.addEventListener('click', () => {
-            const currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem(THEME_KEY, newTheme);
-
-            if (newTheme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                if (state.themeIcon) state.themeIcon.textContent = '☀️';
-                if (state.editor) state.editor.setTheme('Light');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                if (state.themeIcon) state.themeIcon.textContent = '🌙';
-                if (state.editor) state.editor.setTheme('Figma Dark');
-            }
-
-            if (state.editor) {
-                state.editor.requestRedraw();
-            }
-            requestRender();
-            if (state.canvas) state.canvas.focus();
-            showToast(`Theme: ${newTheme === 'light' ? 'Light' : 'Dark'}`);
-        });
-    }
+    wireOptionalButton('theme-btn', () => {
+        toggleTheme();
+        if (state.canvas) state.canvas.focus();
+    });
 
     if (state.zoomFitBtn) {
         state.zoomFitBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
@@ -695,10 +674,10 @@ export function setupEventListeners(): void {
     }
 
     // Mobile Drawer Setup
+    const sidePanel = document.getElementById('side-panel');
+    const drawerOverlay = document.getElementById('drawer-overlay');
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
-    const drawerOverlay = document.getElementById('drawer-overlay');
-    const sidePanel = document.getElementById('side-panel');
 
     const closeDrawer = () => {
         if (sidePanel) sidePanel.classList.remove('open');
@@ -722,59 +701,45 @@ export function setupEventListeners(): void {
         drawerOverlay.addEventListener('click', closeDrawer);
     }
 
-    // Mobile Action Button Listeners
-    const mobileUndoBtn = document.getElementById('mobile-undo-btn');
-    if (mobileUndoBtn) {
-        mobileUndoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileUndoBtn.addEventListener('click', () => {
-            if (!state.editor) return;
+    // Mobile Actions Wiring
+    wireOptionalButton('mobile-undo-btn', () => {
+        if (state.editor) {
             state.editor.undo();
             requestRender();
             updateUI();
-            closeDrawer();
-            if (state.canvas) state.canvas.focus();
-        });
-    }
+        }
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
 
-    const mobileRedoBtn = document.getElementById('mobile-redo-btn');
-    if (mobileRedoBtn) {
-        mobileRedoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileRedoBtn.addEventListener('click', () => {
-            if (!state.editor) return;
+    wireOptionalButton('mobile-redo-btn', () => {
+        if (state.editor) {
             state.editor.redo();
             requestRender();
             updateUI();
+        }
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
+
+    wireOptionalButton('mobile-copy-btn', () => {
+        void copyToClipboard();
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
+
+    wireOptionalButton('mobile-clear-btn', () => {
+        if (!state.editor) return;
+        if (confirm('Clear the canvas? This cannot be undone.')) {
+            state.editor.clear();
+            requestRender();
+            updateUI();
+            scheduleAutoSave();
+            showToast('Canvas cleared');
             closeDrawer();
             if (state.canvas) state.canvas.focus();
-        });
-    }
-
-    const mobileCopyBtn = document.getElementById('mobile-copy-btn');
-    if (mobileCopyBtn) {
-        mobileCopyBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileCopyBtn.addEventListener('click', () => {
-            void copyToClipboard();
-            closeDrawer();
-            if (state.canvas) state.canvas.focus();
-        });
-    }
-
-    const mobileClearBtn = document.getElementById('mobile-clear-btn');
-    if (mobileClearBtn) {
-        mobileClearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileClearBtn.addEventListener('click', () => {
-            if (!state.editor) return;
-            if (confirm('Clear the canvas? This cannot be undone.')) {
-                state.editor.clear();
-                requestRender();
-                updateUI();
-                scheduleAutoSave();
-                showToast('Canvas cleared');
-                closeDrawer();
-                if (state.canvas) state.canvas.focus();
-            }
-        });
-    }
+        }
+    });
 
     wireOptionalButton('mobile-save-btn', () => {
         if (!state.editor) return;
@@ -817,43 +782,14 @@ export function setupEventListeners(): void {
         if (state.canvas) state.canvas.focus();
     });
 
-    const mobileThemeBtn = document.getElementById('mobile-theme-btn');
-    const mobileThemeIcon = document.getElementById('mobile-theme-icon');
-    if (mobileThemeBtn) {
-        mobileThemeBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileThemeBtn.addEventListener('click', () => {
-            const currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-            localStorage.setItem(THEME_KEY, newTheme);
+    wireOptionalButton('mobile-theme-btn', () => {
+        toggleTheme();
+        closeDrawer();
+        if (state.canvas) state.canvas.focus();
+    });
 
-            if (newTheme === 'light') {
-                document.documentElement.setAttribute('data-theme', 'light');
-                if (state.themeIcon) state.themeIcon.textContent = '☀️';
-                if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
-                if (state.editor) state.editor.setTheme('Light');
-            } else {
-                document.documentElement.removeAttribute('data-theme');
-                if (state.themeIcon) state.themeIcon.textContent = '🌙';
-                if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
-                if (state.editor) state.editor.setTheme('Figma Dark');
-            }
-
-            if (state.editor) {
-                state.editor.requestRedraw();
-            }
-            requestRender();
-            closeDrawer();
-            if (state.canvas) state.canvas.focus();
-            showToast(`Theme: ${newTheme === 'light' ? 'Light' : 'Dark'}`);
-        });
-    }
-
-    const mobileHelpBtn = document.getElementById('mobile-help-btn');
-    if (mobileHelpBtn) {
-        mobileHelpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileHelpBtn.addEventListener('click', () => {
-            showShortcutsModal();
-            closeDrawer();
-        });
-    }
+    wireOptionalButton('mobile-help-btn', () => {
+        showShortcutsModal();
+        closeDrawer();
+    });
 }

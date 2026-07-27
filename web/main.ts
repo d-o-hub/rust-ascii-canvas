@@ -76,6 +76,8 @@ async function initialize() {
         state.statusToast = getElement('status-toast');
         state.undoBtn = getElement<HTMLButtonElement>('undo-btn');
         state.redoBtn = getElement<HTMLButtonElement>('redo-btn');
+        state.mobileUndoBtn = getElement<HTMLButtonElement>('mobile-undo-btn');
+        state.mobileRedoBtn = getElement<HTMLButtonElement>('mobile-redo-btn');
         state.copyBtn = getElement<HTMLButtonElement>('copy-btn');
         state.clearBtn = getElement<HTMLButtonElement>('clear-btn');
         state.helpBtn = getElement<HTMLButtonElement>('help-btn');
