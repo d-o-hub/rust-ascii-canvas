@@ -58,6 +58,7 @@ jobs:
               - '.agents/**'
               - '.loc-allowlist'
               - '.github/workflows/**'
+              - 'plans/**'
             product:
               - 'src/**'
               - 'tests/**'

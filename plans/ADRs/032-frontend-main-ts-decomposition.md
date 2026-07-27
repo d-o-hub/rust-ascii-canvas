@@ -3,6 +3,8 @@
 ## Status
 Implemented - 2026-07-15
 
+## Notes
+Partial implementation: feature modules extracted; main.ts remains orchestrator.
 
 
 ## Context

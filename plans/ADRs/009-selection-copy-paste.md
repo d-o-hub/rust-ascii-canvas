@@ -3,6 +3,8 @@
 ## Status
 Implemented - 2026-07-15
 
+## Notes
+Implemented via ADR-036 (Clipboard Fidelity & Product Features Bundle).
 
 
 ## Context

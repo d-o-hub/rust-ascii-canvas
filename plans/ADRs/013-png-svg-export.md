@@ -3,6 +3,8 @@
 ## Status
 Implemented - 2026-07-16
 
+## Notes
+PNG export implemented 2026-07-15; SVG export implemented 2026-07-16.
 
 
 ## Context

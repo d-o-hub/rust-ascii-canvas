@@ -1,8 +1,7 @@
 # ADR-011: Preview Operations Rendering
 
 ## Status
-Proposed - 2026-03-01
-
+Implemented - 2026-07-21
 
 
 ## Context
