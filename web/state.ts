@@ -52,6 +52,8 @@ export interface AppState {
     directionBtns: NodeListOf<Element> | null;
     eraserRadiusSelect: HTMLSelectElement | null;
     mobileKeyboardProxy: HTMLInputElement | null;
+    themeBtn: HTMLButtonElement | null;
+    themeIcon: HTMLElement | null;
 }
 
 export const state: AppState = {
@@ -102,4 +104,6 @@ export const state: AppState = {
     directionBtns: null,
     eraserRadiusSelect: null,
     mobileKeyboardProxy: null,
+    themeBtn: null,
+    themeIcon: null,
 };

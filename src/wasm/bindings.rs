@@ -42,6 +42,7 @@ pub struct AsciiEditor {
     pub(crate) layers: Vec<LayerData>,
     pub(crate) active_layer: usize,
     pub(crate) eraser_size: i32,
+    pub(crate) theme: crate::ui::Theme,
 }
 
 /// Serializable layer metadata + content snapshot.
@@ -105,6 +106,7 @@ impl AsciiEditor {
             }],
             active_layer: 0,
             eraser_size: 1,
+            theme: crate::ui::Theme::figma_dark(),
         }
     }
 
@@ -305,5 +307,24 @@ impl AsciiEditor {
             }
         }
         None
+    }
+
+    /// Sets the active theme of the editor by name (case-insensitive).
+    /// Returns true if the theme was successfully changed, false otherwise.
+    #[wasm_bindgen(js_name = setTheme)]
+    pub fn set_theme(&mut self, theme_name: String) -> bool {
+        if let Some(theme) = crate::ui::Theme::find(&theme_name) {
+            self.theme = theme;
+            self.dirty_tracker.request_full_redraw();
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Gets the name of the active theme.
+    #[wasm_bindgen(getter = themeName)]
+    pub fn theme_name(&self) -> String {
+        self.theme.name.clone()
     }
 }

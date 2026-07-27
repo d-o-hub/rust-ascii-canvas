@@ -39,14 +39,16 @@ impl AsciiEditor {
 
         // Background
         svg.push_str(&format!(
-            r##"<rect width="{w}" height="{h}" fill="#1e1e1e" />"##,
+            r##"<rect width="{w}" height="{h}" fill="{bg}" />"##,
             w = svg_width,
-            h = svg_height
+            h = svg_height,
+            bg = self.theme.background
         ));
 
         // Group with shared styling
         svg.push_str(&format!(
-            r##"<g fill="#d4d4d4" font-family="JetBrains Mono, Fira Code, Consolas, monospace" font-size="{size}px">"##,
+            r##"<g fill="{fg}" font-family="JetBrains Mono, Fira Code, Consolas, monospace" font-size="{size}px">"##,
+            fg = self.theme.foreground,
             size = self.renderer.metrics().size
         ));
 
@@ -295,7 +297,7 @@ impl AsciiEditor {
             self.pixel_buffer.resize(required_len, 0);
         }
 
-        let bg_color = [30, 30, 30, 255];
+        let bg_color = parse_hex_color(&self.theme.background).unwrap_or([30, 30, 30, 255]);
         for i in 0..buffer_width * buffer_height {
             let idx = i * 4;
             self.pixel_buffer[idx] = bg_color[0];
@@ -304,14 +306,15 @@ impl AsciiEditor {
             self.pixel_buffer[idx + 3] = bg_color[3];
         }
 
-        let fg_color = [212, 212, 212, 255];
+        let fg_color = parse_hex_color(&self.theme.foreground).unwrap_or([212, 212, 212, 255]);
 
         // Composite all visible layers so on-screen view and PNG export match ASCII export.
         let composite = self.composite_visible_grid();
 
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
-            let highlight_color = [38, 79, 120, 255];
+            let highlight_color =
+                parse_hex_color(&self.theme.selection).unwrap_or([38, 79, 120, 255]);
 
             for gy in min_y..=max_y {
                 for gx in min_x..=max_x {
@@ -373,5 +376,24 @@ fn escape_xml_char(c: char) -> String {
         '"' => "&quot;".to_string(),
         '\'' => "&apos;".to_string(),
         _ => c.to_string(),
+    }
+}
+
+/// Helper function to parse hex color string into [r, g, b, a] bytes.
+fn parse_hex_color(hex: &str) -> Option<[u8; 4]> {
+    let hex = hex.trim_start_matches('#');
+    if hex.len() == 6 {
+        let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+        let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+        let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+        Some([r, g, b, 255])
+    } else if hex.len() == 8 {
+        let r = u8::from_str_radix(&hex[0..2], 16).ok()?;
+        let g = u8::from_str_radix(&hex[2..4], 16).ok()?;
+        let b = u8::from_str_radix(&hex[4..6], 16).ok()?;
+        let a = u8::from_str_radix(&hex[6..8], 16).ok()?;
+        Some([r, g, b, a])
+    } else {
+        None
     }
 }

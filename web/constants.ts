@@ -26,3 +26,5 @@ export const LINE_DIRECTIONS = ['auto', 'horizontal', 'vertical'];
 
 /** localStorage key for auto-saved diagrams */
 export const AUTOSAVE_KEY = 'ascii-canvas-autosave';
+/** localStorage key for theme preference */
+export const THEME_KEY = 'ascii-canvas-theme';

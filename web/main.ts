@@ -7,7 +7,7 @@
 import init, { AsciiEditor } from './pkg/ascii_canvas.js';
 import { logger } from './logger.js';
 import type { AsciiEditor as AsciiEditorType } from './types.js';
-import { FONT_SIZE, TOOL_INFO } from './constants.js';
+import { FONT_SIZE, TOOL_INFO, THEME_KEY } from './constants.js';
 import { getElement } from './utils.js';
 import { tryRestoreAutoSave } from './persistence.js';
 import { state } from './state.js';
@@ -88,6 +88,8 @@ async function initialize() {
         state.directionBtns = document.querySelectorAll('.direction-btn');
         state.eraserRadiusSelect = getElement<HTMLSelectElement>('eraser-radius');
         state.mobileKeyboardProxy = getElement<HTMLInputElement>('mobile-keyboard-proxy');
+        state.themeBtn = getElement<HTMLButtonElement>('theme-btn');
+        state.themeIcon = getElement('theme-icon');
 
         state.mobileKeyboardProxy.value = ' '; // Initialize with space for backspace detection
 
@@ -123,6 +125,26 @@ async function initialize() {
 
         // Update editor with font metrics again after creation
         state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
+
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+        if (savedTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            if (state.themeIcon) {
+                state.themeIcon.textContent = '☀️';
+            }
+            if (state.editor) {
+                state.editor.setTheme('Light');
+            }
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            if (state.themeIcon) {
+                state.themeIcon.textContent = '🌙';
+            }
+            if (state.editor) {
+                state.editor.setTheme('Figma Dark');
+            }
+        }
 
         // Restore auto-saved document if present (locks grid so resize cannot crop it).
         if (tryRestoreAutoSave(state.editor)) {

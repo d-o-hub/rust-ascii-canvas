@@ -15,6 +15,12 @@ import { logger } from './logger.js';
 import { debounce } from './utils.js';
 import type { RenderCommand, AsciiEditor } from './types.js';
 
+function getComputedThemeColor(variableName: string, fallback: string): string {
+    if (typeof document === 'undefined') return fallback;
+    const value = getComputedStyle(document.documentElement).getPropertyValue(variableName).trim();
+    return value || fallback;
+}
+
 export function computeGridDimensions(): { width: number; height: number } {
     if (!state.canvasContainer) return { width: MIN_COLS, height: MIN_ROWS };
     const rect = state.canvasContainer.getBoundingClientRect();
@@ -136,7 +142,7 @@ export function render(): void {
         state.ctx.setTransform(1, 0, 0, 1, 0, 0);
         state.ctx.scale(dpr, dpr);
 
-        state.ctx.fillStyle = '#1e1e1e';
+        state.ctx.fillStyle = getComputedThemeColor('--bg', '#1e1e1e');
         state.ctx.fillRect(0, 0, state.canvas.width / dpr, state.canvas.height / dpr);
 
         state.ctx.imageSmoothingEnabled = false;
@@ -179,7 +185,7 @@ export function executeRenderCommand(cmd: RenderCommand): void {
 
     switch (cmd.type || Object.keys(cmd)[0]) {
         case 'Clear':
-            state.ctx.fillStyle = cmd.color as string || '#1e1e1e';
+            state.ctx.fillStyle = cmd.color as string || getComputedThemeColor('--bg', '#1e1e1e');
             state.ctx.fillRect(0, 0, state.canvas.width, state.canvas.height);
             break;
 
@@ -189,7 +195,7 @@ export function executeRenderCommand(cmd: RenderCommand): void {
             break;
 
         case 'DrawChar':
-            state.ctx.fillStyle = '#d4d4d4';
+            state.ctx.fillStyle = getComputedThemeColor('--fg', '#d4d4d4');
             state.ctx.fillText(cmd.char as string, cmd.x as number, cmd.y as number);
             break;
 
@@ -199,12 +205,12 @@ export function executeRenderCommand(cmd: RenderCommand): void {
             break;
 
         case 'DrawRect':
-            state.ctx.fillStyle = cmd.color as string || '#264f78';
+            state.ctx.fillStyle = cmd.color as string || getComputedThemeColor('--selection', '#264f78');
             state.ctx.fillRect(cmd.x as number, cmd.y as number, cmd.width as number, cmd.height as number);
             break;
 
         case 'DrawGrid': {
-            state.ctx.strokeStyle = cmd.color as string || '#333333';
+            state.ctx.strokeStyle = cmd.color as string || getComputedThemeColor('--grid', '#333333');
             state.ctx.lineWidth = 0.5;
             state.ctx.beginPath();
 

@@ -122,3 +122,26 @@ fn test_editor_select_all() {
     // but we can check if it covers a point at the boundary.
     // In bindings.rs, it uses (0, 0, width-1, height-1)
 }
+
+#[wasm_bindgen_test]
+fn test_editor_theme() {
+    let mut editor = AsciiEditor::new(80, 40);
+
+    // Default theme name should be "Figma Dark"
+    assert_eq!(editor.theme_name(), "Figma Dark");
+
+    // Get render commands to clear dirty/redraw flags
+    let _ = editor.get_render_commands();
+    assert!(!editor.needs_redraw());
+
+    // Set theme to "Light"
+    assert!(editor.set_theme("Light".to_string()));
+    assert_eq!(editor.theme_name(), "Light");
+
+    // Setting theme should trigger a full redraw request
+    assert!(editor.needs_redraw());
+
+    // Set theme to invalid name should return false and not change theme
+    assert!(!editor.set_theme("NonexistentTheme".to_string()));
+    assert_eq!(editor.theme_name(), "Light");
+}

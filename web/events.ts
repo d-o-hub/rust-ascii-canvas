@@ -8,6 +8,7 @@ import {
     TOOL_INFO,
     MIN_COLS,
     MIN_ROWS,
+    THEME_KEY,
 } from './constants.js';
 import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
 import { createAutoSaveScheduler, downloadDocument, openDocumentPicker } from './persistence.js';
@@ -629,6 +630,32 @@ export function setupEventListeners(): void {
     if (state.helpBtn) {
         state.helpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         state.helpBtn.addEventListener('click', showShortcutsModal);
+    }
+
+    if (state.themeBtn) {
+        state.themeBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
+        state.themeBtn.addEventListener('click', () => {
+            const currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem(THEME_KEY, newTheme);
+
+            if (newTheme === 'light') {
+                document.documentElement.setAttribute('data-theme', 'light');
+                if (state.themeIcon) state.themeIcon.textContent = '☀️';
+                if (state.editor) state.editor.setTheme('Light');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                if (state.themeIcon) state.themeIcon.textContent = '🌙';
+                if (state.editor) state.editor.setTheme('Figma Dark');
+            }
+
+            if (state.editor) {
+                state.editor.requestRedraw();
+            }
+            requestRender();
+            if (state.canvas) state.canvas.focus();
+            showToast(`Theme: ${newTheme === 'light' ? 'Light' : 'Dark'}`);
+        });
     }
 
     if (state.zoomFitBtn) {
