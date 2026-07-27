@@ -14,17 +14,15 @@ export type ToastFn = (message: string, isError?: boolean) => void;
  * Uses plain text only (not text/html) so external paste targets receive the same
  * characters without Codacy/eslint-plugin-xss false positives on HTML clipboard MIME.
  */
-export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Promise<boolean> {
+export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Promise<void> {
     const normalized = normalizeToCRLF(text);
 
     try {
         await navigator.clipboard.writeText(normalized);
         showToast('Copied — paste in a monospace editor');
-        return true;
     } catch (err) {
         logger.error('Failed to copy:', err);
         showToast('Failed to copy', true);
-        return false;
     }
 }
 
@@ -34,7 +32,7 @@ export async function copyAsciiToClipboard(text: string, showToast: ToastFn): Pr
 export async function copyToClipboard(
     editor: AsciiEditorInterface,
     showToast: ToastFn,
-): Promise<boolean> {
+): Promise<void> {
     // Populate internal SelectionClipboard for Ctrl+V paste inside the editor.
     if (typeof editor.copySelection === 'function') {
         editor.copySelection();
@@ -47,5 +45,5 @@ export async function copyToClipboard(
         ascii = editor.exportAscii();
     }
 
-    return await copyAsciiToClipboard(ascii, showToast);
+    await copyAsciiToClipboard(ascii, showToast);
 }

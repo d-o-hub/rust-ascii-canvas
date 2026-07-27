@@ -33,6 +33,15 @@ impl AsciiEditor {
         self.paste_impl()
     }
 
+    /// Pastes external plain text at the cursor or selection origin.
+    /// CRLF/LF line endings are normalized to grid rows.
+    /// Respects canvas bounds and avoids clobbering with space/whitespace runs.
+    /// Returns true if any characters were pasted successfully.
+    #[wasm_bindgen(js_name = pasteText)]
+    pub fn paste_text(&mut self, text: String) -> bool {
+        self.paste_text_impl(&text)
+    }
+
     /// Deletes the currently selected area, replacing cell content with spaces.
     /// Returns true if successful.
     #[wasm_bindgen(js_name = deleteSelection)]
