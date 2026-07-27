@@ -432,17 +432,17 @@ export function setupEventListeners(): void {
             if (modal && !modal.classList.contains('hidden')) {
                 const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex="0"]');
                 if (focusableElements.length > 0) {
-                    const firstElement = focusableElements[0] as HTMLElement;
-                    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+                    const firstFocusableHtmlElement = focusableElements[0] as HTMLElement;
+                    const lastFocusableHtmlElement = focusableElements[focusableElements.length - 1] as HTMLElement;
 
                     if (e.shiftKey) {
-                        if (document.activeElement === firstElement) {
-                            lastElement.focus();
+                        if (document.activeElement === firstFocusableHtmlElement) {
+                            lastFocusableHtmlElement.focus();
                             e.preventDefault();
                         }
                     } else {
-                        if (document.activeElement === lastElement) {
-                            firstElement.focus();
+                        if (document.activeElement === lastFocusableHtmlElement) {
+                            firstFocusableHtmlElement.focus();
                             e.preventDefault();
                         }
                     }
