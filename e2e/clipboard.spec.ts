@@ -127,4 +127,45 @@ test.describe('Copy / export fidelity', () => {
         expect(ok.afterClear).toBe('');
         expect(ok.same).toBe(true);
     });
+
+    test('external paste at cursor origin respects spaces and boundaries', async ({ page }) => {
+        // Draw a Rectangle at upper-left to have some content underneath
+        await page.click('[data-tool="rectangle"]');
+        const canvasLocator = page.locator('#canvas');
+        const box = await canvasLocator.boundingBox();
+        expect(box).toBeTruthy();
+        if (!box) return;
+
+        // Draw a small solid structure (or simple lines) using rectangle
+        await page.mouse.move(box.x + 10, box.y + 10);
+        await page.mouse.down();
+        await page.mouse.move(box.x + 80, box.y + 40);
+        await page.mouse.up();
+
+        // Wait for it to render
+        await page.waitForFunction(() => (window.editor?.exportAscii() ?? '').length > 0);
+
+        // Now dispatch a paste event with text "P S" over the drawn content.
+        await page.click('[data-tool="select"]');
+        await page.mouse.move(box.x + 30, box.y + 30);
+        await page.mouse.down();
+        await page.mouse.move(box.x + 30, box.y + 30);
+        await page.mouse.up();
+
+        // Dispatch Paste Event
+        await page.evaluate(() => {
+            const pasteEvent = new ClipboardEvent('paste', {
+                bubbles: true,
+                cancelable: true,
+                clipboardData: new DataTransfer(),
+            });
+            pasteEvent.clipboardData?.setData('text/plain', 'P S');
+            window.dispatchEvent(pasteEvent);
+        });
+
+        // Verify characters were pasted
+        const asciiAfter = await page.evaluate(() => window.editor?.exportAscii() ?? '');
+        expect(asciiAfter).toContain('P');
+        expect(asciiAfter).toContain('S');
+    });
 });
