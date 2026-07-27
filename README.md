@@ -27,13 +27,6 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 - [Rust](https://rustup.rs/) (1.75+)
 - [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) (0.13.1+)
 - [Node.js](https://nodejs.org/) (22+)
-- **Toolchain Manager (Recommended)**: [mise-en-place (mise)](https://mise.jdx.dev/) is used to automatically manage and pin toolchain versions (Node.js, Rust, wasm-bindgen-cli, and binaryen/wasm-opt) defined in `mise.toml`.
-  - Install mise by following the [mise installation instructions](https://mise.jdx.dev/getting-started.html).
-  - Run `mise install` in the project root to install all required tools automatically.
-- **WASM Optimizer**: [binaryen (`wasm-opt`)](https://github.com/WebAssembly/binaryen) is **required** to compile optimized release builds of the WASM module.
-  - If using `mise`, it is automatically installed as part of the toolchain setup (defined in `mise.toml`).
-  - Alternatively, you can install it globally via npm using the canonical `binaryen` package: `npm install -g binaryen`.
-  - Or manually install the `binaryen` package via your system package manager (e.g., `brew install binaryen` or `apt-get install binaryen`).
 
 ### Build
 

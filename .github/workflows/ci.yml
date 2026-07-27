@@ -242,7 +242,7 @@ jobs:
 
       - name: Build WASM
         run: |
-          npm install -g wasm-opt
+          pnpm install --frozen-lockfile
           pnpm run build:wasm
 
       - name: WASM size budget
