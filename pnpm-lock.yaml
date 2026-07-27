@@ -14,6 +14,9 @@ importers:
       '@playwright/test':
         specifier: ^1.61.1
         version: 1.61.1
+      binaryen:
+        specifier: ^131.0.0
+        version: 131.0.0
       eslint:
         specifier: ^10.7.0
         version: 10.7.0
@@ -174,6 +177,10 @@ packages:
   balanced-match@4.0.4:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
+
+  binaryen@131.0.0:
+    resolution: {integrity: sha512-anblNezmBjfWGfOMvZq1j5MwhVnMs+gezqbDz4FBFwx6twDwOsQSed+E8i4UKmLYXb3r+f3HWmz7Lx5sx5qOyQ==}
+    hasBin: true
 
   brace-expansion@5.0.7:
     resolution: {integrity: sha512-7oFy703dxfY3/NLxC1fh2SUCQ0H9rmAY+5EpDVfXjUTTs+HEwR2nYaqLv+GWcTsumwxPfiz6CzCNkwXwBUwqCA==}
@@ -600,6 +607,8 @@ snapshots:
       uri-js: 4.4.1
 
   balanced-match@4.0.4: {}
+
+  binaryen@131.0.0: {}
 
   brace-expansion@5.0.7:
     dependencies:
