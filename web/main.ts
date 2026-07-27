@@ -128,15 +128,18 @@ async function initialize() {
 
         // Initialize theme from localStorage
         const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+        const mobileThemeIcon = document.getElementById('mobile-theme-icon');
         if (savedTheme === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
             state.themeIcon.textContent = '☀️';
+            if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
             if (state.editor) {
                 state.editor.setTheme('Light');
             }
         } else {
             document.documentElement.removeAttribute('data-theme');
             state.themeIcon.textContent = '🌙';
+            if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
             if (state.editor) {
                 state.editor.setTheme('Figma Dark');
             }

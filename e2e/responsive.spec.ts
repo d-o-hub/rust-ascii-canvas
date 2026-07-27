@@ -112,4 +112,45 @@ test.describe('Responsive Grid', () => {
         expect(lastLine.length).toBe(cols);
         expect(lastLine[cols - 1]).not.toBe(' ');
     });
+
+    test('should support mobile-specific sliding panel, touch targets, and action triggers', async ({ page }) => {
+        await openAtViewport(page, 375, 667);
+
+        // Mobile menu button should be visible on phone viewports
+        const mobileMenuBtn = page.locator('#mobile-menu-btn');
+        await expect(mobileMenuBtn).toBeVisible();
+
+        // Initially side panel should not be open
+        const sidePanel = page.locator('#side-panel');
+        await expect(sidePanel).not.toHaveClass(/open/);
+
+        // Click the mobile menu button to slide in the side panel drawer
+        await mobileMenuBtn.click();
+        await expect(sidePanel).toHaveClass(/open/);
+
+        // Close button inside drawer should be visible on mobile
+        const closeDrawerBtn = page.locator('#close-drawer-btn');
+        await expect(closeDrawerBtn).toBeVisible();
+
+        // Drawer overlay should be active and visible
+        const drawerOverlay = page.locator('#drawer-overlay');
+        await expect(drawerOverlay).toHaveClass(/open/);
+
+        // Mobile theme toggle button should be visible in the actions grid
+        const mobileThemeBtn = page.locator('#mobile-theme-btn');
+        await expect(mobileThemeBtn).toBeVisible();
+
+        // Click mobile theme button to toggle theme
+        await mobileThemeBtn.click();
+
+        // Drawer should be dismissed on action click
+        await expect(sidePanel).not.toHaveClass(/open/);
+        await expect(drawerOverlay).not.toHaveClass(/open/);
+
+        // Re-open and close with drawer overlay click
+        await mobileMenuBtn.click();
+        await expect(sidePanel).toHaveClass(/open/);
+        await drawerOverlay.click({ position: { x: 10, y: 10 } }); // click outside
+        await expect(sidePanel).not.toHaveClass(/open/);
+    });
 });

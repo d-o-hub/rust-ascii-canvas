@@ -92,6 +92,14 @@
                         <option value="dotted">Dotted (*)</option>
                     </select>
                 </div>
+
+                <div class="tool-separator mobile-only"></div>
+
+                <!-- Mobile Menu Button -->
+                <button id="mobile-menu-btn" class="tool-btn mobile-only" title="Panels & Actions" aria-label="More actions and panels">
+                    <span class="tool-icon">☰</span>
+                    <span class="tool-label">Menu</span>
+                </button>
             </div>
 
             <div class="toolbar-right">
@@ -147,8 +155,63 @@
                 <input type="text" id="mobile-keyboard-proxy" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" aria-hidden="true" style="position: absolute; opacity: 0; pointer-events: none; left: -9999px;">
             </div>
 
+            <div id="drawer-overlay" class="drawer-overlay"></div>
+
             <!-- Side Panel -->
-            <aside class="side-panel">
+            <aside class="side-panel" id="side-panel">
+                <!-- Mobile Header -->
+                <div class="side-panel-header mobile-only">
+                    <h3>Panels & Actions</h3>
+                    <button id="close-drawer-btn" class="drawer-close" aria-label="Close panels">&times;</button>
+                </div>
+
+                <!-- Actions (Mobile Only) -->
+                <section class="panel-section mobile-only" aria-labelledby="mobile-actions-title">
+                    <h3 class="section-title" id="mobile-actions-title">Actions</h3>
+                    <div class="mobile-actions-grid">
+                        <button id="mobile-undo-btn" class="action-btn" title="Undo" aria-label="Undo" disabled>
+                            <span class="action-icon">↶</span>
+                            <span class="action-label">Undo</span>
+                        </button>
+                        <button id="mobile-redo-btn" class="action-btn" title="Redo" aria-label="Redo" disabled>
+                            <span class="action-icon">↷</span>
+                            <span class="action-label">Redo</span>
+                        </button>
+                        <button id="mobile-copy-btn" class="action-btn primary" title="Copy ASCII" aria-label="Copy ASCII">
+                            <span class="action-icon">⎘</span>
+                            <span class="action-label">Copy</span>
+                        </button>
+                        <button id="mobile-clear-btn" class="action-btn" title="Clear Canvas" aria-label="Clear canvas">
+                            <span class="action-icon">🗑</span>
+                            <span class="action-label">Clear</span>
+                        </button>
+                        <button id="mobile-save-btn" class="action-btn" title="Save diagram" aria-label="Save diagram">
+                            <span class="action-icon">💾</span>
+                            <span class="action-label">Save</span>
+                        </button>
+                        <button id="mobile-load-btn" class="action-btn" title="Load diagram" aria-label="Load diagram">
+                            <span class="action-icon">📂</span>
+                            <span class="action-label">Load</span>
+                        </button>
+                        <button id="mobile-png-btn" class="action-btn" title="Export PNG" aria-label="Export as PNG">
+                            <span class="action-icon">🖼</span>
+                            <span class="action-label">PNG</span>
+                        </button>
+                        <button id="mobile-svg-btn" class="action-btn" title="Export SVG" aria-label="Export as SVG">
+                            <span class="action-icon">📐</span>
+                            <span class="action-label">SVG</span>
+                        </button>
+                        <button id="mobile-theme-btn" class="action-btn" title="Toggle Theme" aria-label="Toggle theme">
+                            <span id="mobile-theme-icon" class="action-icon">🌙</span>
+                            <span class="action-label">Theme</span>
+                        </button>
+                        <button id="mobile-help-btn" class="action-btn" title="Keyboard Shortcuts" aria-label="Show help">
+                            <span class="action-icon">?</span>
+                            <span class="action-label">Help</span>
+                        </button>
+                    </div>
+                </section>
+
                 <!-- Info -->
                 <section class="panel-section">
                     <h3 class="section-title">Info</h3>
