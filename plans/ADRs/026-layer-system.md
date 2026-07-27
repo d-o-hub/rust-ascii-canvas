@@ -1,10 +1,9 @@
 # ADR-026: Layer System
 
 ## Status
-Accepted (basic stack 2026-07-15 — add/switch/visibility; history clears on switch)
+Implemented - 2026-07-15
 
-## Date
-2026-03-03
+
 
 ## Context
 

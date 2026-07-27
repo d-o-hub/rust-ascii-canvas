@@ -1,10 +1,9 @@
 # ADR 007: Fix E2E Tests in GitHub Actions CI
 
 ## Status
-Accepted
+Implemented - 2026-02-26
 
-## Date
-2026-02-26
+
 
 ## Context
 The E2E tests were failing in GitHub Actions CI due to:

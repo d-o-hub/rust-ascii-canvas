@@ -1,7 +1,9 @@
 # ADR-020: Skill Documentation Cleanup
 
 ## Status
-**Proposed** - 2026-03-01
+Implemented - 2026-03-01
+
+
 
 ## Context
 

@@ -1,8 +1,9 @@
 # ADR-003: Enhanced Keyboard Shortcuts and UI Controls
 
 ## Status
+Implemented - 2026-02-26
 
-**Accepted** - 2026-02-26
+
 
 ## Context
 

@@ -1,8 +1,9 @@
 # ADR-004: GitHub Repository Configuration
 
 ## Status
+Implemented - 2026-02-26
 
-**Proposed** - 2026-02-26
+
 
 ## Context
 

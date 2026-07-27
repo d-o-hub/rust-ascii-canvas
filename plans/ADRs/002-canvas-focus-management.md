@@ -1,8 +1,9 @@
 # ADR-002: Canvas Focus Management for Keyboard Input
 
 ## Status
+Implemented - 2026-02-27
 
-**Proposed** - 2026-02-26
+
 
 ## Context
 

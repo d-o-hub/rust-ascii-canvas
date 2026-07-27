@@ -1,10 +1,9 @@
 # ADR-029: Documentation Reconciliation
 
 ## Status
-Proposed
+Implemented - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

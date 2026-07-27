@@ -1,10 +1,9 @@
 # ADR-028: Performance Optimization
 
 ## Status
-Proposed
+Accepted - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

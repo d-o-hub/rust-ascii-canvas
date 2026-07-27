@@ -1,10 +1,9 @@
 # ADR 006: GitHub Infrastructure and Package Metadata
 
 ## Status
-Accepted
+Implemented - 2026-02-26
 
-## Date
-2026-02-26
+
 
 ## Context
 The project lacked standard GitHub community files, CI/CD workflows, and had inconsistent package metadata across Cargo.toml and package.json.

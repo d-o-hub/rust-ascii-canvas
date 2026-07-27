@@ -1,7 +1,9 @@
 # ADR-016: Text Tool Click-to-Insert Position Bug
 
 ## Status
-Proposed
+Implemented - 2026-03-20
+
+
 
 ## Context
 The text tool is not inserting characters at the clicked cursor/grid position. When users click on the canvas and type, the text doesn't appear at the clicked position or stops working after a few insertions.

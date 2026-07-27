@@ -1,7 +1,9 @@
 # ADR-030: Select Tool Delete Selection Bug Fix
 
 ## Status
-Accepted
+Implemented - 2026-03-04
+
+
 
 ## Context
 

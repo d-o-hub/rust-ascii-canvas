@@ -1,7 +1,9 @@
 # ADR-010: Enhanced Text Tool
 
 ## Status
-Proposed
+Implemented - 2026-03-20
+
+
 
 ## Context
 The current Text tool only places single characters per click. Users cannot efficiently type multi-character labels, correct mistakes, or see where text will appear.

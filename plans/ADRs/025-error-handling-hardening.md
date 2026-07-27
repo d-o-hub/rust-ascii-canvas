@@ -1,10 +1,9 @@
 # ADR-025: Error Handling Hardening
 
 ## Status
-Proposed
+Implemented - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

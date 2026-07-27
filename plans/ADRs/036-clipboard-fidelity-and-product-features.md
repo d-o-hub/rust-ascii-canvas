@@ -1,10 +1,9 @@
 # ADR-036: Clipboard Fidelity & Product Features Bundle
 
 ## Status
-Accepted
+Implemented - 2026-07-16
 
-## Date
-2026-07-15
+
 
 ## Context
 
