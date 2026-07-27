@@ -1,10 +1,9 @@
 # ADR-033: TypeScript Type Safety Hardening
 
 ## Status
-Proposed
+Implemented - 2026-07-27
 
-## Date
-2026-03-03
+
 
 ## Context
 

@@ -1,10 +1,9 @@
 # ADR-035: Fix Page Object Model Selector Mismatches
 
 ## Status
-Proposed
+Implemented - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

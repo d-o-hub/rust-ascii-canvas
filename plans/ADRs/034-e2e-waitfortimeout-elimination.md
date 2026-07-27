@@ -1,10 +1,9 @@
 # ADR-034: Eliminate waitForTimeout from E2E Tests
 
 ## Status
-Proposed
+Implemented - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

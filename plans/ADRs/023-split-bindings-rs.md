@@ -1,10 +1,9 @@
 # ADR-023: Split bindings.rs Into Focused Modules
 
 ## Status
-Proposed
+Implemented - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

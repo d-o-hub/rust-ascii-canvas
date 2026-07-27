@@ -1,10 +1,9 @@
 # ADR-022: Code Hygiene & Dead Code Cleanup
 
 ## Status
-Proposed
+Implemented - 2026-03-03
 
-## Date
-2026-03-03
+
 
 ## Context
 

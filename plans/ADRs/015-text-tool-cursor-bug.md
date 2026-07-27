@@ -1,7 +1,9 @@
 # ADR-015: Text Tool Cursor Position Bug
 
 ## Status
-Proposed
+Implemented - 2026-03-20
+
+
 
 ## Context
 User reports that after a few text insertions, the text no longer inserts at the cursor position. This indicates a bug in how the text tool tracks cursor position.

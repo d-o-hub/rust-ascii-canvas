@@ -1,7 +1,9 @@
 # ADR-011: Preview Operations Rendering
 
 ## Status
-Proposed
+Proposed - 2026-03-01
+
+
 
 ## Context
 During drag operations (drawing rectangles, lines, etc.), the editor stores `preview_ops` but doesn't render them with visual distinction. Users cannot see what they're drawing until they release the mouse button.

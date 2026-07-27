@@ -1,10 +1,9 @@
 # ADR-032: Decompose main.ts Monolith into Focused Modules
 
 ## Status
-Accepted (partial 2026-07-15 — feature modules extracted; main.ts remains orchestrator)
+Implemented - 2026-07-15
 
-## Date
-2026-03-03
+
 
 ## Context
 

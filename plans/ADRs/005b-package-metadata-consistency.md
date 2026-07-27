@@ -1,8 +1,9 @@
 # ADR-005: Package Metadata Consistency
 
 ## Status
+Implemented - 2026-02-26
 
-**Proposed** - 2026-02-26
+
 
 ## Context
 

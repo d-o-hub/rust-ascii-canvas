@@ -1,8 +1,9 @@
 # ADR-008: Automated Dependency Updates with Dependabot
 
 ## Status
+Implemented - 2026-02-27
 
-**Accepted** - 2026-02-27
+
 
 ## Context
 

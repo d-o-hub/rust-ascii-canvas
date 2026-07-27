@@ -1,10 +1,9 @@
 # ADR 005: E2E Test Enhancement for ASCII Canvas
 
 ## Status
-Accepted
+Implemented - 2026-02-26
 
-## Date
-2026-02-26
+
 
 ## Context
 The current e2e tests cover basic functionality but miss several key areas:

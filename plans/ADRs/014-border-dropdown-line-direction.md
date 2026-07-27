@@ -1,7 +1,9 @@
 # ADR-014: Border Style Dropdown Fix & Line Direction Options
 
 ## Status
-Proposed
+Implemented - 2026-07-15
+
+
 
 ## Context
 
