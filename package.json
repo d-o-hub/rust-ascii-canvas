@@ -24,7 +24,7 @@
     "build:wasm": "bash scripts/build-wasm.sh",
     "build:web": "cd web && pnpm run build",
     "build": "pnpm run build:wasm && pnpm run build:web",
-    "netlify:build": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli --version 0.2.126 && npm install -g binaryen && pnpm install --frozen-lockfile && cd web && pnpm install --frozen-lockfile && cd .. && pnpm run build && pnpm run check-size",
+    "netlify:build": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli --version 0.2.126 && pnpm install --frozen-lockfile && cd web && pnpm install --frozen-lockfile && cd .. && pnpm run build && pnpm run check-size",
     "dev": "cd web && pnpm run dev",
     "test": "cargo test && npx playwright test --project=chromium",
     "test:unit": "cargo test",
@@ -43,6 +43,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.61.1",
+    "binaryen": "^131.0.0",
     "eslint": "^10.7.0",
     "playwright": "^1.61.1",
     "typescript-eslint": "^8.64.0"
