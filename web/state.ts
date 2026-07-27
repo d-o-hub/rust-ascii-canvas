@@ -24,6 +24,7 @@ export interface AppState {
     // Callbacks to avoid circular dependency
     requestRender: (() => void) | null;
     scheduleAutoSave: (() => void) | null;
+    onGridResize: (() => void) | null;
 
     // DOM Elements
     loadingOverlay: HTMLElement | null;
@@ -73,6 +74,7 @@ export const state: AppState = {
     // Callbacks
     requestRender: null,
     scheduleAutoSave: null,
+    onGridResize: null,
 
     // DOM Elements
     loadingOverlay: null,

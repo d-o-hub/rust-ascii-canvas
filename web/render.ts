@@ -83,9 +83,9 @@ export function resizeCanvas(): void {
                 state.editor.resize(width, height);
                 state.offscreenCanvas = null;
                 state.offscreenCtx = null;
-                void import('./ui.js').then(m => {
-                    m.updateUI();
-                });
+                if (state.onGridResize) {
+                    state.onGridResize();
+                }
             }
         }
         requestRender();

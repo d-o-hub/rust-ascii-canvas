@@ -427,6 +427,27 @@ export function setupEventListeners(): void {
             if (modal && !modal.classList.contains('hidden')) {
                 hideShortcutsModal();
             }
+        } else if (e.key === 'Tab') {
+            const modal = document.getElementById('shortcuts-modal');
+            if (modal && !modal.classList.contains('hidden')) {
+                const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex="0"]');
+                if (focusableElements.length > 0) {
+                    const firstElement = focusableElements[0] as HTMLElement;
+                    const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            lastElement.focus();
+                            e.preventDefault();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            firstElement.focus();
+                            e.preventDefault();
+                        }
+                    }
+                }
+            }
         }
     });
 

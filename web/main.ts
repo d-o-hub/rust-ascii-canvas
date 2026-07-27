@@ -26,13 +26,6 @@ import {
 } from './ui.js';
 import { setupEventListeners } from './events.js';
 
-// Legacy exports
-export let editor: AsciiEditorInterface | null = null;
-export let canvas: HTMLCanvasElement | null = null;
-export let ctx: CanvasRenderingContext2D | null = null;
-export let charWidth = 8.4;
-export let lineHeight = 20;
-
 // Expose editor for testing
 declare global {
     interface Window {
@@ -100,19 +93,15 @@ async function initialize() {
 
         // Get canvas and context
         state.canvas = getElement<HTMLCanvasElement>('canvas');
-        canvas = state.canvas; // Sync with legacy export
 
         const ctxResult = state.canvas.getContext('2d', { alpha: false });
         if (!ctxResult) {
             throw new Error('Failed to get 2D context');
         }
         state.ctx = ctxResult;
-        ctx = state.ctx; // Sync with legacy export
 
         // Measure font metrics MUST run before computeGridDimensions()
         measureFont();
-        charWidth = state.charWidth; // Sync with legacy export
-        lineHeight = state.lineHeight; // Sync with legacy export
 
         // Set up canvas size first to have correct container rect
         resizeCanvas();
@@ -131,7 +120,6 @@ async function initialize() {
         // Create editor with responsive dimensions
         const { width, height } = computeGridDimensions();
         state.editor = new AsciiEditor(width, height) as unknown as AsciiEditorInterface;
-        editor = state.editor; // Sync with legacy export
 
         // Update editor with font metrics again after creation
         state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
@@ -146,6 +134,9 @@ async function initialize() {
 
         // Set up event listeners
         setupEventListeners();
+
+        // Bind callback for grid resize UI update to avoid circular dependency
+        state.onGridResize = updateUI;
 
         // Update UI
         updateUI();
