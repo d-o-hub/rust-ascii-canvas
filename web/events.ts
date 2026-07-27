@@ -685,7 +685,7 @@ export function setupEventListeners(): void {
     };
 
     if (mobileMenuBtn && sidePanel && drawerOverlay) {
-        mobileMenuBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        mobileMenuBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         mobileMenuBtn.addEventListener('click', () => {
             sidePanel.classList.toggle('open');
             drawerOverlay.classList.toggle('open');
@@ -693,7 +693,7 @@ export function setupEventListeners(): void {
     }
 
     if (closeDrawerBtn) {
-        closeDrawerBtn.addEventListener('mousedown', (e) => e.preventDefault());
+        closeDrawerBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         closeDrawerBtn.addEventListener('click', closeDrawer);
     }
 
