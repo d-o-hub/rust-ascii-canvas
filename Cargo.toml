@@ -67,3 +67,18 @@ path = "tests/core/mod.rs"
 [[test]]
 name = "utils_tests"
 path = "tests/utils/mod.rs"
+
+[[bench]]
+name = "grid_bench"
+path = "benches/grid_bench.rs"
+harness = false
+
+[[bench]]
+name = "font_bench"
+path = "benches/font_bench.rs"
+harness = false
+
+[[bench]]
+name = "pixel_buffer_bench"
+path = "benches/pixel_buffer_bench.rs"
+harness = false
