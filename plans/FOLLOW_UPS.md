@@ -54,7 +54,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
-| **F-30** | ✅ | [#124](https://github.com/d-o-hub/rust-ascii-canvas/issues/124) | Collab editing research spike complete; documented in `plans/F-30-collaborative-editing-spike.md` |
+| **F-30** | spike | [#124](https://github.com/d-o-hub/rust-ascii-canvas/issues/124) | Collab editing research spike complete; documented in `plans/F-30-collaborative-editing-spike.md` |
 | **F-31** | open | [#125](https://github.com/d-o-hub/rust-ascii-canvas/issues/125) | Light theme + switcher |
 | **F-32** | open | [#126](https://github.com/d-o-hub/rust-ascii-canvas/issues/126) | Mobile UX audit |
 | **F-33** | open | [#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) | crates.io / npm publish decision |
