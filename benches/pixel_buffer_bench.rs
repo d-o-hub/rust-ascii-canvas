@@ -54,13 +54,12 @@ fn benchmark_render_to_pixel_buffer_large_grid() {
     // Clear dirty state first
     editor.clear_dirty_state();
 
-    // Trigger cell dirty marking for a 1-cell region
-    editor.mark_cell_dirty_for_bench(80, 40);
-
     // Measure rendering the partial update in a loop.
-    // Note: We do not clear the dirty state inside the loop, so it repeatedly renders the same dirty-rect region.
+    // On each iteration, we clear the dirty state, mark a single cell dirty, and render it.
     let start_partial = Instant::now();
-    for _ in 0..iterations {
+    for i in 0..iterations {
+        editor.clear_dirty_state();
+        editor.mark_cell_dirty_for_bench(80 + (i % 10) as i32, 40);
         editor.render_to_pixel_buffer();
     }
     let duration_partial = start_partial.elapsed();
