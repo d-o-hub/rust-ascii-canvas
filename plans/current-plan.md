@@ -61,7 +61,7 @@
 | 3 Robustness & error handling | HIGH | 🟡 Partial | Clipboard hardened; more unwrap audit optional |
 | 4 Layer system | MEDIUM | 🟢 Basic done | F-11–F-13 for full ADR-026 |
 | 5 File persistence | MEDIUM | ✅ Done | ADR-027 |
-| 6 Collaborative editing | LOW | ❌ Not started | F-30 |
+| 6 Collaborative editing | LOW | ✅ Completed | F-30 research spike complete (see `plans/F-30-collaborative-editing-spike.md`) |
 | 7 Performance optimization | MEDIUM | 🟡 Partial | Dirty-rect exists; ADR-028 backlog F-28 |
 | 8 Developer experience / docs | MEDIUM | 🟡 Improved | Plans refreshed 2026-07-16; ADR sweep F-23 |
 
