@@ -53,7 +53,10 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
 ---
 
-## Recent Completions (2026-07-15 → 2026-07-16)
+## Recent Completions (2026-07-15 → 2026-07-28)
+
+### F-33: crates.io / npm package metadata / publishing decision (2026-07-28) ✅
+- Decided on **app-only** distribution (no public library releases on crates.io or npm). Documented in [ADR-040](ADRs/040-app-only-distribution.md).
 
 ### F-02: Manual Clipboard Fidelity QA across Editors (2026-07-16) ✅
 - **Draw box + arrow** verified: drew on canvas, hit Copy, confirmed clipboard contains right borders (┐, │, ┘, etc.), uniform line widths, and CRLF (`\r\n`) endings.
@@ -135,4 +138,4 @@ ascii-canvas/
 
 ---
 
-*Last updated: 2026-07-16*
+*Last updated: 2026-07-28*
