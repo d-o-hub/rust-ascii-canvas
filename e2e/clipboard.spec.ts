@@ -170,63 +170,55 @@ test.describe('Copy / export fidelity', () => {
     });
 
     test('navigator.clipboard.readText() matches export geometry where permissions allow (F-27)', async ({ page, context, browserName, isMobile }) => {
+        // Idiomatically skip browsers and viewports upfront
         test.skip(isMobile, 'Copy button and status toast are hidden on mobile viewports');
+        test.skip(browserName !== 'chromium', 'Permissions and reading from system clipboard is only fully supported/queryable under Chromium');
 
-        // Skip gracefully where permissions API is unsupported or clipboard-read cannot be queried/granted
-        // WebKit/Firefox may not support querying/granting 'clipboard-read' or accessing readText in headless environments.
-        if (browserName !== 'chromium') {
-            test.skip(true, 'Skip gracefully on non-Chromium browsers where permissions/clipboard-read are unsupported');
-            return;
-        }
-
-        // Grant permissions explicitly in Chromium context to guarantee it's available
+        // Grant permissions explicitly in Chromium context to guarantee API access
         await context.grantPermissions(['clipboard-read', 'clipboard-write']);
 
-        // Draw a rectangle to have some content
+        // Draw a rectangle to produce non-empty ASCII content
         await page.click('[data-tool="rectangle"]');
         const canvas = page.locator('#canvas');
         const box = await canvas.boundingBox();
         expect(box).toBeTruthy();
-        if (!box) return;
 
-        const x1 = box.x + 40;
-        const y1 = box.y + 40;
-        const x2 = box.x + 160;
-        const y2 = box.y + 120;
+        // Use safe inset coordinates relative to bounding box to draw inside the grid canvas bounds
+        const x1 = box!.x + 40;
+        const y1 = box!.y + 40;
+        const x2 = box!.x + 160;
+        const y2 = box!.y + 120;
 
         await page.mouse.move(x1, y1);
         await page.mouse.down();
         await page.mouse.move(x2, y2);
         await page.mouse.up();
 
-        // Wait for content to render and be exportable
+        // Wait up to 3 seconds for content to render and be ready for export
         await page.waitForFunction(() => {
             const ascii = window.editor?.exportAscii() ?? '';
             return ascii.length > 0;
-        }, null, { timeout: 10000 });
+        }, null, { timeout: 3000 });
 
         const exportedAscii = await page.evaluate(() => window.editor?.exportAscii() ?? '');
 
-        // Click the copy button to copy ASCII to system clipboard
+        // Click the copy button to write ASCII content to the system clipboard
         await page.click('#copy-btn');
 
-        // Verify clipboard content via navigator.clipboard.readText() - must succeed on Chromium
-        const clipboardText = await page.evaluate(async () => {
-            const cb = navigator.clipboard;
-            if (!cb) {
-                throw new Error('Clipboard API unsupported');
-            }
-            return await cb.readText();
-        });
+        // Retrieve clipboard content directly using browser's native API in the page context
+        const clipboardText = await page.evaluate(async () => navigator.clipboard.readText());
 
-        // Normalize line endings to LF to perform line-by-line geometry comparison
+        // Normalize line endings to LF for unified geometry comparison
         const normExported = exportedAscii.replace(/\r\n/g, '\n');
         const normClipboard = clipboardText.replace(/\r\n/g, '\n');
 
         const exportedLines = normExported.split('\n').filter(l => l.length > 0);
         const clipboardLines = normClipboard.split('\n').filter(l => l.length > 0);
 
-        // Directly compare arrays to prevent any bracket notation/index access warning (L231)
+        // Ensure we actually drew and captured lines to prevent silent falsy passes
+        expect(exportedLines.length).toBeGreaterThan(0);
+
+        // Perform standard deep array comparison of the line contents
         expect(clipboardLines).toEqual(exportedLines);
     });
 });
