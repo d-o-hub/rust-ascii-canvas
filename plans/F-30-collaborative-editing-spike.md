@@ -14,11 +14,12 @@ This document presents a comprehensive research spike comparing **Conflict-free 
 
 ### Core Recommendation
 
-We recommend a **TypeScript-Centric Hybrid CRDT approach utilizing Yjs** with `y-webrtc` and `y-websocket` providers:
-1. **TypeScript Orchestration**: The collaborative state engine runs in the TypeScript layer using the mature, optimized **Yjs** library. This keeps the compiled Rust WebAssembly binary small (~150KB size budget) and leverages standard JS-WebRTC bindings.
+We recommend a **TypeScript-Centric Hybrid CRDT approach utilizing Yjs**:
+1. **TypeScript Orchestration**: The collaborative state engine runs in the TypeScript layer using the mature, optimized **Yjs** library. This keeps the compiled Rust WebAssembly binary small (~150KB size budget) and leverages standard JS-WebRTC / JS-WebSocket bindings.
 2. **Sparse Coordinate Map**: The canvas state is represented in the CRDT as a shared `Y.Map<string, CellState>` mapping coordinate keys (e.g., `"x,y"`) to cell data (character, color, layer ID).
 3. **WASM-Driven Local Rendering**: As remote updates arrive via Yjs, TypeScript applies them to the Rust/WASM `AsciiEditor` instance using targeted API calls. The editor's high-performance dirty-rect rendering path instantly repaints only the modified bounding boxes, maintaining 60 FPS.
-4. **Signaling Server Setup**: For serverless peer-to-peer editing, we utilize a simple WebRTC signaling coordinator. For persistence-backed team collaboration, a standard Node-based WebSocket relay is deployed.
+4. **Signaling Server & Production Setup**: For serverless peer-to-peer editing, we utilize a signaling coordinator. For persistence-backed team collaboration, a standard Node-based WebSocket relay (e.g., `y-websocket`) is deployed.
+5. **A Note on `y-webrtc`**: The popular `y-webrtc` package is legacy and has not been actively maintained. In production, we recommend using a custom robust WebRTC signaling coordinator (e.g., built on standard WebSockets) or leveraging standard WebSocket connections (`y-websocket`) to a centralized node/room relay.
 
 ---
 
@@ -68,7 +69,7 @@ The recommended architecture utilizes a **TypeScript-centric CRDT orchestrator**
                            |         Web Browser Clients         |
                            +-------------------------------------+
                                        |              |
-                    (y-webrtc Data Channel)      (y-websocket)
+                        (WebRTC Signaling Channel)    (y-websocket)
                                        |              |
                                        v              v
 +------------------+       +-------------------------------------+
@@ -153,17 +154,21 @@ The existing editor has a robust Ring Buffer History (`History`) built with the 
 
 ## 5. Performance, Latency, and Network Overhead Analysis
 
-### A. Network Packet Size Breakdown
+*Note: The performance, snapshot sizing, and latency figures below represent estimated back-of-the-napkin calculations based on typical ASCII layout dimensions, derived from general Yjs performance evaluations.*
+
+### A. Network Packet Size Estimates
 ASCII Canvas is inherently lightweight compared to high-resolution bitmap editors.
 
 *   **Full Grid Snapshot (80 × 40 = 3200 cells)**:
     *   Raw cells (assuming ~50% filled): ~1.6KB characters.
-    *   Yjs encoded document update snapshot: **~5KB to 8KB** (highly compact).
-    *   Initial loading synchronization over WebRTC takes **< 15ms** on standard broadband.
+    *   Yjs encoded document update snapshot (estimated): **~5KB to 8KB** (highly compact).
+    *   Initial loading synchronization over WebRTC takes **< 15ms** (estimated) on standard broadband.
 *   **Incremental Deltas (Drawing a line or shape)**:
     *   Drawing a 10-character line changes 10 coordinates.
-    *   Yjs binary update packet size: **~150 to 250 bytes**.
-    *   Transmitted instantly in a single UDP/WebRTC frame, ensuring real-time responsiveness (< 30ms latency peer-to-peer).
+    *   Yjs binary update packet size (estimated): **~150 to 250 bytes**.
+    *   Transmitted instantly in a single UDP/WebRTC frame, ensuring real-time responsiveness (< 30ms estimated latency peer-to-peer).
+
+For official large-scale performance benchmarks and internal optimization reports, refer to the [Yjs Benchmarks and Performance Documentation](https://github.com/dopt/cr-benchmarks).
 
 ### B. Frame-Rate and CPU Overhead
 *   **WASM Optimization**: The project uses **dirty-rect pixel buffer rendering** (ADR-028). When a collaborative update alters 5 cells, only those 5 cell areas are cleared and redrawn on the HTML Canvas. This keeps CPU usage close to 0% and guarantees a smooth 60 FPS even with 10+ users drawing simultaneously.
@@ -176,13 +181,45 @@ ASCII Canvas is inherently lightweight compared to high-resolution bitmap editor
 If collaborative editing is prioritized for development in a future release, the following modular steps should be taken:
 
 ### Step 1: Expose WASM Boundary APIs for Remote Mutations
-Enhance `src/wasm/helpers.rs` to expose high-performance batch mutations:
+Enhance `src/wasm/helpers.rs` to expose high-performance batch mutations. Below is a conceptual, syntactically correct Rust/WASM implementation for applying batch updates to the canvas grid without triggering recursive history records:
+
 ```rust
-#[wasm_bindgen(js_name = applyRemoteMutations)]
-pub fn apply_remote_mutations(&mut self, serialized_updates: &JsValue) {
-    // Deserialize raw coordinate updates directly into the active layer grid.
-    // Mark modified coordinates as dirty in the dirty_tracker.
-    // Skip historical command stack recording to avoid loopbacks.
+use wasm_bindgen::prelude::*;
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
+pub struct RemoteCellUpdate {
+    pub x: i32,
+    pub y: i32,
+    pub char_str: String,
+}
+
+#[wasm_bindgen]
+impl AsciiEditor {
+    /// Applies batch remote mutations directly to the active layer of the grid.
+    /// Remote mutations are written in place and marked as dirty, bypassing the local command undo history.
+    #[wasm_bindgen(js_name = applyRemoteMutations)]
+    pub fn apply_remote_mutations(&mut self, serialized_updates: &JsValue) -> Result<(), JsValue> {
+        let updates: Vec<RemoteCellUpdate> = serde_wasm_bindgen::from_value(serialized_updates.clone())
+            .map_err(|e| JsValue::from_str(&format!("Failed to deserialize updates: {:?}", e)))?;
+
+        for update in updates {
+            let ch = update.char_str.chars().next().unwrap_or(' ');
+
+            // Assuming self.grid resides in the active layer of the model
+            if self.grid.is_within_bounds(update.x, update.y) {
+                // Mutate grid cell directly
+                self.grid.set_char(update.x, update.y, ch);
+
+                // Mark cell as dirty in the dirty rect tracker to trigger incremental repainting
+                self.dirty_tracker.mark_dirty(update.x, update.y);
+            }
+        }
+
+        // Request a repaint for the dirty bounding boxes
+        self.request_render();
+        Ok(())
+    }
 }
 ```
 
@@ -191,7 +228,6 @@ Install the lightweight Yjs packages in `web/package.json`:
 ```json
 "dependencies": {
   "yjs": "^13.6.0",
-  "y-webrtc": "^10.3.0",
   "y-websocket": "^2.0.0"
 }
 ```
@@ -204,5 +240,5 @@ Create a new frontend feature module `web/collab.ts` to manage:
 
 ### Step 4: Add Multiplayer UI Elements
 Add lightweight collaborative UI:
-*   A "Share Board" button to generate unique WebRTC room hashes.
+*   A "Share Board" button to generate unique Room hashes.
 *   Peer presence indicators in the top toolbar (colored avatars representing active collaborators).
