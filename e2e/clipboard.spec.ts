@@ -183,11 +183,15 @@ test.describe('Copy / export fidelity', () => {
         const box = await canvas.boundingBox();
         expect(box).toBeTruthy();
 
+        if (!box) {
+            throw new Error('Canvas bounding box not found');
+        }
+
         // Use safe inset coordinates relative to bounding box to draw inside the grid canvas bounds
-        const x1 = box!.x + 40;
-        const y1 = box!.y + 40;
-        const x2 = box!.x + 160;
-        const y2 = box!.y + 120;
+        const x1 = box.x + 40;
+        const y1 = box.y + 40;
+        const x2 = box.x + 160;
+        const y2 = box.y + 120;
 
         await page.mouse.move(x1, y1);
         await page.mouse.down();
