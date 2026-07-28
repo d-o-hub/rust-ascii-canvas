@@ -242,6 +242,19 @@ npm run build
 ```
 The final static assets will be in the `dist/` directory.
 
+### Library vs. App-Only Distribution
+
+ASCII Canvas is designed and distributed exclusively as an **app-only** project (an end-user single-page web application).
+
+While the project is organized with a Rust/WASM backend (`src/`) and a TypeScript frontend (`web/`), these components are tightly coupled and highly optimized specifically for this application (e.g., custom dirty-rect rendering and font atlas glyph rasterization).
+
+Therefore:
+- **No crates.io release**: The crate is not published to crates.io as a reusable Rust library.
+- **No npm registry release**: The compiled WASM package is not published to the public npm registry as a reusable package.
+- **Static Asset Deployment**: All standard deployments are done by hosting the static web assets from the `/dist` directory (for example, on Netlify or similar hosting platforms).
+
+See [ADR-040 (App-Only Distribution)](plans/ADRs/040-app-only-distribution.md) for further technical context and rationale.
+
 ## Performance
 
 - **Dirty-Rect Rendering**: Only redraws modified regions, significantly reducing CPU usage during edits.
