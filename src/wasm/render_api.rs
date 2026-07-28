@@ -261,12 +261,6 @@ impl AsciiEditor {
         self.dirty_tracker.clear();
     }
 
-    /// Marks a cell as dirty for benchmarking purposes.
-    #[wasm_bindgen(js_name = markCellDirtyForBench)]
-    pub fn mark_cell_dirty_for_bench(&mut self, x: i32, y: i32) {
-        self.dirty_tracker.mark_dirty(x, y);
-    }
-
     /// Updates the font atlas glyph data cache for a specific Unicode character.
     #[wasm_bindgen(js_name = updateFontAtlasGlyph)]
     pub fn update_font_atlas_glyph(&mut self, ch_code: u32, glyph_data: Vec<u8>) {
@@ -332,6 +326,10 @@ impl AsciiEditor {
             let row_start_idx = (py * buffer_width + px_start) * 4;
             let row_end_idx = (py * buffer_width + px_end) * 4;
             for idx in (row_start_idx..row_end_idx).step_by(4) {
+                debug_assert!(
+                    idx + 3 < self.pixel_buffer.len(),
+                    "Pixel index out of bounds in render_to_pixel_buffer clear"
+                );
                 if idx + 3 < self.pixel_buffer.len() {
                     self.pixel_buffer[idx] = bg_color[0];
                     self.pixel_buffer[idx + 1] = bg_color[1];
@@ -340,9 +338,6 @@ impl AsciiEditor {
                 }
             }
         }
-
-        // Composite all visible layers so on-screen view and PNG export match ASCII export.
-        let composite = self.composite_visible_grid();
 
         // 2. Render Selection Highlights if there is an active selection that intersects the dirty rect
         if let Some(ref sel) = self.current_selection {
@@ -357,7 +352,7 @@ impl AsciiEditor {
 
             for gy in start_y..=end_y {
                 for gx in start_x..=end_x {
-                    if composite.in_bounds(gx, gy) {
+                    if self.state.grid.in_bounds(gx, gy) {
                         let sx = gx as usize * glyph_w;
                         let sy = gy as usize * glyph_h;
 
@@ -366,6 +361,10 @@ impl AsciiEditor {
                             let buffer_row_start = (buffer_y * buffer_width + sx) * 4;
                             for x in 0..glyph_w {
                                 let pixel_idx = buffer_row_start + x * 4;
+                                debug_assert!(
+                                    pixel_idx + 3 < self.pixel_buffer.len(),
+                                    "Pixel index out of bounds in render_to_pixel_buffer highlight"
+                                );
                                 if pixel_idx + 3 < self.pixel_buffer.len() {
                                     self.pixel_buffer[pixel_idx] = highlight_color[0];
                                     self.pixel_buffer[pixel_idx + 1] = highlight_color[1];
@@ -379,20 +378,37 @@ impl AsciiEditor {
             }
         }
 
-        // 3. Render grid composite glyphs that fall inside the dirty rect
+        // 3. Render grid composite glyphs that fall inside the dirty rect using sparse lookup
         for gy in dirty.y1..=dirty.y2 {
             for gx in dirty.x1..=dirty.x2 {
-                if let Some(cell) = composite.get(gx, gy) {
-                    if cell.is_visible() {
-                        self.font_atlas.render_glyph(
-                            &mut self.pixel_buffer,
-                            buffer_width,
-                            gx as usize * glyph_w,
-                            gy as usize * glyph_h,
-                            cell.ch,
-                            fg_color,
-                        );
+                let mut composite_cell = None;
+                for i in (0..self.layers.len()).rev() {
+                    let layer = &self.layers[i];
+                    if !layer.visible {
+                        continue;
                     }
+                    let grid = if i == self.active_layer {
+                        &self.state.grid
+                    } else {
+                        &layer.grid
+                    };
+                    if let Some(cell) = grid.get(gx, gy) {
+                        if cell.is_visible() {
+                            composite_cell = Some(*cell);
+                            break;
+                        }
+                    }
+                }
+
+                if let Some(cell) = composite_cell {
+                    self.font_atlas.render_glyph(
+                        &mut self.pixel_buffer,
+                        buffer_width,
+                        gx as usize * glyph_w,
+                        gy as usize * glyph_h,
+                        cell.ch,
+                        fg_color,
+                    );
                 }
             }
         }
@@ -449,5 +465,12 @@ fn parse_hex_color(hex: &str) -> Option<[u8; 4]> {
         Some([r, g, b, a])
     } else {
         None
+    }
+}
+
+impl AsciiEditor {
+    /// Marks a cell as dirty for benchmarking purposes.
+    pub fn mark_cell_dirty_for_bench(&mut self, x: i32, y: i32) {
+        self.dirty_tracker.mark_dirty(x, y);
     }
 }
