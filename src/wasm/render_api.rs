@@ -261,6 +261,12 @@ impl AsciiEditor {
         self.dirty_tracker.clear();
     }
 
+    /// Marks a cell as dirty for benchmarking purposes.
+    #[wasm_bindgen(js_name = markCellDirtyForBench)]
+    pub fn mark_cell_dirty_for_bench(&mut self, x: i32, y: i32) {
+        self.dirty_tracker.mark_dirty(x, y);
+    }
+
     /// Updates the font atlas glyph data cache for a specific Unicode character.
     #[wasm_bindgen(js_name = updateFontAtlasGlyph)]
     pub fn update_font_atlas_glyph(&mut self, ch_code: u32, glyph_data: Vec<u8>) {
@@ -282,7 +288,7 @@ impl AsciiEditor {
         self.pixel_buffer.len()
     }
 
-    /// Renders the entire canvas layers and current selection highlights into the pixel buffer.
+    /// Renders the canvas layers and selection highlights into the pixel buffer, using dirty-rect optimization when possible.
     #[wasm_bindgen(js_name = renderToPixelBuffer)]
     pub fn render_to_pixel_buffer(&mut self) {
         let grid_width = self.state.grid.width();
@@ -293,31 +299,64 @@ impl AsciiEditor {
         let buffer_height = grid_height * glyph_h;
 
         let required_len = buffer_width * buffer_height * 4;
+        let mut is_resized = false;
         if self.pixel_buffer.len() != required_len {
             self.pixel_buffer.resize(required_len, 0);
+            is_resized = true;
+        }
+
+        let needs_full = self.dirty_tracker.needs_full_redraw() || is_resized;
+
+        let mut dirty = if needs_full {
+            crate::render::DirtyRect::full(grid_width, grid_height)
+        } else {
+            *self.dirty_tracker.dirty_rect()
+        };
+
+        dirty.clamp(grid_width, grid_height);
+
+        if dirty.is_empty() {
+            return;
         }
 
         let bg_color = parse_hex_color(&self.theme.background).unwrap_or([30, 30, 30, 255]);
-        for i in 0..buffer_width * buffer_height {
-            let idx = i * 4;
-            self.pixel_buffer[idx] = bg_color[0];
-            self.pixel_buffer[idx + 1] = bg_color[1];
-            self.pixel_buffer[idx + 2] = bg_color[2];
-            self.pixel_buffer[idx + 3] = bg_color[3];
-        }
-
         let fg_color = parse_hex_color(&self.theme.foreground).unwrap_or([212, 212, 212, 255]);
+
+        // 1. Clear only the dirty pixel region to bg_color
+        let py_start = dirty.y1 as usize * glyph_h;
+        let py_end = (dirty.y2 as usize + 1) * glyph_h;
+        let px_start = dirty.x1 as usize * glyph_w;
+        let px_end = (dirty.x2 as usize + 1) * glyph_w;
+
+        for py in py_start..py_end {
+            let row_start_idx = (py * buffer_width + px_start) * 4;
+            let row_end_idx = (py * buffer_width + px_end) * 4;
+            for idx in (row_start_idx..row_end_idx).step_by(4) {
+                if idx + 3 < self.pixel_buffer.len() {
+                    self.pixel_buffer[idx] = bg_color[0];
+                    self.pixel_buffer[idx + 1] = bg_color[1];
+                    self.pixel_buffer[idx + 2] = bg_color[2];
+                    self.pixel_buffer[idx + 3] = bg_color[3];
+                }
+            }
+        }
 
         // Composite all visible layers so on-screen view and PNG export match ASCII export.
         let composite = self.composite_visible_grid();
 
+        // 2. Render Selection Highlights if there is an active selection that intersects the dirty rect
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
             let highlight_color =
                 parse_hex_color(&self.theme.selection).unwrap_or([38, 79, 120, 255]);
 
-            for gy in min_y..=max_y {
-                for gx in min_x..=max_x {
+            let start_y = min_y.max(dirty.y1);
+            let end_y = max_y.min(dirty.y2);
+            let start_x = min_x.max(dirty.x1);
+            let end_x = max_x.min(dirty.x2);
+
+            for gy in start_y..=end_y {
+                for gx in start_x..=end_x {
                     if composite.in_bounds(gx, gy) {
                         let sx = gx as usize * glyph_w;
                         let sy = gy as usize * glyph_h;
@@ -327,10 +366,12 @@ impl AsciiEditor {
                             let buffer_row_start = (buffer_y * buffer_width + sx) * 4;
                             for x in 0..glyph_w {
                                 let pixel_idx = buffer_row_start + x * 4;
-                                self.pixel_buffer[pixel_idx] = highlight_color[0];
-                                self.pixel_buffer[pixel_idx + 1] = highlight_color[1];
-                                self.pixel_buffer[pixel_idx + 2] = highlight_color[2];
-                                self.pixel_buffer[pixel_idx + 3] = highlight_color[3];
+                                if pixel_idx + 3 < self.pixel_buffer.len() {
+                                    self.pixel_buffer[pixel_idx] = highlight_color[0];
+                                    self.pixel_buffer[pixel_idx + 1] = highlight_color[1];
+                                    self.pixel_buffer[pixel_idx + 2] = highlight_color[2];
+                                    self.pixel_buffer[pixel_idx + 3] = highlight_color[3];
+                                }
                             }
                         }
                     }
@@ -338,22 +379,28 @@ impl AsciiEditor {
             }
         }
 
-        for (x, y, cell) in composite.iter_with_coords() {
-            if cell.is_visible() {
-                self.font_atlas.render_glyph(
-                    &mut self.pixel_buffer,
-                    buffer_width,
-                    x as usize * glyph_w,
-                    y as usize * glyph_h,
-                    cell.ch,
-                    fg_color,
-                );
+        // 3. Render grid composite glyphs that fall inside the dirty rect
+        for gy in dirty.y1..=dirty.y2 {
+            for gx in dirty.x1..=dirty.x2 {
+                if let Some(cell) = composite.get(gx, gy) {
+                    if cell.is_visible() {
+                        self.font_atlas.render_glyph(
+                            &mut self.pixel_buffer,
+                            buffer_width,
+                            gx as usize * glyph_w,
+                            gy as usize * glyph_h,
+                            cell.ch,
+                            fg_color,
+                        );
+                    }
+                }
             }
         }
 
+        // 4. Render preview ops that fall inside the dirty rect
         let preview_color = [86, 156, 214, 179]; // rgba(86, 156, 214, 0.7)
         for op in &self.preview_ops {
-            if op.cell.is_visible() {
+            if op.cell.is_visible() && dirty.contains(op.x, op.y) {
                 self.font_atlas.render_glyph(
                     &mut self.pixel_buffer,
                     buffer_width,
@@ -363,6 +410,13 @@ impl AsciiEditor {
                     preview_color,
                 );
             }
+        }
+
+        // Update metric counters to track if we did a full or dirty rect render
+        if needs_full {
+            self.full_render_count += 1;
+        } else {
+            self.dirty_render_count += 1;
         }
     }
 }
