@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
+import { state } from './state';
+import { setupEventListeners } from './events';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -94,5 +96,52 @@ describe('UX Improvements', () => {
 
         setTool('rectangle');
         expect(eraserGroup?.style.display).toBe('none');
+    });
+
+    it('should apply grid size and focus canvas when Enter is pressed in grid inputs', () => {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'canvas';
+        document.body.appendChild(canvas);
+        const focusSpy = vi.spyOn(canvas, 'focus');
+
+        const widthInput = document.createElement('input');
+        widthInput.id = 'grid-width';
+        widthInput.type = 'number';
+        widthInput.value = '100';
+        document.body.appendChild(widthInput);
+
+        const heightInput = document.createElement('input');
+        heightInput.id = 'grid-height';
+        heightInput.type = 'number';
+        heightInput.value = '50';
+        document.body.appendChild(heightInput);
+
+        const applyBtn = document.createElement('button');
+        applyBtn.id = 'apply-grid-btn';
+        document.body.appendChild(applyBtn);
+
+        const toast = document.createElement('div');
+        toast.id = 'status-toast';
+        document.body.appendChild(toast);
+
+        state.canvas = canvas;
+        state.statusToast = toast;
+        state.editor = {
+            width: 80,
+            height: 40,
+            resize: vi.fn(),
+            tool: 'rectangle',
+        } as unknown as typeof state.editor;
+
+        setupEventListeners();
+
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+        widthInput.dispatchEvent(enterEvent);
+
+        if (!state.editor) {
+            throw new Error('state.editor must be defined');
+        }
+        expect(state.editor.resize).toHaveBeenCalledWith(100, 50);
+        expect(focusSpy).toHaveBeenCalled();
     });
 });

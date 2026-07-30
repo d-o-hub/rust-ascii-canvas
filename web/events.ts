@@ -617,6 +617,22 @@ export function setupEventListeners(): void {
         applyCustomGridSize();
         if (state.canvas) state.canvas.focus();
     });
+
+    const gridWidthInput = document.querySelector('#grid-width');
+    const gridHeightInput = document.querySelector('#grid-height');
+    const handleGridEnter = (e: Event): void => {
+        if ((e as KeyboardEvent).key === 'Enter') {
+            applyCustomGridSize();
+            if (state.canvas) state.canvas.focus();
+        }
+    };
+    if (gridWidthInput) {
+        gridWidthInput.addEventListener('keydown', handleGridEnter);
+    }
+    if (gridHeightInput) {
+        gridHeightInput.addEventListener('keydown', handleGridEnter);
+    }
+
     wireOptionalButton('add-layer-btn', () => {
         if (!state.editor) return;
         state.editor.addLayer();

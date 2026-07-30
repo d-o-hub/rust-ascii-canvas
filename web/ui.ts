@@ -312,6 +312,7 @@ export function refreshLayerList(): void {
         nameInput.type = 'text';
         nameInput.value = state.editor.layerName(i) || `Layer ${i + 1}`;
         nameInput.title = 'Edit layer name';
+        nameInput.setAttribute('aria-label', `Layer ${i + 1} name`);
         nameInput.addEventListener('change', () => {
             if (state.editor) {
                 state.editor.renameLayer(i, nameInput.value);
