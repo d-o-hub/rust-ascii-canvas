@@ -613,24 +613,25 @@ export function setupEventListeners(): void {
         }
         if (state.canvas) state.canvas.focus();
     });
-    wireOptionalButton('apply-grid-btn', () => {
+    function applyGridAndFocus(): void {
         applyCustomGridSize();
         if (state.canvas) state.canvas.focus();
-    });
+    }
 
-    const gridWidthInput = document.querySelector('#grid-width');
-    const gridHeightInput = document.querySelector('#grid-height');
-    function handleGridEnter(e: Event): void {
-        if ((e as KeyboardEvent).key === 'Enter') {
-            applyCustomGridSize();
-            if (state.canvas) state.canvas.focus();
+    wireOptionalButton('apply-grid-btn', applyGridAndFocus);
+
+    const gridWidthInput = document.querySelector('#grid-width') as HTMLInputElement | null;
+    const gridHeightInput = document.querySelector('#grid-height') as HTMLInputElement | null;
+    function handleGridEnter(e: KeyboardEvent): void {
+        if (e.key === 'Enter') {
+            applyGridAndFocus();
         }
     }
     if (gridWidthInput) {
-        gridWidthInput.addEventListener('keydown', handleGridEnter);
+        gridWidthInput.addEventListener('keydown', handleGridEnter as EventListener);
     }
     if (gridHeightInput) {
-        gridHeightInput.addEventListener('keydown', handleGridEnter);
+        gridHeightInput.addEventListener('keydown', handleGridEnter as EventListener);
     }
 
     wireOptionalButton('add-layer-btn', () => {
