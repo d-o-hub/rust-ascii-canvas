@@ -620,12 +620,12 @@ export function setupEventListeners(): void {
 
     const gridWidthInput = document.querySelector('#grid-width');
     const gridHeightInput = document.querySelector('#grid-height');
-    const handleGridEnter = (e: Event): void => {
+    function handleGridEnter(e: Event): void {
         if ((e as KeyboardEvent).key === 'Enter') {
             applyCustomGridSize();
             if (state.canvas) state.canvas.focus();
         }
-    };
+    }
     if (gridWidthInput) {
         gridWidthInput.addEventListener('keydown', handleGridEnter);
     }
