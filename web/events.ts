@@ -620,18 +620,18 @@ export function setupEventListeners(): void {
 
     wireOptionalButton('apply-grid-btn', applyGridAndFocus);
 
-    const gridWidthInput = document.querySelector('#grid-width') as HTMLInputElement | null;
-    const gridHeightInput = document.querySelector('#grid-height') as HTMLInputElement | null;
+    const gridWidthInputEl = document.querySelector('#grid-width') as HTMLInputElement | null;
+    const gridHeightInputEl = document.querySelector('#grid-height') as HTMLInputElement | null;
     function handleGridEnter(e: KeyboardEvent): void {
         if (e.key === 'Enter') {
             applyGridAndFocus();
         }
     }
-    if (gridWidthInput) {
-        gridWidthInput.addEventListener('keydown', handleGridEnter as EventListener);
+    if (gridWidthInputEl) {
+        gridWidthInputEl.addEventListener('keydown', handleGridEnter as EventListener);
     }
-    if (gridHeightInput) {
-        gridHeightInput.addEventListener('keydown', handleGridEnter as EventListener);
+    if (gridHeightInputEl) {
+        gridHeightInputEl.addEventListener('keydown', handleGridEnter as EventListener);
     }
 
     wireOptionalButton('add-layer-btn', () => {
