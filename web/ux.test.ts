@@ -104,17 +104,17 @@ describe('UX Improvements', () => {
         document.body.appendChild(canvas);
         const focusSpy = vi.spyOn(canvas, 'focus');
 
-        const widthInputEl = document.createElement('input');
-        widthInputEl.id = 'grid-width';
-        widthInputEl.type = 'number';
-        widthInputEl.value = '100';
-        document.body.appendChild(widthInputEl);
+        const widthHtmlElement = document.createElement('input');
+        widthHtmlElement.id = 'grid-width';
+        widthHtmlElement.type = 'number';
+        widthHtmlElement.value = '100';
+        document.body.appendChild(widthHtmlElement);
 
-        const heightInputEl = document.createElement('input');
-        heightInputEl.id = 'grid-height';
-        heightInputEl.type = 'number';
-        heightInputEl.value = '50';
-        document.body.appendChild(heightInputEl);
+        const heightHtmlElement = document.createElement('input');
+        heightHtmlElement.id = 'grid-height';
+        heightHtmlElement.type = 'number';
+        heightHtmlElement.value = '50';
+        document.body.appendChild(heightHtmlElement);
 
         const applyBtn = document.createElement('button');
         applyBtn.id = 'apply-grid-btn';
@@ -136,7 +136,7 @@ describe('UX Improvements', () => {
         setupEventListeners();
 
         const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-        widthInputEl.dispatchEvent(enterEvent);
+        widthHtmlElement.dispatchEvent(enterEvent);
 
         if (!state.editor) {
             throw new Error('state.editor must be defined');
