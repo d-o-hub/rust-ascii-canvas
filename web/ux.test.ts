@@ -65,8 +65,7 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvasNode = document.getElementById('canvas') as HTMLCanvasElement;
-        const focusSpy = vi.spyOn(canvasNode, 'focus');
+        const focusSpy = vi.spyOn(HTMLCanvasElement.prototype, 'focus');
 
         setTool('rectangle');
         expect(focusSpy).toHaveBeenCalled();
@@ -106,11 +105,11 @@ describe('UX Improvements', () => {
         const widthHtmlElement = document.getElementById('grid-width') as HTMLInputElement;
         const toastHtmlElement = document.getElementById('status-toast') as HTMLElement;
 
-        const focusSpy = vi.spyOn(canvasHtmlElement, 'focus');
+        const focusSpy = vi.spyOn(HTMLCanvasElement.prototype, 'focus');
 
-        state.canvas = canvasHtmlElement;
-        state.statusToast = toastHtmlElement;
-        state.editor = {
+        state['canvas'] = canvasHtmlElement;
+        state['statusToast'] = toastHtmlElement;
+        state['editor'] = {
             width: 80,
             height: 40,
             resize: vi.fn(),
@@ -122,10 +121,10 @@ describe('UX Improvements', () => {
         const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
         widthHtmlElement.dispatchEvent(enterEvent);
 
-        if (!state.editor) {
+        if (!state['editor']) {
             throw new Error('state.editor must be defined');
         }
-        expect(state.editor.resize).toHaveBeenCalledWith(100, 50);
+        expect(state['editor'].resize).toHaveBeenCalledWith(100, 50);
         expect(focusSpy).toHaveBeenCalled();
     });
 });
