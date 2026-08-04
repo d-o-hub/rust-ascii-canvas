@@ -59,3 +59,36 @@ assertion is used only where TS requires a non-null target (`vi.spyOn`, `dispatc
   `eslint-plugin-xss` with default options (`xss/no-mixed-html: ['error']`).
 - Type-cast identifiers (`HTML*Element`) in variable initializers trigger the rule;
   prefer `querySelector` tag-literal inference over `as` casts in test code.
+
+## Follow-up 2: eliminate the "Forbidden non-null assertion" alerts
+
+After `51f7f4f`, Codacy still reported **2x** "Forbidden non-null assertion"
+(`@typescript-eslint/no-non-null-assertion`, ErrorProne/high) on the two added lines
+using the `!` operator:
+- `vi.spyOn(canvasNode!, 'focus')`
+- `widthInput!.dispatchEvent(enterEvent)`
+
+These were introduced by `51f7f4f` itself, which used `!` as a replacement for the
+removed `as HTML*Element` casts. Codacy's rule set is stricter than the local
+`web/eslint.config.js`, which does not enable `no-non-null-assertion`.
+
+Resolution: replace `!` with guard clauses that narrow the type for TypeScript:
+
+```ts
+const canvasNode = document.querySelector('canvas');
+if (!canvasNode) {
+    throw new Error('canvas element must exist in test DOM');
+}
+const focusSpy = vi.spyOn(canvasNode, 'focus');
+```
+
+This satisfies both `tsc` narrowing and the Codacy rule without reintroducing
+`as HTML*Element` casts (which would re-trigger `xss/no-mixed-html`).
+
+### Learnings (for the harness)
+- Codacy checks run `@typescript-eslint` recommended rules **on top of** the repo's
+  local ESLint config; `no-non-null-assertion` is the strictest surprise candidate.
+  When replacing casts with `!` assertions, prefer guard clauses instead.
+- Local reproduction recipe: ESLint 8 + `@typescript-eslint/parser` +
+  `@typescript-eslint/eslint-plugin` with
+  `@typescript-eslint/no-non-null-assertion: ['error']`.
