@@ -65,9 +65,8 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvasHtmlElement = document.getElementById('canvas') as HTMLCanvasElement;
-        const canvasProto = Object.getPrototypeOf(canvasHtmlElement);
-        const focusSpy = vi.spyOn(canvasProto, 'focus');
+        const canvasNode = document.getElementById('canvas') as HTMLCanvasElement;
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
 
         setTool('rectangle');
         expect(focusSpy).toHaveBeenCalled();
@@ -103,20 +102,14 @@ describe('UX Improvements', () => {
     });
 
     it('should apply grid size and focus canvas when Enter is pressed in grid inputs', () => {
-        const canvasHtmlElement = document.getElementById('canvas') as HTMLCanvasElement;
-        const widthHtmlElement = document.getElementById('grid-width') as HTMLInputElement;
-        const toastHtmlElement = document.getElementById('status-toast') as HTMLElement;
+        const canvasNode = document.getElementById('canvas') as HTMLCanvasElement;
+        const widthInput = document.getElementById('grid-width') as HTMLInputElement;
 
-        const canvasProto = Object.getPrototypeOf(canvasHtmlElement);
-        const focusSpy = vi.spyOn(canvasProto, 'focus');
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
 
-        const canvasKey = 'canvas';
-        const toastKey = 'statusToast';
-        const editorKey = 'editor';
-
-        state[canvasKey] = canvasHtmlElement;
-        state[toastKey] = toastHtmlElement;
-        state[editorKey] = {
+        state.canvas = canvasNode;
+        state.statusToast = document.getElementById('status-toast');
+        state.editor = {
             width: 80,
             height: 40,
             resize: vi.fn(),
@@ -126,12 +119,12 @@ describe('UX Improvements', () => {
         setupEventListeners();
 
         const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-        widthHtmlElement.dispatchEvent(enterEvent);
+        widthInput.dispatchEvent(enterEvent);
 
-        if (!state[editorKey]) {
+        if (!state.editor) {
             throw new Error('state.editor must be defined');
         }
-        expect(state[editorKey].resize).toHaveBeenCalledWith(100, 50);
+        expect(state.editor.resize).toHaveBeenCalledWith(100, 50);
         expect(focusSpy).toHaveBeenCalled();
     });
 });
