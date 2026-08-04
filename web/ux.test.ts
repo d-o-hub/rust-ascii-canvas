@@ -65,8 +65,8 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvasNode = document.getElementById('canvas') as HTMLCanvasElement;
-        const focusSpy = vi.spyOn(canvasNode, 'focus');
+        const canvasNode = document.querySelector('canvas');
+        const focusSpy = vi.spyOn(canvasNode!, 'focus');
 
         setTool('rectangle');
         expect(focusSpy).toHaveBeenCalled();
@@ -102,10 +102,10 @@ describe('UX Improvements', () => {
     });
 
     it('should apply grid size and focus canvas when Enter is pressed in grid inputs', () => {
-        const canvasNode = document.getElementById('canvas') as HTMLCanvasElement;
-        const widthInput = document.getElementById('grid-width') as HTMLInputElement;
+        const canvasNode = document.querySelector('canvas');
+        const widthInput = document.querySelector('input#grid-width');
 
-        const focusSpy = vi.spyOn(canvasNode, 'focus');
+        const focusSpy = vi.spyOn(canvasNode!, 'focus');
 
         state.canvas = canvasNode;
         state.statusToast = document.getElementById('status-toast');
@@ -119,7 +119,7 @@ describe('UX Improvements', () => {
         setupEventListeners();
 
         const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-        widthInput.dispatchEvent(enterEvent);
+        widthInput!.dispatchEvent(enterEvent);
 
         if (!state.editor) {
             throw new Error('state.editor must be defined');
