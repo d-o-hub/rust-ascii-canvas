@@ -22,6 +22,11 @@ describe('UX Improvements', () => {
             <button class="tool-btn" data-tool="text"></button>
             <button class="tool-btn" data-tool="select"></button>
             <button class="tool-btn" data-tool="eraser"></button>
+            <canvas id="canvas"></canvas>
+            <input type="number" id="grid-width" value="100">
+            <input type="number" id="grid-height" value="50">
+            <button id="apply-grid-btn"></button>
+            <div id="status-toast"></div>
         `;
     });
 
@@ -60,9 +65,7 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvas = document.createElement('canvas');
-        canvas.id = 'canvas';
-        document.body.appendChild(canvas);
+        const canvas = document.getElementById('canvas') as HTMLCanvasElement;
         const focusSpy = vi.spyOn(canvas, 'focus');
 
         setTool('rectangle');
@@ -99,30 +102,11 @@ describe('UX Improvements', () => {
     });
 
     it('should apply grid size and focus canvas when Enter is pressed in grid inputs', () => {
-        const canvas = document.createElement('canvas');
-        canvas.id = 'canvas';
-        document.body.appendChild(canvas);
+        const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+        const widthHtmlElement = document.getElementById('grid-width') as HTMLInputElement;
+        const toast = document.getElementById('status-toast') as HTMLElement;
+
         const focusSpy = vi.spyOn(canvas, 'focus');
-
-        const widthHtmlElement = document.createElement('input');
-        widthHtmlElement.id = 'grid-width';
-        widthHtmlElement.type = 'number';
-        widthHtmlElement.value = '100';
-        document.body.appendChild(widthHtmlElement);
-
-        const heightHtmlElement = document.createElement('input');
-        heightHtmlElement.id = 'grid-height';
-        heightHtmlElement.type = 'number';
-        heightHtmlElement.value = '50';
-        document.body.appendChild(heightHtmlElement);
-
-        const applyBtn = document.createElement('button');
-        applyBtn.id = 'apply-grid-btn';
-        document.body.appendChild(applyBtn);
-
-        const toast = document.createElement('div');
-        toast.id = 'status-toast';
-        document.body.appendChild(toast);
 
         state.canvas = canvas;
         state.statusToast = toast;
