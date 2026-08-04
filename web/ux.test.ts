@@ -65,8 +65,8 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-        const focusSpy = vi.spyOn(canvas, 'focus');
+        const canvasHtmlElement = document.getElementById('canvas') as HTMLCanvasElement;
+        const focusSpy = vi.spyOn(canvasHtmlElement, 'focus');
 
         setTool('rectangle');
         expect(focusSpy).toHaveBeenCalled();
@@ -102,14 +102,14 @@ describe('UX Improvements', () => {
     });
 
     it('should apply grid size and focus canvas when Enter is pressed in grid inputs', () => {
-        const canvas = document.getElementById('canvas') as HTMLCanvasElement;
+        const canvasHtmlElement = document.getElementById('canvas') as HTMLCanvasElement;
         const widthHtmlElement = document.getElementById('grid-width') as HTMLInputElement;
-        const toast = document.getElementById('status-toast') as HTMLElement;
+        const toastHtmlElement = document.getElementById('status-toast') as HTMLElement;
 
-        const focusSpy = vi.spyOn(canvas, 'focus');
+        const focusSpy = vi.spyOn(canvasHtmlElement, 'focus');
 
-        state.canvas = canvas;
-        state.statusToast = toast;
+        state.canvas = canvasHtmlElement;
+        state.statusToast = toastHtmlElement;
         state.editor = {
             width: 80,
             height: 40,
