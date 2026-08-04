@@ -190,7 +190,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Install cargo-audit
-        uses: taiki-e/install-action@v2.85.3
+        uses: taiki-e/install-action@v2
         with:
           tool: cargo-audit
       - name: Generate lockfile

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
+import { state } from './state';
+import { setupEventListeners } from './events';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -20,6 +22,11 @@ describe('UX Improvements', () => {
             <button class="tool-btn" data-tool="text"></button>
             <button class="tool-btn" data-tool="select"></button>
             <button class="tool-btn" data-tool="eraser"></button>
+            <canvas id="canvas"></canvas>
+            <input type="number" id="grid-width" value="100">
+            <input type="number" id="grid-height" value="50">
+            <button id="apply-grid-btn"></button>
+            <div id="status-toast"></div>
         `;
     });
 
@@ -58,10 +65,11 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvas = document.createElement('canvas');
-        canvas.id = 'canvas';
-        document.body.appendChild(canvas);
-        const focusSpy = vi.spyOn(canvas, 'focus');
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) {
+            throw new Error('canvas element must exist in test DOM');
+        }
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
 
         setTool('rectangle');
         expect(focusSpy).toHaveBeenCalled();
@@ -94,5 +102,35 @@ describe('UX Improvements', () => {
 
         setTool('rectangle');
         expect(eraserGroup?.style.display).toBe('none');
+    });
+
+    it('should apply grid size and focus canvas when Enter is pressed in grid inputs', () => {
+        const canvasNode = document.querySelector('canvas');
+        const widthInput = document.querySelector('input#grid-width');
+        if (!canvasNode || !widthInput) {
+            throw new Error('canvas and grid-width elements must exist in test DOM');
+        }
+
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
+
+        state.canvas = canvasNode;
+        state.statusToast = document.getElementById('status-toast');
+        state.editor = {
+            width: 80,
+            height: 40,
+            resize: vi.fn(),
+            tool: 'rectangle',
+        } as unknown as typeof state.editor;
+
+        setupEventListeners();
+
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+        widthInput.dispatchEvent(enterEvent);
+
+        if (!state.editor) {
+            throw new Error('state.editor must be defined');
+        }
+        expect(state.editor.resize).toHaveBeenCalledWith(100, 50);
+        expect(focusSpy).toHaveBeenCalled();
     });
 });

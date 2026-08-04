@@ -613,10 +613,27 @@ export function setupEventListeners(): void {
         }
         if (state.canvas) state.canvas.focus();
     });
-    wireOptionalButton('apply-grid-btn', () => {
+    function applyGridAndFocus(): void {
         applyCustomGridSize();
         if (state.canvas) state.canvas.focus();
-    });
+    }
+
+    wireOptionalButton('apply-grid-btn', applyGridAndFocus);
+
+    const gridWidthHtmlElement = document.querySelector('#grid-width') as HTMLInputElement | null;
+    const gridHeightHtmlElement = document.querySelector('#grid-height') as HTMLInputElement | null;
+    function handleGridEnter(e: KeyboardEvent): void {
+        if (e.key === 'Enter') {
+            applyGridAndFocus();
+        }
+    }
+    if (gridWidthHtmlElement) {
+        gridWidthHtmlElement.addEventListener('keydown', handleGridEnter as EventListener);
+    }
+    if (gridHeightHtmlElement) {
+        gridHeightHtmlElement.addEventListener('keydown', handleGridEnter as EventListener);
+    }
+
     wireOptionalButton('add-layer-btn', () => {
         if (!state.editor) return;
         state.editor.addLayer();
