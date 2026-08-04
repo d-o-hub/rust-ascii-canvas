@@ -65,8 +65,8 @@ describe('UX Improvements', () => {
     });
 
     it('should focus canvas when setting tool', () => {
-        const canvasHtmlElement = document.getElementById('canvas') as HTMLCanvasElement;
-        const focusSpy = vi.spyOn(canvasHtmlElement, 'focus');
+        const canvasNode = document.getElementById('canvas') as HTMLCanvasElement;
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
 
         setTool('rectangle');
         expect(focusSpy).toHaveBeenCalled();
