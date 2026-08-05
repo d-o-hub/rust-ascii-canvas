@@ -136,3 +136,13 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Why harness failed** | No sensor fired on docs-only changes. The architecture and format of ADR files had no automated validation. |
 | **Prevention** | (1) Added `plans/**` to `harness` path filter so fmt, clippy, and architecture checks run on ADR changes. (2) AGENTS.md now requires human review for bot-generated ADR PRs. (3) ADR status changes must be verified against actual commits. |
 | **Agent rule** | After touching `plans/ADRs/`, run `git log --oneline` to confirm status dates match real commit history. Do not mark ADRs as `Implemented` without corroborating evidence. |
+
+### L-004 — Release guard-rails checked git tags, not GitHub Releases (2026-08-04)
+
+| | |
+|--|--|
+| **Symptom** | Version bump PRs merged to main but no GitHub Release existed. Guard-rails passed because git tags existed, but actual GitHub Releases were missing. |
+| **Root cause** | Guard-rails used `git describe --tags --abbrev=0` to find the "last version". Git tags can exist without a corresponding GitHub Release (e.g., from failed workflow runs or manual tag creation). |
+| **Why harness failed** | The release workflow's version validation only checked local git state, not the actual GitHub Release API. |
+| **Prevention** | (1) Guard-rails now query `gh release list` to find the latest actual GitHub Release. (2) Version comparison uses whichever is higher: latest release or latest tag. (3) Blocks release if VERSION matches an existing release tag. |
+| **Agent rule** | Before creating a release, always verify the latest GitHub Release via `gh release list --limit 1`. Never assume git tags reflect published releases. |
