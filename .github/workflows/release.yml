@@ -44,6 +44,8 @@ jobs:
 
       - name: Determine version
         id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if [ ! -f "VERSION" ]; then
             echo "Error: VERSION file not found"
@@ -58,17 +60,45 @@ jobs:
           
           echo "Found version: $VERSION"
 
+          # --- Check against latest GitHub Release (not just git tags) ---
+          LATEST_RELEASE_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          if [ -n "$LATEST_RELEASE_TAG" ]; then
+            LATEST_RELEASE_VERSION=${LATEST_RELEASE_TAG#v}
+            echo "Latest GitHub Release: $LATEST_RELEASE_TAG (v$LATEST_RELEASE_VERSION)"
+
+            if [ "$VERSION" = "$LATEST_RELEASE_VERSION" ]; then
+              echo "Error: Version $VERSION already has a GitHub Release ($LATEST_RELEASE_TAG)"
+              exit 1
+            fi
+          else
+            echo "No existing GitHub Releases found"
+            LATEST_RELEASE_VERSION="0.0.0"
+          fi
+
+          # --- Also check git tags as fallback ---
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           LAST_VERSION=${LAST_TAG#v}
-          echo "Last tag version: $LAST_VERSION"
+          echo "Last git tag: $LAST_TAG"
 
-          if [ "$VERSION" = "$LAST_VERSION" ]; then
-            echo "Error: Version $VERSION is already the latest tag"
+          # Use whichever is higher: latest release or latest tag
+          if [ -n "$LATEST_RELEASE_TAG" ]; then
+            if printf '%s\n%s' "$LATEST_RELEASE_VERSION" "$LAST_VERSION" | sort -V -C; then
+              BASE_VERSION="$LAST_VERSION"
+            else
+              BASE_VERSION="$LATEST_RELEASE_VERSION"
+            fi
+          else
+            BASE_VERSION="$LAST_VERSION"
+          fi
+          echo "Base version for comparison: $BASE_VERSION"
+
+          if [ "$VERSION" = "$BASE_VERSION" ]; then
+            echo "Error: Version $VERSION is already released (tag or release exists)"
             exit 1
           fi
           
           IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$VERSION"
-          IFS='.' read -r L_MAJOR L_MINOR L_PATCH <<< "$LAST_VERSION"
+          IFS='.' read -r L_MAJOR L_MINOR L_PATCH <<< "$BASE_VERSION"
 
           VALID=false
           if [ "$V_MAJOR" -gt "$L_MAJOR" ] && [ "$V_MINOR" -eq 0 ] && [ "$V_PATCH" -eq 0 ]; then
@@ -83,7 +113,7 @@ jobs:
           fi
 
           if [ "$VALID" != "true" ]; then
-            echo "Error: Version $VERSION is not a valid increment over $LAST_VERSION"
+            echo "Error: Version $VERSION is not a valid increment over $BASE_VERSION"
             echo "Must be a valid major, minor, or patch increment."
             exit 1
           fi

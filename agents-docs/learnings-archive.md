@@ -102,3 +102,14 @@ Rustc 1.94.0 generates WASM using sign extension (`i32.extend8_s`, `i32.extend16
 - **Interactive State Feedback**: Toggleable elements (like tool buttons) must use `aria-pressed` to communicate their active state to assistive technologies.
 - **State Resilience**: Applications with persistent keyboard-driven states (e.g., Space-drag panning) should use the window `blur` event to reset these states, preventing UI lock-in when users switch tabs or windows.
 - **Visual Icon Clarity**: Destructive actions (like Clear Canvas) should use distinct icons (e.g., `🗑`) to avoid confusion with lighter editing actions (e.g., `⌫` for Eraser).
+
+## Release Guard-Rails: GitHub Release Verification (2026-08-04)
+
+### Problem
+Guard-rails in `release.yml` only checked git tags (`git describe --tags`) to determine the latest version. Git tags can exist without corresponding GitHub Releases (from failed workflow runs, manual tag creation, or partial releases).
+
+### Fix
+Added `gh release list --limit 1` to query the actual latest GitHub Release. The guard-rails now use whichever is higher (release version vs git tag) as the base for semver comparison, and block if VERSION matches an existing release.
+
+### Key Learning
+**Always verify external state (GitHub API), not just local state (git tags), when making release decisions.** Tags are local pointers; releases are the published truth.
