@@ -268,6 +268,9 @@ jobs:
             exit 0
           fi
           
+          # Delete remote branch if it exists (from a previous failed run)
+          git push origin --delete "$BRANCH_NAME" 2>/dev/null || true
+          
           git commit -m "chore(release): update changelog and VERSION to $VERSION"
           git checkout -b "$BRANCH_NAME"
           git push origin "$BRANCH_NAME"
