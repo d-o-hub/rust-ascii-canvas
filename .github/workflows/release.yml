@@ -264,7 +264,6 @@ jobs:
           
           if git diff --cached --quiet; then
             echo "No changes to commit"
-            echo "skip_release=false" >> $GITHUB_OUTPUT
             exit 0
           fi
           
@@ -275,32 +274,7 @@ jobs:
           git checkout -b "$BRANCH_NAME"
           git push origin "$BRANCH_NAME"
           
-          # Create PR and auto-merge
-          PR_URL=$(gh pr create \
-            --title "chore(release): update changelog for v$VERSION" \
-            --body "Automated changelog update for v$VERSION release." \
-            --base main \
-            --head "$BRANCH_NAME")
-          
-          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
-          echo "Created PR #$PR_NUMBER: $PR_URL"
-          
-          # Enable auto-merge (will merge when CI passes)
-          gh pr merge "$PR_NUMBER" --auto --merge
-          
-          echo "Waiting for PR #$PR_NUMBER to merge..."
-          while true; do
-            PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state')
-            if [ "$PR_STATE" = "MERGED" ]; then
-              echo "PR #$PR_NUMBER merged!"
-              break
-            elif [ "$PR_STATE" = "CLOSED" ]; then
-              echo "Error: PR #$PR_NUMBER was closed without merging"
-              exit 1
-            fi
-            echo "  PR state: $PR_STATE - waiting 10s..."
-            sleep 10
-          done
+          echo "Branch $BRANCH_NAME pushed with changelog commit"
 
       - name: Create Release
         if: needs.guard-rails.outputs.is_dry_run != 'true'
@@ -309,16 +283,14 @@ jobs:
         run: |
           VERSION="${{ needs.guard-rails.outputs.version }}"
           TAG_NAME="v$VERSION"
+          BRANCH_NAME="release/v${VERSION}-changelog"
           
-          # Fetch latest main (which now includes the changelog commit)
-          git fetch origin main
-          git checkout origin/main
-          
-          # gh release create creates the tag and the release in one step
+          # Create release targeting the release branch (not main)
+          # The branch has the changelog commit
           gh release create "$TAG_NAME" \
             --title "$TAG_NAME" \
             --notes-file release_body.md \
-            --target HEAD
+            --target "$BRANCH_NAME"
   publish-wasm:
     name: Publish WASM
     needs: create-release
