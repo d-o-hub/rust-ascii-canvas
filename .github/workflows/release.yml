@@ -255,14 +255,50 @@ jobs:
 
       - name: Commit and Push Changes
         if: needs.guard-rails.outputs.is_dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ needs.guard-rails.outputs.version }}"
+          BRANCH_NAME="release/v${VERSION}-changelog"
           git add CHANGELOG.md VERSION
-          # Only commit if there are changes
-          if ! git diff --cached --quiet; then
-            git commit -m "chore(release): bump version to $VERSION and update changelog"
-            git push origin HEAD
+          
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            echo "skip_release=false" >> $GITHUB_OUTPUT
+            exit 0
           fi
+          
+          git commit -m "chore(release): update changelog and VERSION to $VERSION"
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+          
+          # Create PR and auto-merge
+          PR_URL=$(gh pr create \
+            --title "chore(release): update changelog for v$VERSION" \
+            --body "Automated changelog update for v$VERSION release." \
+            --base main \
+            --head "$BRANCH_NAME" \
+            --label "automated")
+          
+          PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
+          echo "Created PR #$PR_NUMBER: $PR_URL"
+          
+          # Enable auto-merge (will merge when CI passes)
+          gh pr merge "$PR_NUMBER" --auto --merge
+          
+          echo "Waiting for PR #$PR_NUMBER to merge..."
+          while true; do
+            PR_STATE=$(gh pr view "$PR_NUMBER" --json state --jq '.state')
+            if [ "$PR_STATE" = "MERGED" ]; then
+              echo "PR #$PR_NUMBER merged!"
+              break
+            elif [ "$PR_STATE" = "CLOSED" ]; then
+              echo "Error: PR #$PR_NUMBER was closed without merging"
+              exit 1
+            fi
+            echo "  PR state: $PR_STATE - waiting 10s..."
+            sleep 10
+          done
 
       - name: Create Release
         if: needs.guard-rails.outputs.is_dry_run != 'true'
@@ -272,8 +308,11 @@ jobs:
           VERSION="${{ needs.guard-rails.outputs.version }}"
           TAG_NAME="v$VERSION"
           
+          # Fetch latest main (which now includes the changelog commit)
+          git fetch origin main
+          git checkout origin/main
+          
           # gh release create creates the tag and the release in one step
-          # Target is HEAD so it uses the commit we just pushed
           gh release create "$TAG_NAME" \
             --title "$TAG_NAME" \
             --notes-file release_body.md \
