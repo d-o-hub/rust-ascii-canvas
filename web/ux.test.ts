@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
+import { refreshLayerList } from './ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -132,5 +133,73 @@ describe('UX Improvements', () => {
         }
         expect(state.editor.resize).toHaveBeenCalledWith(100, 50);
         expect(focusSpy).toHaveBeenCalled();
+    });
+
+    it('should blur layer-name-input and focus canvas on Enter or Escape', () => {
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas must exist');
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
+        state.canvas = canvasNode;
+
+        state.editor = {
+            layerCount: 1,
+            activeLayer: 0,
+            layerName: vi.fn().mockReturnValue('Layer 1'),
+            layerVisible: vi.fn().mockReturnValue(true),
+            layerLocked: vi.fn().mockReturnValue(false),
+            renameLayer: vi.fn(),
+        } as unknown as typeof state.editor;
+
+        document.body.innerHTML += '<div id="layer-list"></div>';
+
+        refreshLayerList();
+
+        const input = document.querySelector('.layer-name-input') as HTMLInputElement;
+        expect(input).toBeTruthy();
+
+        const blurSpy = vi.spyOn(input, 'blur');
+
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+        input.dispatchEvent(enterEvent);
+
+        expect(blurSpy).toHaveBeenCalled();
+        expect(focusSpy).toHaveBeenCalled();
+
+        blurSpy.mockClear();
+        focusSpy.mockClear();
+
+        const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        input.dispatchEvent(escapeEvent);
+
+        expect(blurSpy).toHaveBeenCalled();
+        expect(focusSpy).toHaveBeenCalled();
+    });
+
+    it('should update mobile menu button accessibility attributes when clicked', () => {
+        document.body.innerHTML += `
+            <div id="side-panel"></div>
+            <div id="drawer-overlay"></div>
+            <button id="mobile-menu-btn"></button>
+            <button id="close-drawer-btn"></button>
+        `;
+
+        const sidePanel = document.getElementById('side-panel');
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const closeBtn = document.getElementById('close-drawer-btn');
+
+        expect(menuBtn).toBeTruthy();
+
+        setupEventListeners();
+
+        expect(menuBtn?.getAttribute('aria-expanded')).toBe('false');
+        expect(menuBtn?.getAttribute('aria-controls')).toBe('side-panel');
+
+        menuBtn?.dispatchEvent(new MouseEvent('click'));
+        expect(sidePanel?.classList.contains('open')).toBe(true);
+        expect(menuBtn?.getAttribute('aria-expanded')).toBe('true');
+
+        closeBtn?.dispatchEvent(new MouseEvent('click'));
+        expect(sidePanel?.classList.contains('open')).toBe(false);
+        expect(menuBtn?.getAttribute('aria-expanded')).toBe('false');
     });
 });

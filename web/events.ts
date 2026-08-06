@@ -699,13 +699,19 @@ export function setupEventListeners(): void {
     function closeDrawer(): void {
         if (sidePanel) sidePanel.classList.remove('open');
         if (drawerOverlay) drawerOverlay.classList.remove('open');
+        if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
     }
 
     if (mobileMenuBtn && sidePanel && drawerOverlay) {
+        mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        mobileMenuBtn.setAttribute('aria-controls', 'side-panel');
+
         mobileMenuBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
         mobileMenuBtn.addEventListener('click', () => {
+            const isOpen = sidePanel.classList.contains('open');
             sidePanel.classList.toggle('open');
             drawerOverlay.classList.toggle('open');
+            mobileMenuBtn.setAttribute('aria-expanded', (!isOpen).toString());
         });
     }
 
