@@ -150,17 +150,19 @@ describe('UX Improvements', () => {
             renameLayer: vi.fn(),
         } as unknown as typeof state.editor;
 
-        document.body.innerHTML += '<div id="layer-list"></div>';
+        const layerListContainer = document.createElement('div');
+        layerListContainer.id = 'layer-list';
+        document.body.appendChild(layerListContainer);
 
         refreshLayerList();
 
-        const input = document.querySelector('.layer-name-input') as HTMLInputElement;
-        expect(input).toBeTruthy();
+        const layerNameInputHtmlElement = document.querySelector('.layer-name-input') as HTMLInputElement;
+        expect(layerNameInputHtmlElement).toBeTruthy();
 
-        const blurSpy = vi.spyOn(input, 'blur');
+        const blurSpy = vi.spyOn(layerNameInputHtmlElement, 'blur');
 
         const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-        input.dispatchEvent(enterEvent);
+        layerNameInputHtmlElement.dispatchEvent(enterEvent);
 
         expect(blurSpy).toHaveBeenCalled();
         expect(focusSpy).toHaveBeenCalled();
@@ -169,19 +171,26 @@ describe('UX Improvements', () => {
         focusSpy.mockClear();
 
         const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
-        input.dispatchEvent(escapeEvent);
+        layerNameInputHtmlElement.dispatchEvent(escapeEvent);
 
         expect(blurSpy).toHaveBeenCalled();
         expect(focusSpy).toHaveBeenCalled();
     });
 
     it('should update mobile menu button accessibility attributes when clicked', () => {
-        document.body.innerHTML += `
-            <div id="side-panel"></div>
-            <div id="drawer-overlay"></div>
-            <button id="mobile-menu-btn"></button>
-            <button id="close-drawer-btn"></button>
-        `;
+        const sidePanelEl = document.createElement('div');
+        sidePanelEl.id = 'side-panel';
+        const drawerOverlayEl = document.createElement('div');
+        drawerOverlayEl.id = 'drawer-overlay';
+        const mobileMenuBtnEl = document.createElement('button');
+        mobileMenuBtnEl.id = 'mobile-menu-btn';
+        const closeDrawerBtnEl = document.createElement('button');
+        closeDrawerBtnEl.id = 'close-drawer-btn';
+
+        document.body.appendChild(sidePanelEl);
+        document.body.appendChild(drawerOverlayEl);
+        document.body.appendChild(mobileMenuBtnEl);
+        document.body.appendChild(closeDrawerBtnEl);
 
         const sidePanel = document.getElementById('side-panel');
         const menuBtn = document.getElementById('mobile-menu-btn');
