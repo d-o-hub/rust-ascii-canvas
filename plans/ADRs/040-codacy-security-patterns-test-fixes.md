@@ -92,3 +92,31 @@ This satisfies both `tsc` narrowing and the Codacy rule without reintroducing
 - Local reproduction recipe: ESLint 8 + `@typescript-eslint/parser` +
   `@typescript-eslint/eslint-plugin` with
   `@typescript-eslint/no-non-null-assertion: ['error']`.
+
+## Follow-up 3 (PR #168): variable-name trigger, generic querySelector, and test-env semantics
+
+PR #168 (Jules a11y PR) reintroduced the pattern with a fresh catch: a variable named
+`layerNameInputHtmlElement` (an `html`-named identifier) passed to `expect` and
+`vi.spyOn` triggered 2x "HTML passed in to function" alerts — **the `as HTMLInputElement`
+cast is NOT the trigger**. Verified by reproducing the rule locally:
+
+- `xss/no-mixed-html`'s `Identifier` visitor infects a call expression when an argument
+  identifier matches `/html/i` (default `htmlVariableRules`); the `as HTML*Element`
+  cast itself is inert (TSAsExpression is not visited).
+- **Fix pattern**: `const layerNameInput = document.querySelector<HTMLInputElement>('.cls');`
+  followed by a guard clause `if (!layerNameInput) { throw new Error(...); }`. The
+  generic preserves the `HTMLInputElement` type for `vi.spyOn(x, 'blur')` without an
+  `as` cast, a `!` assertion, or an html-named variable. Zero alerts, strict-safe.
+
+### Test-env learnings (happy-dom + module-singleton state)
+- **happy-dom does not fire `change` on programmatic `blur()`**. The layer-rename commit
+  path (`change` → `renameLayer`) can only be exercised deterministically by dispatching
+  `new Event('change')` explicitly after the keydown.
+- **`setupEventListeners()` early-returns `if (!state.canvas)`**; `state.canvas` is a
+  module singleton that leaks across tests in `ux.test.ts` (`beforeEach` resets the DOM,
+  not `state`). New tests calling `setupEventListeners` must set `state.canvas` from the
+  fresh DOM (`document.querySelector('canvas')`) to avoid order-dependent tests.
+- **Escape-cancel hardening**: the `change` handler on the layer-name input now guards
+  `nameInput.value !== state.editor.layerName(i)` so Escape-restored values can never be
+  re-committed as a (no-op) rename by a spec-degenerate browser that fires `change` on
+  blur anyway.

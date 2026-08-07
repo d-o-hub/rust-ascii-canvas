@@ -149,6 +149,9 @@ describe('UX Improvements', () => {
             layerLocked: vi.fn().mockReturnValue(false),
             renameLayer: vi.fn(),
         } as unknown as typeof state.editor;
+        if (!state.editor) {
+            throw new Error('state.editor must be defined');
+        }
 
         const layerListContainer = document.createElement('div');
         layerListContainer.id = 'layer-list';
@@ -156,28 +159,44 @@ describe('UX Improvements', () => {
 
         refreshLayerList();
 
-        const layerNameInputHtmlElement = document.querySelector('.layer-name-input') as HTMLInputElement;
-        expect(layerNameInputHtmlElement).toBeTruthy();
+        const layerNameInput = document.querySelector<HTMLInputElement>('.layer-name-input');
+        if (!layerNameInput) {
+            throw new Error('layer-name-input must exist');
+        }
 
-        const blurSpy = vi.spyOn(layerNameInputHtmlElement, 'blur');
+        const blurSpy = vi.spyOn(layerNameInput, 'blur');
 
+        layerNameInput.value = 'Renamed';
         const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
-        layerNameInputHtmlElement.dispatchEvent(enterEvent);
+        layerNameInput.dispatchEvent(enterEvent);
 
         expect(blurSpy).toHaveBeenCalled();
         expect(focusSpy).toHaveBeenCalled();
+
+        layerNameInput.dispatchEvent(new Event('change'));
+        expect(state.editor.renameLayer).toHaveBeenCalledWith(0, 'Renamed');
 
         blurSpy.mockClear();
         focusSpy.mockClear();
+        (state.editor.renameLayer as ReturnType<typeof vi.fn>).mockClear();
 
+        layerNameInput.value = 'Discarded edit';
         const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
-        layerNameInputHtmlElement.dispatchEvent(escapeEvent);
+        layerNameInput.dispatchEvent(escapeEvent);
 
         expect(blurSpy).toHaveBeenCalled();
         expect(focusSpy).toHaveBeenCalled();
+        expect(layerNameInput.value).toBe('Layer 1');
+
+        layerNameInput.dispatchEvent(new Event('change'));
+        expect(state.editor.renameLayer).not.toHaveBeenCalled();
     });
 
     it('should update mobile menu button accessibility attributes when clicked', () => {
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas must exist');
+        state.canvas = canvasNode;
+
         const sidePanelEl = document.createElement('div');
         sidePanelEl.id = 'side-panel';
         const drawerOverlayEl = document.createElement('div');
