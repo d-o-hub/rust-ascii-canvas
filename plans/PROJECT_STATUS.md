@@ -138,4 +138,20 @@ ascii-canvas/
 
 ---
 
-*Last updated: 2026-07-28*
+## PR Queue Triage (2026-08-07) — goap orchestrator run
+
+Reviewed all 3 open PRs with an agent swarm (a11y deep-review + local Codacy rule repro):
+
+| PR | Title | Verdict | Outcome |
+|----|-------|---------|---------|
+| #168 | 🎨 Palette: Keyboard nav parity & mobile ARIA | **Impact** (a11y) — 2 Codacy high alerts, 2 real test bugs, 1 handler hardening | Fixed code (not Codacy config), pushed, CI re-run → merge |
+| #169 | deps-dev bump (root: playwright, eslint, ts-eslint) | **Impact** (dev deps) | Merged ✅ |
+| #170 | deps-dev bump (web: playwright, ts-eslint, vite) | **Impact** (dev deps) | Merged ✅ |
+
+### #168 fix details (addressing all bot comments + failing CI)
+- **Codacy** `xss/no-mixed-html` (2 high): trigger is html-named **variable identifiers**, not casts; fixed with generic `querySelector<HTMLInputElement>` + guard clause. Reproduced/verified locally via ADR-040 recipe.
+- **Test bugs** (swarm findings): mobile-menu test was order-dependent on module-singleton `state.canvas` (`setupEventListeners` early-returns without it); layer-rename test never exercised commit semantics. Both fixed; Enter-commits / Escape-discards now asserted.
+- **Hardening**: `change` handler guards against no-op renames so Escape-cancel can't re-commit restored names.
+- Learnings documented in ADR-040 (Follow-up 3).
+
+*Last updated: 2026-08-07*
