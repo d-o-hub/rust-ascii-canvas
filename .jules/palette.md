@@ -32,4 +32,4 @@
 
 ## 2026-08-13 - [Dynamic Screen-Reader Labeling for Interactive State Switches]
 **Learning:** Interactive list-actions (such as moving up, down, or deleting layers) as well as global actions (like undo and redo) are often dynamically disabled/enabled. Simply setting `disabled` is not enough for modern micro-interactions; screen readers and mouse hovers need descriptive contextual reasons explaining why the control is currently locked.
-**Action:** Dynamically assign localized, descriptive `title` and `aria-label` tags corresponding to the active or disabled state (e.g., 'Nothing to undo' or 'Cannot move the top layer further up') rather than static labels.
+**Action:** Dynamically assign descriptive `title` and `aria-label` tags corresponding to the active or disabled state (e.g., 'Nothing to undo' or 'Cannot move the top layer further up') rather than static labels.

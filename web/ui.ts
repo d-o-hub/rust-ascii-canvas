@@ -257,6 +257,10 @@ export function refreshLayerList(): void {
     }
 
     for (let i = count - 1; i >= 0; i--) {
+        const isTopLayer = i === count - 1;
+        const isBottomLayer = i === 0;
+        const isOnlyLayer = count <= 1;
+
         const item = document.createElement('div');
         item.className = 'layer-item';
         if (i === active) item.classList.add('active');
@@ -336,7 +340,6 @@ export function refreshLayerList(): void {
         upBtn.className = 'layer-item-btn';
         upBtn.type = 'button';
         upBtn.textContent = '↑';
-        const isTopLayer = i === count - 1;
         upBtn.title = isTopLayer ? 'Cannot move the top layer further up' : 'Move up';
         upBtn.setAttribute('aria-label', isTopLayer ? 'Cannot move the top layer further up' : 'Move up');
         upBtn.disabled = isTopLayer;
@@ -353,7 +356,6 @@ export function refreshLayerList(): void {
         downBtn.className = 'layer-item-btn';
         downBtn.type = 'button';
         downBtn.textContent = '↓';
-        const isBottomLayer = i === 0;
         downBtn.title = isBottomLayer ? 'Cannot move the bottom layer further down' : 'Move down';
         downBtn.setAttribute('aria-label', isBottomLayer ? 'Cannot move the bottom layer further down' : 'Move down');
         downBtn.disabled = isBottomLayer;
@@ -387,7 +389,6 @@ export function refreshLayerList(): void {
         delBtn.className = 'layer-item-btn';
         delBtn.type = 'button';
         delBtn.textContent = '🗑';
-        const isOnlyLayer = count <= 1;
         delBtn.title = isOnlyLayer ? 'Cannot delete the only remaining layer' : 'Delete layer';
         delBtn.setAttribute('aria-label', isOnlyLayer ? 'Cannot delete the only remaining layer' : 'Delete layer');
         delBtn.disabled = isOnlyLayer;
@@ -423,15 +424,13 @@ export function updateUI(): void {
 
         if (state.undoBtn) {
             state.undoBtn.disabled = !canUndo;
-            const title = canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo';
-            state.undoBtn.title = title;
-            state.undoBtn.setAttribute('aria-label', title);
+            state.undoBtn.title = canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo';
+            state.undoBtn.setAttribute('aria-label', canUndo ? 'Undo' : 'Nothing to undo');
         }
         if (state.redoBtn) {
             state.redoBtn.disabled = !canRedo;
-            const title = canRedo ? 'Redo (Ctrl+Shift+Z or Ctrl+Y)' : 'Nothing to redo';
-            state.redoBtn.title = title;
-            state.redoBtn.setAttribute('aria-label', title);
+            state.redoBtn.title = canRedo ? 'Redo (Ctrl+Shift+Z or Ctrl+Y)' : 'Nothing to redo';
+            state.redoBtn.setAttribute('aria-label', canRedo ? 'Redo' : 'Nothing to redo');
         }
         if (state.mobileUndoBtn) {
             state.mobileUndoBtn.disabled = !canUndo;
