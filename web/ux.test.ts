@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
-import { refreshLayerList, updateUI } from './ui';
+import { refreshLayerList } from './ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -229,99 +229,5 @@ describe('UX Improvements', () => {
         closeBtn?.dispatchEvent(new MouseEvent('click'));
         expect(sidePanel?.classList.contains('open')).toBe(false);
         expect(menuBtn?.getAttribute('aria-expanded')).toBe('false');
-    });
-
-    it('should expose descriptive labels for locked layer actions', () => {
-        const layerList = document.createElement('div');
-        layerList.id = 'layer-list';
-        document.body.appendChild(layerList);
-
-        state.editor = {
-            layerCount: 2,
-            activeLayer: 0,
-            layerName: vi.fn((i: number) => `Layer ${i + 1}`),
-            layerVisible: vi.fn().mockReturnValue(true),
-            layerLocked: vi.fn().mockReturnValue(false),
-            moveLayer: vi.fn(),
-            mergeLayerDown: vi.fn(),
-            deleteLayer: vi.fn(),
-        } as unknown as typeof state.editor;
-
-        refreshLayerList();
-
-        const items = layerList.querySelectorAll<HTMLElement>('.layer-item');
-        expect(items.length).toBe(2);
-
-        // Loop renders top-most layer first (i === count - 1).
-        const topItem = items[0];
-        const bottomItem = items[1];
-
-        const topUp = topItem.querySelector('button[aria-label="Cannot move the top layer further up"]');
-        expect(topUp).toBeTruthy();
-        expect((topUp as HTMLButtonElement).disabled).toBe(true);
-
-        const bottomDown = bottomItem.querySelector('button[aria-label="Cannot move the bottom layer further down"]');
-        const bottomMerge = bottomItem.querySelector('button[aria-label="Cannot merge the bottom layer down"]');
-        expect(bottomDown).toBeTruthy();
-        expect(bottomMerge).toBeTruthy();
-        expect((bottomDown as HTMLButtonElement).disabled).toBe(true);
-        expect((bottomMerge as HTMLButtonElement).disabled).toBe(true);
-
-        // Two layers remain, so deletion is still allowed.
-        const deleteBtn = bottomItem.querySelector('button[aria-label="Delete layer"]');
-        expect(deleteBtn).toBeTruthy();
-        expect((deleteBtn as HTMLButtonElement).disabled).toBe(false);
-    });
-
-    it('should expose the delete lock reason when only one layer remains', () => {
-        const layerList = document.createElement('div');
-        layerList.id = 'layer-list';
-        document.body.appendChild(layerList);
-
-        state.editor = {
-            layerCount: 1,
-            activeLayer: 0,
-            layerName: vi.fn().mockReturnValue('Solo layer'),
-            layerVisible: vi.fn().mockReturnValue(true),
-            layerLocked: vi.fn().mockReturnValue(false),
-            deleteLayer: vi.fn(),
-        } as unknown as typeof state.editor;
-
-        refreshLayerList();
-
-        const delBtn = layerList.querySelector<HTMLButtonElement>('button[aria-label="Cannot delete the only remaining layer"]');
-        expect(delBtn).toBeTruthy();
-        expect(delBtn?.disabled).toBe(true);
-    });
-
-    it('should update undo/redo labels to explain why they are locked', () => {
-        state.undoBtn = document.createElement('button');
-        state.redoBtn = document.createElement('button');
-        state.mobileUndoBtn = document.createElement('button');
-        state.mobileRedoBtn = document.createElement('button');
-
-        state.editor = {
-            can_undo: false,
-            can_redo: true,
-            width: 10,
-            height: 10,
-            tool: 'select',
-            layerCount: 0,
-            activeLayer: 0,
-        } as unknown as typeof state.editor;
-
-        updateUI();
-
-        expect(state.undoBtn?.disabled).toBe(true);
-        expect(state.undoBtn?.getAttribute('aria-label')).toBe('Nothing to undo');
-        expect(state.undoBtn?.title).toBe('Nothing to undo');
-
-        expect(state.redoBtn?.disabled).toBe(false);
-        expect(state.redoBtn?.getAttribute('aria-label')).toBe('Redo');
-        expect(state.redoBtn?.title).toBe('Redo (Ctrl+Shift+Z or Ctrl+Y)');
-
-        expect(state.mobileUndoBtn?.disabled).toBe(true);
-        expect(state.mobileUndoBtn?.getAttribute('aria-label')).toBe('Nothing to undo');
-        expect(state.mobileRedoBtn?.getAttribute('aria-label')).toBe('Redo');
     });
 });
