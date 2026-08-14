@@ -29,3 +29,7 @@
 ## 2026-07-10 - [Centering Logic and Robust Shortcuts]
 **Learning:** Centering the grid content in the viewport after zoom or fit-to-view actions significantly improves the professional feel and interaction quality of the editor. Furthermore, providing character-based fallbacks for shortcuts (e.g., handling ')' for Shift+0) ensures that keyboard interactions remain accessible across different international keyboard layouts.
 **Action:** Always calculate centering pan offsets when modifying canvas scale and implement character-level checks for shortcuts that involve Shift or Alt modifiers.
+
+## 2026-08-13 - [Dynamic Screen-Reader Labeling for Interactive State Switches]
+**Learning:** Interactive list-actions (such as moving up, down, or deleting layers) as well as global actions (like undo and redo) are often dynamically disabled/enabled. Simply setting `disabled` is not enough for modern micro-interactions; screen readers and mouse hovers need descriptive contextual reasons explaining why the control is currently locked.
+**Action:** Dynamically assign descriptive `title` and `aria-label` tags corresponding to the active or disabled state (e.g., 'Nothing to undo' or 'Cannot move the top layer further up') rather than static labels.
