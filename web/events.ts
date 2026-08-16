@@ -9,7 +9,11 @@ import {
     MIN_COLS,
     MIN_ROWS,
 } from './constants.js';
-import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
+import {
+    copyAsciiToClipboard,
+    copyToClipboard as copySelectionAware,
+    getClipboardOptions,
+} from './clipboard.js';
 import { createAutoSaveScheduler, downloadDocument, openDocumentPicker } from './persistence.js';
 import { exportPng } from './exportPng.js';
 import { exportSvg } from './exportSvg.js';
@@ -333,7 +337,7 @@ export function handleEventResult(result: EventResult | null, options: { persist
     }
 
     if (result.should_copy && result.ascii) {
-        void copyAsciiToClipboard(result.ascii, showToast);
+        void copyAsciiToClipboard(result.ascii, showToast, getClipboardOptions());
     }
 
     updateUI();
@@ -345,7 +349,7 @@ export function handleEventResult(result: EventResult | null, options: { persist
 
 export async function copyToClipboard(): Promise<void> {
     if (!state.editor) return;
-    await copySelectionAware(state.editor, showToast);
+    await copySelectionAware(state.editor, showToast, getClipboardOptions());
 }
 
 export function applyCustomGridSize(): void {
