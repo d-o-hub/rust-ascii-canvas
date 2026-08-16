@@ -17,7 +17,9 @@ pub mod selection;
 pub mod tools;
 
 // Re-exports
-pub use ascii_export::{export_grid, ExportOptions};
+pub use ascii_export::{
+    ascii_fallback_char, export_grid, export_region, export_region_with_options, ExportOptions,
+};
 pub use cell::{Cell, CellStyle};
 pub use commands::Command;
 pub use grid::Grid;

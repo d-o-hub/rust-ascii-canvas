@@ -11,6 +11,11 @@ declare global {
         editor: {
             exportAscii(): string;
             exportForCopy?: () => string;
+            exportForCopyWithOptions?: (
+                trimTrailingWhitespace: boolean,
+                enforceBoundingBox: boolean,
+                convertUnicodeToAscii: boolean,
+            ) => string;
             serializeDocument(): string;
             loadDocument(json: string): boolean;
             clear(): void;
@@ -87,6 +92,24 @@ test.describe('Copy / export fidelity', () => {
         });
 
         expect(forCopy).toBe(full);
+    });
+
+    test('exportForCopyWithOptions provides a pure ASCII fallback', async ({ page }) => {
+        await page.click('[data-tool="rectangle"]');
+        const canvas = page.locator('#canvas');
+        const box = await canvas.boundingBox();
+        if (!box) return;
+
+        await page.mouse.move(box.x + 50, box.y + 50);
+        await page.mouse.down();
+        await page.mouse.move(box.x + 120, box.y + 90);
+        await page.mouse.up();
+        await page.waitForFunction(() => (window.editor?.exportAscii() ?? '').length > 0);
+
+        const ascii = await page.evaluate(() => window.editor?.exportForCopyWithOptions?.(false, true, true) ?? '');
+        expect(ascii.length).toBeGreaterThan(0);
+        expect([...ascii].every((char) => char === '\\n' || char === '\\r' || char.charCodeAt(0) < 128)).toBeTruthy();
+        expect(ascii).toMatch(/[+\\-|]/);
     });
 
     test('copy button shows toast', async ({ page, isMobile }) => {

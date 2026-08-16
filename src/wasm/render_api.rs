@@ -3,6 +3,7 @@
 use wasm_bindgen::prelude::*;
 
 use super::bindings::AsciiEditor;
+use crate::core::ascii_export::ExportOptions;
 use crate::wasm::render_bridge::{
     export_ascii, get_dirty_render_commands, get_render_commands, get_render_commands_full,
     needs_redraw, request_full_redraw,
@@ -78,6 +79,25 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = exportForCopy)]
     pub fn export_for_copy_public(&self) -> String {
         self.export_for_copy()
+    }
+
+    /// Export the copy scope with explicit whitespace and character-fidelity options.
+    #[wasm_bindgen(js_name = exportForCopyWithOptions)]
+    pub fn export_for_copy_with_options_public(
+        &self,
+        trim_trailing_whitespace: bool,
+        enforce_bounding_box: bool,
+        convert_unicode_to_ascii: bool,
+    ) -> String {
+        let options = ExportOptions {
+            trim_borders: true,
+            line_numbers: false,
+            max_width: 0,
+            trim_trailing_whitespace,
+            enforce_bounding_box,
+            convert_unicode_to_ascii,
+        };
+        self.export_for_copy_with_options(&options)
     }
 
     /// Serialize diagram to JSON (`.asc` format).

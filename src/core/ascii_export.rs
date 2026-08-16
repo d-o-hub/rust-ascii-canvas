@@ -11,6 +11,12 @@ pub struct ExportOptions {
     pub line_numbers: bool,
     /// Maximum width (0 = no limit)
     pub max_width: usize,
+    /// Remove spaces at the end of each exported line when the bounding box is not enforced.
+    pub trim_trailing_whitespace: bool,
+    /// Keep every exported line padded to the selected rectangular width.
+    pub enforce_bounding_box: bool,
+    /// Convert box-drawing and other supported Unicode glyphs to 7-bit ASCII.
+    pub convert_unicode_to_ascii: bool,
 }
 
 impl Default for ExportOptions {
@@ -19,6 +25,9 @@ impl Default for ExportOptions {
             trim_borders: true,
             line_numbers: false,
             max_width: 0,
+            trim_trailing_whitespace: false,
+            enforce_bounding_box: true,
+            convert_unicode_to_ascii: false,
         }
     }
 }
@@ -71,45 +80,50 @@ fn export_in_bounds(
     max_x: i32,
     max_y: i32,
 ) -> String {
-    // Calculate approximate capacity
+    // Width is measured in grid columns, not UTF-8 bytes.
     let width = (max_x - min_x + 1).max(0) as usize;
     let height = (max_y - min_y + 1).max(0) as usize;
-
-    let mut line_prefix_len = 0;
-    if options.line_numbers {
-        line_prefix_len = 7; // Estimated: " 1234 | "
-    }
-
-    let cols = width.min(if options.max_width > 0 {
+    let prefix_width = if options.line_numbers { 7 } else { 0 };
+    let max_line_width = if options.max_width > 0 {
         options.max_width
     } else {
         usize::MAX
-    });
-    let mut result = String::with_capacity(height * (line_prefix_len + cols + 1));
+    };
+    let mut result = String::with_capacity(height * (prefix_width + width + 1));
 
     for y in min_y..=max_y {
-        let mut line_chars_count = 0;
+        let mut line = String::new();
 
         if options.line_numbers {
-            let prefix = format!("{:4} | ", y + 1);
-            for ch in prefix.chars() {
-                if options.max_width > 0 && line_chars_count >= options.max_width {
+            for ch in format!("{:4} | ", y + 1).chars() {
+                if line.chars().count() >= max_line_width {
                     break;
                 }
-                result.push(ch);
-                line_chars_count += 1;
+                line.push(ch);
             }
         }
 
         for x in min_x..=max_x {
-            if options.max_width > 0 && line_chars_count >= options.max_width {
+            if line.chars().count() >= max_line_width {
                 break;
             }
             let ch = grid.get(x, y).map(|c| c.ch).unwrap_or(' ');
-            result.push(ch);
-            line_chars_count += 1;
+            line.push(if options.convert_unicode_to_ascii {
+                ascii_fallback_char(ch)
+            } else {
+                ch
+            });
         }
 
+        // A rectangular export deliberately retains trailing spaces. Trimming is only
+        // meaningful when callers opt out of the geometry guarantee.
+        if options.trim_trailing_whitespace && !options.enforce_bounding_box {
+            while line.ends_with(' ') {
+                line.pop();
+            }
+        }
+
+        result.push_str(&line);
         if y < max_y {
             result.push('\n');
         }
@@ -141,34 +155,56 @@ pub fn find_content_bounds(grid: &Grid) -> Option<(i32, i32, i32, i32)> {
     }
 }
 
-/// Export a rectangular region of the grid.
+/// Export a rectangular region of the grid using the default fidelity options.
 pub fn export_region(grid: &Grid, x1: i32, y1: i32, x2: i32, y2: i32) -> String {
+    export_region_with_options(grid, x1, y1, x2, y2, &ExportOptions::default())
+}
+
+/// Export a rectangular region of the grid with explicit fidelity options.
+pub fn export_region_with_options(
+    grid: &Grid,
+    x1: i32,
+    y1: i32,
+    x2: i32,
+    y2: i32,
+    options: &ExportOptions,
+) -> String {
     let min_x = x1.min(x2);
     let min_y = y1.min(y2);
     let max_x = x1.max(x2);
     let max_y = y1.max(y2);
 
-    // If the region is entirely outside the grid, return empty string or empty grid shape?
-    // Current behavior for export_trimmed/full is to return content.
-    // For a specific region request, we should probably return the requested size,
-    // but clamped to grid boundaries for actual content.
-    // Actually, export_region is often used for copy-paste where we want exactly the region.
+    export_in_bounds(grid, options, min_x, min_y, max_x, max_y)
+}
 
-    let mut result = String::with_capacity(
-        ((max_y - min_y + 1).max(0) as usize) * ((max_x - min_x + 1).max(0) as usize + 1),
-    );
-
-    for y in min_y..=max_y {
-        for x in min_x..=max_x {
-            let ch = grid.get(x, y).map(|c| c.ch).unwrap_or(' ');
-            result.push(ch);
+/// Convert a supported Unicode drawing glyph to its 7-bit ASCII equivalent.
+///
+/// Box corners and junctions become `+`, horizontal strokes become `-`, and
+/// vertical strokes become `|`. Other non-ASCII glyphs become `?` so callers
+/// requesting a pure ASCII export receive only 7-bit characters.
+pub fn ascii_fallback_char(ch: char) -> char {
+    match ch {
+        '─' | '━' | '═' | '╌' | '╍' | '┄' | '┅' | '┈' | '┉' | '╴' | '╶' | '╸' | '╺' => {
+            '-'
         }
-        if y < max_y {
-            result.push('\n');
+        '│' | '┃' | '║' | '┆' | '┇' | '┊' | '┋' | '╎' | '╏' | '╵' | '╷' | '╹' | '╻' => {
+            '|'
         }
+        '┌' | '┐' | '└' | '┘' | '┏' | '┓' | '┗' | '┛' | '╔' | '╗' | '╚' | '╝' | '╭' | '╮' | '╰'
+        | '╯' | '┼' | '╋' | '╬' | '╁' | '╂' | '╃' | '╄' | '╅' | '╆' | '╇' | '╈' | '╉' | '╊'
+        | '╳' | '┬' | '┴' | '├' | '┤' | '╞' | '╡' | '╥' | '╨' | '╪' | '╫' | '╀' => {
+            '+'
+        }
+        '╱' => '/',
+        '╲' => '\\',
+        '◆' | '◇' | '●' | '•' | '·' => '*',
+        '▲' | '△' => '^',
+        '▼' | '▽' => 'v',
+        '◀' | '◁' => '<',
+        '▶' | '▷' => '>',
+        ch if ch.is_ascii() => ch,
+        _ => '?',
     }
-
-    result
 }
 
 /// Count non-empty cells in the grid.
