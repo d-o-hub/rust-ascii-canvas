@@ -459,20 +459,32 @@ export function toggleTheme(): void {
     localStorage.setItem('ascii-canvas-theme', newTheme);
 
     const mobileThemeIcon = document.getElementById('mobile-theme-icon');
+    const mobileThemeBtn = document.getElementById('mobile-theme-btn');
+
+    const nextThemeLabel = newTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+
+    if (state.themeBtn) {
+        state.themeBtn.title = nextThemeLabel;
+        state.themeBtn.setAttribute('aria-label', nextThemeLabel);
+    }
+    if (mobileThemeBtn) {
+        mobileThemeBtn.title = nextThemeLabel;
+        mobileThemeBtn.setAttribute('aria-label', nextThemeLabel);
+    }
 
     if (newTheme === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
         if (state.themeIcon) state.themeIcon.textContent = '☀️';
         if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
-        if (state.editor) state.editor.setTheme('Light');
+        if (state.editor && typeof state.editor.setTheme === 'function') state.editor.setTheme('Light');
     } else {
         document.documentElement.removeAttribute('data-theme');
         if (state.themeIcon) state.themeIcon.textContent = '🌙';
         if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
-        if (state.editor) state.editor.setTheme('Figma Dark');
+        if (state.editor && typeof state.editor.setTheme === 'function') state.editor.setTheme('Figma Dark');
     }
 
-    if (state.editor) {
+    if (state.editor && typeof state.editor.requestRedraw === 'function') {
         state.editor.requestRedraw();
     }
     if (state.requestRender) {

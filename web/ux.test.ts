@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
-import { refreshLayerList } from './ui';
+import { refreshLayerList, toggleTheme } from './ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -28,6 +28,12 @@ describe('UX Improvements', () => {
             <input type="number" id="grid-height" value="50">
             <button id="apply-grid-btn"></button>
             <div id="status-toast"></div>
+            <button id="theme-btn" class="action-btn" title="Switch to light theme" aria-label="Switch to light theme">
+                <span id="theme-icon">🌙</span>
+            </button>
+            <button id="mobile-theme-btn" class="action-btn" title="Switch to light theme" aria-label="Switch to light theme">
+                <span id="mobile-theme-icon">🌙</span>
+            </button>
         `;
     });
 
@@ -229,5 +235,34 @@ describe('UX Improvements', () => {
         closeBtn?.dispatchEvent(new MouseEvent('click'));
         expect(sidePanel?.classList.contains('open')).toBe(false);
         expect(menuBtn?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('should update theme toggle button title and aria-label when theme changes', () => {
+        const themeBtnNode = document.querySelector<HTMLButtonElement>('#theme-btn');
+        const mobileThemeBtnNode = document.querySelector<HTMLButtonElement>('#mobile-theme-btn');
+
+        if (!themeBtnNode || !mobileThemeBtnNode) {
+            throw new Error('Theme button elements must exist in test DOM');
+        }
+
+        state.themeBtn = themeBtnNode;
+
+        localStorage.setItem('ascii-canvas-theme', 'dark');
+
+        toggleTheme();
+
+        expect(localStorage.getItem('ascii-canvas-theme')).toBe('light');
+        expect(themeBtnNode.getAttribute('aria-label')).toBe('Switch to dark theme');
+        expect(themeBtnNode.getAttribute('title')).toBe('Switch to dark theme');
+        expect(mobileThemeBtnNode.getAttribute('aria-label')).toBe('Switch to dark theme');
+        expect(mobileThemeBtnNode.getAttribute('title')).toBe('Switch to dark theme');
+
+        toggleTheme();
+
+        expect(localStorage.getItem('ascii-canvas-theme')).toBe('dark');
+        expect(themeBtnNode.getAttribute('aria-label')).toBe('Switch to light theme');
+        expect(themeBtnNode.getAttribute('title')).toBe('Switch to light theme');
+        expect(mobileThemeBtnNode.getAttribute('aria-label')).toBe('Switch to light theme');
+        expect(mobileThemeBtnNode.getAttribute('title')).toBe('Switch to light theme');
     });
 });
