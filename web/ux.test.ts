@@ -238,27 +238,31 @@ describe('UX Improvements', () => {
     });
 
     it('should update theme toggle button title and aria-label when theme changes', () => {
-        const themeBtn = document.getElementById('theme-btn');
-        const mobileThemeBtn = document.getElementById('mobile-theme-btn');
+        const themeBtnHtmlElement = document.getElementById('theme-btn');
+        const mobileThemeBtnHtmlElement = document.getElementById('mobile-theme-btn');
 
-        state.themeBtn = themeBtn as HTMLButtonElement;
+        if (!(themeBtnHtmlElement instanceof HTMLButtonElement) || !(mobileThemeBtnHtmlElement instanceof HTMLButtonElement)) {
+            throw new Error('Theme button elements must exist in test DOM');
+        }
+
+        state.themeBtn = themeBtnHtmlElement;
 
         localStorage.setItem('ascii-canvas-theme', 'dark');
 
         toggleTheme();
 
         expect(localStorage.getItem('ascii-canvas-theme')).toBe('light');
-        expect(themeBtn?.getAttribute('aria-label')).toBe('Switch to dark theme');
-        expect(themeBtn?.getAttribute('title')).toBe('Switch to dark theme');
-        expect(mobileThemeBtn?.getAttribute('aria-label')).toBe('Switch to dark theme');
-        expect(mobileThemeBtn?.getAttribute('title')).toBe('Switch to dark theme');
+        expect(themeBtnHtmlElement.getAttribute('aria-label')).toBe('Switch to dark theme');
+        expect(themeBtnHtmlElement.getAttribute('title')).toBe('Switch to dark theme');
+        expect(mobileThemeBtnHtmlElement.getAttribute('aria-label')).toBe('Switch to dark theme');
+        expect(mobileThemeBtnHtmlElement.getAttribute('title')).toBe('Switch to dark theme');
 
         toggleTheme();
 
         expect(localStorage.getItem('ascii-canvas-theme')).toBe('dark');
-        expect(themeBtn?.getAttribute('aria-label')).toBe('Switch to light theme');
-        expect(themeBtn?.getAttribute('title')).toBe('Switch to light theme');
-        expect(mobileThemeBtn?.getAttribute('aria-label')).toBe('Switch to light theme');
-        expect(mobileThemeBtn?.getAttribute('title')).toBe('Switch to light theme');
+        expect(themeBtnHtmlElement.getAttribute('aria-label')).toBe('Switch to light theme');
+        expect(themeBtnHtmlElement.getAttribute('title')).toBe('Switch to light theme');
+        expect(mobileThemeBtnHtmlElement.getAttribute('aria-label')).toBe('Switch to light theme');
+        expect(mobileThemeBtnHtmlElement.getAttribute('title')).toBe('Switch to light theme');
     });
 });
