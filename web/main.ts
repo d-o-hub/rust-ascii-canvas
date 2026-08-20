@@ -131,6 +131,18 @@ async function initialize() {
         // Initialize theme from localStorage
         const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
         const mobileThemeIcon = document.getElementById('mobile-theme-icon');
+        const mobileThemeBtn = document.getElementById('mobile-theme-btn');
+        const nextThemeLabel = savedTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
+
+        if (state.themeBtn) {
+            state.themeBtn.title = nextThemeLabel;
+            state.themeBtn.setAttribute('aria-label', nextThemeLabel);
+        }
+        if (mobileThemeBtn) {
+            mobileThemeBtn.title = nextThemeLabel;
+            mobileThemeBtn.setAttribute('aria-label', nextThemeLabel);
+        }
+
         if (savedTheme === 'light') {
             document.documentElement.setAttribute('data-theme', 'light');
             state.themeIcon.textContent = '☀️';

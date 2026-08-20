@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
-import { refreshLayerList } from './ui';
+import { refreshLayerList, toggleTheme } from './ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -28,6 +28,12 @@ describe('UX Improvements', () => {
             <input type="number" id="grid-height" value="50">
             <button id="apply-grid-btn"></button>
             <div id="status-toast"></div>
+            <button id="theme-btn" class="action-btn" title="Switch to light theme" aria-label="Switch to light theme">
+                <span id="theme-icon">🌙</span>
+            </button>
+            <button id="mobile-theme-btn" class="action-btn" title="Switch to light theme" aria-label="Switch to light theme">
+                <span id="mobile-theme-icon">🌙</span>
+            </button>
         `;
     });
 
@@ -229,5 +235,30 @@ describe('UX Improvements', () => {
         closeBtn?.dispatchEvent(new MouseEvent('click'));
         expect(sidePanel?.classList.contains('open')).toBe(false);
         expect(menuBtn?.getAttribute('aria-expanded')).toBe('false');
+    });
+
+    it('should update theme toggle button title and aria-label when theme changes', () => {
+        const themeBtn = document.getElementById('theme-btn');
+        const mobileThemeBtn = document.getElementById('mobile-theme-btn');
+
+        state.themeBtn = themeBtn as HTMLButtonElement;
+
+        localStorage.setItem('ascii-canvas-theme', 'dark');
+
+        toggleTheme();
+
+        expect(localStorage.getItem('ascii-canvas-theme')).toBe('light');
+        expect(themeBtn?.getAttribute('aria-label')).toBe('Switch to dark theme');
+        expect(themeBtn?.getAttribute('title')).toBe('Switch to dark theme');
+        expect(mobileThemeBtn?.getAttribute('aria-label')).toBe('Switch to dark theme');
+        expect(mobileThemeBtn?.getAttribute('title')).toBe('Switch to dark theme');
+
+        toggleTheme();
+
+        expect(localStorage.getItem('ascii-canvas-theme')).toBe('dark');
+        expect(themeBtn?.getAttribute('aria-label')).toBe('Switch to light theme');
+        expect(themeBtn?.getAttribute('title')).toBe('Switch to light theme');
+        expect(mobileThemeBtn?.getAttribute('aria-label')).toBe('Switch to light theme');
+        expect(mobileThemeBtn?.getAttribute('title')).toBe('Switch to light theme');
     });
 });
