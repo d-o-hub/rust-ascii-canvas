@@ -134,10 +134,8 @@ async function initialize() {
         const mobileThemeBtn = document.getElementById('mobile-theme-btn');
         const nextThemeLabel = savedTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
 
-        if (state.themeBtn) {
-            state.themeBtn.title = nextThemeLabel;
-            state.themeBtn.setAttribute('aria-label', nextThemeLabel);
-        }
+        state.themeBtn.title = nextThemeLabel;
+        state.themeBtn.setAttribute('aria-label', nextThemeLabel);
         if (mobileThemeBtn) {
             mobileThemeBtn.title = nextThemeLabel;
             mobileThemeBtn.setAttribute('aria-label', nextThemeLabel);
