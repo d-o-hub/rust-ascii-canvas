@@ -15,8 +15,8 @@ importers:
         specifier: ^1.62.1
         version: 1.62.1
       binaryen:
-        specifier: ^131.0.0
-        version: 131.0.0
+        specifier: ^132.0.0
+        version: 132.0.0
       eslint:
         specifier: ^10.8.1
         version: 10.8.1
@@ -178,8 +178,8 @@ packages:
     resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
     engines: {node: 18 || 20 || >=22}
 
-  binaryen@131.0.0:
-    resolution: {integrity: sha512-anblNezmBjfWGfOMvZq1j5MwhVnMs+gezqbDz4FBFwx6twDwOsQSed+E8i4UKmLYXb3r+f3HWmz7Lx5sx5qOyQ==}
+  binaryen@132.0.0:
+    resolution: {integrity: sha512-4Usg7yEvwO3FMso3Oov6qkOOHSod1IEv+boKkh77kTljM+eNBouqCTbqWswGzbG+vDNO/b/v2C4gfEh1WgB9Lg==}
     hasBin: true
 
   brace-expansion@5.0.9:
@@ -608,7 +608,7 @@ snapshots:
 
   balanced-match@4.0.4: {}
 
-  binaryen@131.0.0: {}
+  binaryen@132.0.0: {}
 
   brace-expansion@5.0.9:
     dependencies:
