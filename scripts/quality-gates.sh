@@ -305,12 +305,37 @@ if ! $FAST; then
   if [[ ! -d "$REPO_ROOT/node_modules" ]]; then
     pnpm install --frozen-lockfile 2>/dev/null || pnpm install
   fi
-  if ! OUTPUT=$(npx playwright test --project=chromium 2>&1); then
+  # Boot the vite dev server when nothing is listening on :3003 (mirrors the CI
+  # e2e job, .github/workflows/ci.yml). Playwright has no webServer config.
+  # setsid isolates the server in its own process group so cleanup can kill the
+  # whole pnpm -> vite tree; the group is resolved from the :3003 listener at
+  # teardown time ($! is unreliable across setsid/subshell forks).
+  E2E_SERVER_STARTED=0
+  if ! curl -sf http://localhost:3003 >/dev/null 2>&1; then
+    E2E_SERVER_STARTED=1
+    (cd "$REPO_ROOT/web" && setsid nohup pnpm run dev >/tmp/ascii-canvas-vite-e2e.log 2>&1 &)
+    for _ in $(seq 1 60); do
+      curl -sf http://localhost:3003 >/dev/null 2>&1 && break
+      sleep 1
+    done
+    if ! curl -sf http://localhost:3003 >/dev/null 2>&1; then
+      fail "E2E"
+      echo "  FIX: vite dev server did not come up on :3003; see /tmp/ascii-canvas-vite-e2e.log."
+    fi
+  fi
+  if ! OUTPUT=$(npx playwright test --project=chromium --timeout=120000 2>&1); then
     fail "E2E"
     echo "  FIX: Inspect Playwright report; fix product or test. Prefer POM helpers over waits."
     printf "%s\n" "$OUTPUT" >&2
   else
     pass "E2E: OK"
+  fi
+  if [[ "$E2E_SERVER_STARTED" == "1" ]]; then
+    for e2e_pid in $(lsof -ti tcp:3003 2>/dev/null); do
+      e2e_pgid="$(ps -o pgid= -p "$e2e_pid" 2>/dev/null | tr -d ' ')"
+      [[ -n "$e2e_pgid" ]] && kill -- "-$e2e_pgid" 2>/dev/null
+      kill "$e2e_pid" 2>/dev/null
+    done
   fi
   printf "\n"
 else
