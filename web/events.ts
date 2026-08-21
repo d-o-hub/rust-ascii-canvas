@@ -82,6 +82,7 @@ export function handlePointerMove(e: PointerEvent): void {
         state.cursorPosEl.textContent = `${gridX}, ${gridY}`;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
     const hasTextCursor = state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
     if (!hasTextCursor) {
         updateCursorIndicator(gridX, gridY);
@@ -140,6 +141,7 @@ export function handleTouchMove(e: TouchEvent): void {
         const pan = state.editor.pan as number[] | Float64Array;
         const gridX = Math.floor((x - pan[0]) / state.editor.zoom / state.charWidth);
         const gridY = Math.floor((y - pan[1]) / state.editor.zoom / state.lineHeight);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
         const hasTextCursor = state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
         if (!hasTextCursor) {
             updateCursorIndicator(gridX, gridY);
@@ -204,6 +206,7 @@ export function handleMobileInput(e: Event): void {
 }
 
 export function handlePointerLeave(): void {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
     const hasTextCursor = state.editor && state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
     if (!hasTextCursor && state.cursorIndicator) {
         state.cursorIndicator.classList.add('hidden');

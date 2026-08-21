@@ -22,6 +22,7 @@ class Logger {
     }
 
     public configure(options: LoggerOptions) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard for partial option objects
         if (options.level !== undefined) {
             this.level = options.level;
         }

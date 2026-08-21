@@ -34,6 +34,8 @@ export function getClipboardOptions(): ClipboardOptions {
     };
 }
 
+// Mirrors core::ascii_export::ascii_fallback_char (src/core/ascii_export.rs).
+// Keep both maps in sync — the Rust map is the source of truth (ADR-041).
 function asciiFallbackChar(char: string): string {
     switch (char) {
         case '─': case '━': case '═': case '╌': case '╍': case '┄': case '┅': case '┈': case '┉':
@@ -55,7 +57,7 @@ function asciiFallbackChar(char: string): string {
         case '▼': case '▽': return 'v';
         case '◀': case '◁': return '<';
         case '▶': case '▷': return '>';
-        default: return char.codePointAt(0)! < 128 ? char : '?';
+        default: return char.charCodeAt(0) < 128 ? char : '?';
     }
 }
 
@@ -81,15 +83,11 @@ export function formatClipboardText(text: string, options: ClipboardOptions): st
  * for insecure, permission-restricted, or embedded browser contexts.
  */
 export async function writeTextToClipboard(text: string): Promise<void> {
-    let clipboardError: unknown = new Error('Clipboard API unavailable');
+    let clipboardError: unknown;
 
     try {
-        if (typeof navigator !== 'undefined'
-            && navigator.clipboard
-            && typeof navigator.clipboard.writeText === 'function') {
-            await navigator.clipboard.writeText(text);
-            return;
-        }
+        await navigator.clipboard.writeText(text);
+        return;
     } catch (error) {
         clipboardError = error;
     }
@@ -118,7 +116,7 @@ export function copyTextWithExecCommand(text: string): boolean {
     textArea.style.opacity = '0';
     textArea.style.pointerEvents = 'none';
 
-    const parent = document.body ?? document.documentElement;
+    const parent = document.body;
     parent.appendChild(textArea);
     try {
         textArea.focus();
