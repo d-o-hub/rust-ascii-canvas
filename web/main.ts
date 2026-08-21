@@ -145,6 +145,7 @@ async function initialize() {
             document.documentElement.setAttribute('data-theme', 'light');
             state.themeIcon.textContent = '☀️';
             if (mobileThemeIcon) mobileThemeIcon.textContent = '☀️';
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard; AppState.editor is typed non-optional
             if (state.editor) {
                 state.editor.setTheme('Light');
             }
@@ -152,6 +153,7 @@ async function initialize() {
             document.documentElement.removeAttribute('data-theme');
             state.themeIcon.textContent = '🌙';
             if (mobileThemeIcon) mobileThemeIcon.textContent = '🌙';
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard; AppState.editor is typed non-optional
             if (state.editor) {
                 state.editor.setTheme('Figma Dark');
             }

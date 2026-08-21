@@ -9,7 +9,11 @@ import {
     MIN_COLS,
     MIN_ROWS,
 } from './constants.js';
-import { copyAsciiToClipboard, copyToClipboard as copySelectionAware } from './clipboard.js';
+import {
+    copyAsciiToClipboard,
+    copyToClipboard as copySelectionAware,
+    getClipboardOptions,
+} from './clipboard.js';
 import { createAutoSaveScheduler, downloadDocument, openDocumentPicker } from './persistence.js';
 import { exportPng } from './exportPng.js';
 import { exportSvg } from './exportSvg.js';
@@ -78,6 +82,7 @@ export function handlePointerMove(e: PointerEvent): void {
         state.cursorPosEl.textContent = `${gridX}, ${gridY}`;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
     const hasTextCursor = state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
     if (!hasTextCursor) {
         updateCursorIndicator(gridX, gridY);
@@ -136,6 +141,7 @@ export function handleTouchMove(e: TouchEvent): void {
         const pan = state.editor.pan as number[] | Float64Array;
         const gridX = Math.floor((x - pan[0]) / state.editor.zoom / state.charWidth);
         const gridY = Math.floor((y - pan[1]) / state.editor.zoom / state.lineHeight);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
         const hasTextCursor = state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
         if (!hasTextCursor) {
             updateCursorIndicator(gridX, gridY);
@@ -200,6 +206,7 @@ export function handleMobileInput(e: Event): void {
 }
 
 export function handlePointerLeave(): void {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
     const hasTextCursor = state.editor && state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
     if (!hasTextCursor && state.cursorIndicator) {
         state.cursorIndicator.classList.add('hidden');
@@ -333,7 +340,7 @@ export function handleEventResult(result: EventResult | null, options: { persist
     }
 
     if (result.should_copy && result.ascii) {
-        void copyAsciiToClipboard(result.ascii, showToast);
+        void copyAsciiToClipboard(result.ascii, showToast, getClipboardOptions());
     }
 
     updateUI();
@@ -345,7 +352,7 @@ export function handleEventResult(result: EventResult | null, options: { persist
 
 export async function copyToClipboard(): Promise<void> {
     if (!state.editor) return;
-    await copySelectionAware(state.editor, showToast);
+    await copySelectionAware(state.editor, showToast, getClipboardOptions());
 }
 
 export function applyCustomGridSize(): void {
