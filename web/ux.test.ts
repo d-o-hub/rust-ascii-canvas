@@ -141,6 +141,35 @@ describe('UX Improvements', () => {
         expect(focusSpy).toHaveBeenCalled();
     });
 
+    it('should revert grid input value and focus canvas when Escape is pressed in grid inputs', () => {
+        const canvasNode = document.querySelector('canvas');
+        const widthInput = document.querySelector<HTMLInputElement>('input#grid-width');
+        if (!canvasNode || !widthInput) {
+            throw new Error('canvas and grid-width elements must exist in test DOM');
+        }
+
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
+        const blurSpy = vi.spyOn(widthInput, 'blur');
+
+        state.canvas = canvasNode;
+        state.editor = {
+            width: 80,
+            height: 40,
+            resize: vi.fn(),
+            tool: 'rectangle',
+        } as unknown as typeof state.editor;
+
+        setupEventListeners();
+
+        widthInput.value = '250';
+        const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        widthInput.dispatchEvent(escapeEvent);
+
+        expect(widthInput.value).toBe('80');
+        expect(blurSpy).toHaveBeenCalled();
+        expect(focusSpy).toHaveBeenCalled();
+    });
+
     it('should blur layer-name-input and focus canvas on Enter or Escape', () => {
         const canvasNode = document.querySelector('canvas');
         if (!canvasNode) throw new Error('canvas must exist');
