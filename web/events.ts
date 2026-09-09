@@ -622,16 +622,22 @@ export function setupEventListeners(): void {
 
     const gridWidthHtmlElement = document.querySelector('#grid-width') as HTMLInputElement | null;
     const gridHeightHtmlElement = document.querySelector('#grid-height') as HTMLInputElement | null;
-    function handleGridEnter(e: KeyboardEvent): void {
+    function handleGridKeyDown(e: KeyboardEvent): void {
         if (e.key === 'Enter') {
             applyGridAndFocus();
+        } else if (e.key === 'Escape') {
+            syncGridInputs();
+            if (e.target instanceof HTMLElement) {
+                e.target.blur();
+            }
+            if (state.canvas) state.canvas.focus();
         }
     }
     if (gridWidthHtmlElement) {
-        gridWidthHtmlElement.addEventListener('keydown', handleGridEnter as EventListener);
+        gridWidthHtmlElement.addEventListener('keydown', handleGridKeyDown as EventListener);
     }
     if (gridHeightHtmlElement) {
-        gridHeightHtmlElement.addEventListener('keydown', handleGridEnter as EventListener);
+        gridHeightHtmlElement.addEventListener('keydown', handleGridKeyDown as EventListener);
     }
 
     wireOptionalButton('add-layer-btn', () => {
