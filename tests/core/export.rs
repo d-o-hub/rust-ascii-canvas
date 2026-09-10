@@ -1,7 +1,8 @@
 //! ASCII export tests.
 
 use ascii_canvas::core::ascii_export::{
-    count_content, export_grid, export_region, find_content_bounds, ExportOptions,
+    ascii_fallback_char, count_content, export_grid, export_region, find_content_bounds,
+    ExportOptions,
 };
 use ascii_canvas::core::grid::Grid;
 
@@ -86,6 +87,61 @@ fn test_export_region() {
     assert!(result.contains('B'));
     assert!(result.contains('C'));
     assert!(result.contains('D'));
+}
+
+#[test]
+fn test_copy_options_preserve_rectangular_box_and_unicode() {
+    let mut grid = Grid::new(12, 4);
+    grid.set_char(0, 0, '┌');
+    grid.set_char(1, 0, '─');
+    grid.set_char(2, 0, '┐');
+    grid.set_char(0, 1, '│');
+    grid.set_char(2, 1, '│');
+    grid.set_char(0, 2, '└');
+    grid.set_char(1, 2, '─');
+    grid.set_char(2, 2, '┘');
+    grid.set_char(10, 0, 'B');
+
+    let result = export_grid(&grid, &ExportOptions::default());
+    let widths: Vec<usize> = result.lines().map(|line| line.chars().count()).collect();
+    assert_eq!(widths, vec![11, 11, 11]);
+    assert_eq!(result.lines().nth(1), Some("│ │        "));
+
+    let ascii = export_grid(
+        &grid,
+        &ExportOptions {
+            convert_unicode_to_ascii: true,
+            ..Default::default()
+        },
+    );
+    assert_eq!(ascii.lines().next(), Some("+-+       B"));
+    assert!(ascii.chars().all(|ch| ch.is_ascii() || ch == '\n'));
+}
+
+#[test]
+fn test_copy_options_can_trim_trailing_whitespace() {
+    let mut grid = Grid::new(4, 2);
+    grid.set_char(0, 0, 'A');
+    grid.set_char(2, 1, 'B');
+
+    let result = export_grid(
+        &grid,
+        &ExportOptions {
+            trim_trailing_whitespace: true,
+            enforce_bounding_box: false,
+            ..Default::default()
+        },
+    );
+    assert_eq!(result, "A\n  B");
+}
+
+#[test]
+fn test_ascii_fallback_maps_box_drawing_glyphs() {
+    assert_eq!(ascii_fallback_char('│'), '|');
+    assert_eq!(ascii_fallback_char('─'), '-');
+    assert_eq!(ascii_fallback_char('┌'), '+');
+    assert_eq!(ascii_fallback_char('┘'), '+');
+    assert_eq!(ascii_fallback_char('🦀'), '?');
 }
 
 #[test]

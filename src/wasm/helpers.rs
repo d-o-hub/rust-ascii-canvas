@@ -1,12 +1,12 @@
 //! Private helper methods for AsciiEditor.
 
-use crate::core::ascii_export::export_region;
+use crate::core::ascii_export::{export_grid, export_region_with_options, ExportOptions};
 use crate::core::commands::{Command, DrawCommand};
 use crate::core::history::{History, DEFAULT_MAX_DEPTH};
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, SelectTool, ToolContext, ToolId};
 use crate::wasm::render_bridge::{
-    create_event_result, create_event_result_with_copy, export_ascii, EditorEventResult,
+    create_event_result, create_event_result_with_copy, EditorEventResult,
 };
 
 use super::bindings::AsciiEditor;
@@ -23,12 +23,17 @@ impl AsciiEditor {
     /// Export text for OS clipboard: selection region if present, else full composite.
     /// Always reads from the composite of visible layers so multi-layer docs match `exportAscii`.
     pub(crate) fn export_for_copy(&self) -> String {
+        self.export_for_copy_with_options(&ExportOptions::default())
+    }
+
+    /// Export the current copy scope with explicit clipboard fidelity options.
+    pub(crate) fn export_for_copy_with_options(&self, options: &ExportOptions) -> String {
         let composite = self.composite_visible_grid();
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
-            export_region(&composite, min_x, min_y, max_x, max_y)
+            export_region_with_options(&composite, min_x, min_y, max_x, max_y, options)
         } else {
-            export_ascii(&composite)
+            export_grid(&composite, options)
         }
     }
 
