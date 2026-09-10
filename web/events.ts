@@ -281,6 +281,14 @@ export function handleKeyDown(e: KeyboardEvent): void {
             }
         }
 
+        if ((key === '+' || key === '=') && !ctrl) {
+            setZoom(state.editor.zoom * 1.25);
+            if (state.canvas) state.canvas.focus();
+        } else if ((key === '-' || key === '_') && !ctrl) {
+            setZoom(state.editor.zoom * 0.8);
+            if (state.canvas) state.canvas.focus();
+        }
+
         if (key === '?' || (key === '/' && shift)) {
             showShortcutsModal();
         }
