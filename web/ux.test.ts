@@ -314,7 +314,10 @@ describe('UX Improvements', () => {
         canvasNode.dispatchEvent(zoomInEvent);
         expect(state.editor?.setZoom).toHaveBeenCalledWith(1.25);
 
-        (state.editor!.setZoom as ReturnType<typeof vi.fn>).mockClear();
+        if (!state.editor) {
+            throw new Error('state.editor must be defined');
+        }
+        (state.editor.setZoom as ReturnType<typeof vi.fn>).mockClear();
 
         const zoomOutEvent = new KeyboardEvent('keydown', { key: '-', bubbles: true });
         canvasNode.dispatchEvent(zoomOutEvent);
