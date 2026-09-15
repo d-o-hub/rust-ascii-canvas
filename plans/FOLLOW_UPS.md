@@ -1,8 +1,9 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-07-16  
-**Source**: Full recommendations bundle (issue #21 + post-merge analysis)  
+**Updated**: 2026-09-15
+**Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
+**Latest triage**: 2026-09-15 — 1 open issue (#176 → PR #177 rebase requested), 5→3 open PRs (#187 merged, #186 closed as version-skew, #185 changes requested, #188 held for vitest 5 major). Steering log L-005 added to agents-docs/harness.md.
 
 Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
 **GitHub issues** track open work (numbers below).
@@ -15,7 +16,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 |----|--------|-------|--------|
 | **F-01** | ✅ | — | [PR #107](https://github.com/d-o-hub/rust-ascii-canvas/pull/107) merged; #21 closed |
 | **F-02** | ✅ | [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108) | Manual clipboard QA verified across Notepad, TextEdit, VS Code, and monospace area |
-| **F-03** | partial | [#109](https://github.com/d-o-hub/rust-ascii-canvas/issues/109) | #98 merged; open Dependabot [#99](https://github.com/d-o-hub/rust-ascii-canvas/pull/99) wasm-bindgen |
+| **F-03** | partial | [#109](https://github.com/d-o-hub/rust-ascii-canvas/issues/109) | #98 merged; #187 (root deps) merged 2026-09-15; #186 wasm-bindgen 0.2.128 closed 2026-09-15 (version-skew vs CLI pin — needs coordinated bump, see harness L-005); #188 (web deps incl. vitest 5 major) held for migration check |
 
 ---
 
