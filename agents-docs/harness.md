@@ -146,3 +146,12 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Why harness failed** | The release workflow's version validation only checked local git state, not the actual GitHub Release API. |
 | **Prevention** | (1) Guard-rails now query `gh release list` to find the latest actual GitHub Release. (2) Version comparison uses whichever is higher: latest release or latest tag. (3) Blocks release if VERSION matches an existing release tag. |
 | **Agent rule** | Before creating a release, always verify the latest GitHub Release via `gh release list --limit 1`. Never assume git tags reflect published releases. |
+
+### L-005 — wasm-bindgen dep vs CLI version skew (PR #186, 2026-09-11)
+
+| | |
+|--|--|
+| **Symptom** | `WASM Build` fails: `rust Wasm file schema version: 0.2.128 / this binary schema version: 0.2.126 — must exactly match` |
+| **Root cause** | Dependabot bumps `wasm-bindgen` in `Cargo.toml` alone; repo pins the CLI separately in `mise.toml`, CI wasm job, and `package.json` `netlify:build`. Dep and CLI must move together. Recurred: #173 closed unmerged, #179 merged only because pins aligned, #186 red. |
+| **Prevention** | Coordinated bump covering `Cargo.toml` + `mise.toml` + CI wasm-bindgen-cli install + `netlify:build` + `Cargo.lock`, verified by `npm run build:wasm`. Candidate computational sensor: `quality-gates.sh` greps the pins for equality and fails fast with FIX hint. |
+| **Agent rule** | Never merge a lone `wasm-bindgen` dep bump. Check `mise.toml`, CI, and `netlify:build` pins match first; if not, close with pointer to coordinated bump. |
