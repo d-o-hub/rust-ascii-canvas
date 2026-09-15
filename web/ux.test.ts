@@ -295,4 +295,32 @@ describe('UX Improvements', () => {
         expect(mobileThemeBtnNode.getAttribute('aria-label')).toBe('Switch to light theme');
         expect(mobileThemeBtnNode.getAttribute('title')).toBe('Switch to light theme');
     });
+
+    it('should handle zoom in (+) and zoom out (-) keyboard shortcuts', () => {
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas element must exist');
+        state.canvas = canvasNode;
+        state.editor = {
+            zoom: 1.0,
+            tool: 'rectangle',
+            setZoom: vi.fn(),
+            requestRedraw: vi.fn(),
+            onKeyDown: vi.fn().mockReturnValue(null),
+        } as unknown as typeof state.editor;
+
+        setupEventListeners();
+
+        const zoomInEvent = new KeyboardEvent('keydown', { key: '+', bubbles: true });
+        canvasNode.dispatchEvent(zoomInEvent);
+        expect(state.editor?.setZoom).toHaveBeenCalledWith(1.25);
+
+        if (!state.editor) {
+            throw new Error('state.editor must be defined');
+        }
+        (state.editor.setZoom as ReturnType<typeof vi.fn>).mockClear();
+
+        const zoomOutEvent = new KeyboardEvent('keydown', { key: '-', bubbles: true });
+        canvasNode.dispatchEvent(zoomOutEvent);
+        expect(state.editor?.setZoom).toHaveBeenCalledWith(0.8);
+    });
 });
