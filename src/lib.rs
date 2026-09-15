@@ -45,8 +45,9 @@ pub mod wasm;
 
 // Re-exports for convenience
 pub use core::{
-    export_grid, BorderStyle, Cell, CellStyle, Command, DrawOp, EditorState, ExportOptions, Grid,
-    History, Selection, Tool, ToolId, ToolResult,
+    ascii_fallback_char, export_grid, export_region, export_region_with_options, BorderStyle, Cell,
+    CellStyle, Command, DrawOp, EditorState, ExportOptions, Grid, History, Selection, Tool, ToolId,
+    ToolResult,
 };
 pub use render::{CanvasRenderer, DirtyRect, FontMetrics};
 pub use ui::{ShortcutManager, Theme, ToolbarConfig};

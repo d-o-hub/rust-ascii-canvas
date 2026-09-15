@@ -456,6 +456,31 @@ body {
     outline-offset: 1px;
 }
 
+/* Copy format controls */
+.copy-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.copy-option .select-input {
+    min-width: 112px;
+    max-width: 132px;
+}
+
+.copy-checkbox {
+    justify-content: flex-start;
+    cursor: pointer;
+}
+
+.copy-checkbox input {
+    accent-color: var(--accent);
+}
+
 /* Layer list styles */
 .layer-list {
     display: flex;

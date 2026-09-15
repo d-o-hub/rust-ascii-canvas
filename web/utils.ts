@@ -4,7 +4,7 @@
 
 /** Normalize line endings to CRLF for cross-platform external paste (esp. Windows Notepad). */
 export function normalizeToCRLF(text: string): string {
-    return text.replace(/\r\n/g, '\n').replace(/\n/g, '\r\n');
+    return text.replace(/\r\n|\r|\n/g, '\n').replace(/\n/g, '\r\n');
 }
 
 /** Capitalize the first letter of a string. */

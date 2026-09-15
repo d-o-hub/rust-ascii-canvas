@@ -209,6 +209,7 @@ let lastLayersState: CachedLayerState[] = [];
 export function refreshLayerList(): void {
     if (!state.editor || typeof state.editor.layerCount !== 'number') return;
     const count = state.editor.layerCount;
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive fallback; activeLayer is typed non-optional
     const active = state.editor.activeLayer ?? 0;
 
     const currentStates: CachedLayerState[] = [];
