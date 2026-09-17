@@ -28,7 +28,7 @@ impl DrawCommand {
             description: if count == 1 {
                 "Draw".to_string()
             } else {
-                format!("Draw {} cells", count)
+                format!("Draw {count} cells")
             },
         }
     }

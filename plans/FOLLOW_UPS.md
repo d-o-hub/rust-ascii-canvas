@@ -1,9 +1,9 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-09-15
+**Updated**: 2026-09-17
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
-**Latest triage**: 2026-09-15 — 1 open issue (#176 → PR #177 rebase requested), 5→3 open PRs (#187 merged, #186 closed as version-skew, #185 changes requested, #188 held for vitest 5 major). Steering log L-005 added to agents-docs/harness.md.
+**Latest triage**: 2026-09-17 — coordinated wasm-bindgen 0.2.128 upgrade done locally (ADR-042, pin-parity sensor in quality-gates.sh, full gates green incl. 79 Chromium E2E). #185 still open; #188 unblocked (vitest 5.0.0 verified: 26 passed). Steering log L-005 resolved, L-006 added (pnpm approve-builds).
 
 Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
 **GitHub issues** track open work (numbers below).
@@ -16,7 +16,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 |----|--------|-------|--------|
 | **F-01** | ✅ | — | [PR #107](https://github.com/d-o-hub/rust-ascii-canvas/pull/107) merged; #21 closed |
 | **F-02** | ✅ | [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108) | Manual clipboard QA verified across Notepad, TextEdit, VS Code, and monospace area |
-| **F-03** | partial | [#109](https://github.com/d-o-hub/rust-ascii-canvas/issues/109) | #98 merged; #187 (root deps) merged 2026-09-15; #186 wasm-bindgen 0.2.128 closed 2026-09-15 (version-skew vs CLI pin — needs coordinated bump, see harness L-005); #188 (web deps incl. vitest 5 major) held for migration check |
+| **F-03** | partial | [#109](https://github.com/d-o-hub/rust-ascii-canvas/issues/109) | #98 merged; #187 (root deps) merged 2026-09-15; #186 wasm-bindgen 0.2.128 closed 2026-09-15 (version-skew vs CLI pin). **2026-09-17: coordinated 0.2.128 upgrade done locally** — Cargo.toml + mise.toml + netlify:build + gate FIX hints aligned, pin-parity sensor added (quality-gates.sh §2b), ADR-042 accepted, `build:wasm` + size (243260 B) + full gates green. #188 (web deps incl. vitest 5 major) **unblocked** — vitest 5.0.0 verified locally (26 passed); ready to re-run CI on that PR |
 
 ---
 

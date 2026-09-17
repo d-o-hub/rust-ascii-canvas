@@ -20,7 +20,7 @@ fn benchmark_grid_mutation() {
     }
 
     let duration = start.elapsed();
-    println!("Grid mutation (1M cells): {:?}", duration);
+    println!("Grid mutation (1M cells): {duration:?}");
 }
 
 fn benchmark_ascii_export() {
@@ -39,8 +39,6 @@ fn benchmark_ascii_export() {
     }
 
     let duration = start.elapsed();
-    println!(
-        "ASCII export (10k cells x 100 iterations): {:?}",
-        duration / 100
-    );
+    let avg = duration / 100;
+    println!("ASCII export (10k cells x 100 iterations): {avg:?}");
 }
