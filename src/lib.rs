@@ -77,22 +77,22 @@ mod console {
 
     /// Log a debug message to the browser console.
     pub fn debug(s: &str) {
-        log(&format!("[DEBUG] {}", s));
+        log(&format!("[DEBUG] {s}"));
     }
 
     /// Log an info message to the browser console.
     pub fn info(s: &str) {
-        log(&format!("[INFO] {}", s));
+        log(&format!("[INFO] {s}"));
     }
 
     /// Log a warning message to the browser console.
     pub fn warn(s: &str) {
-        log(&format!("[WARN] {}", s));
+        log(&format!("[WARN] {s}"));
     }
 
     /// Log an error message to the browser console.
     pub fn error(s: &str) {
-        log(&format!("[ERROR] {}", s));
+        log(&format!("[ERROR] {s}"));
     }
 }
 
@@ -103,19 +103,19 @@ pub use console::{debug, error, info, warn};
 mod console {
     /// Log a debug message.
     pub fn debug(s: &str) {
-        println!("[DEBUG] {}", s);
+        println!("[DEBUG] {s}");
     }
     /// Log an info message.
     pub fn info(s: &str) {
-        println!("[INFO] {}", s);
+        println!("[INFO] {s}");
     }
     /// Log a warning message.
     pub fn warn(s: &str) {
-        println!("[WARN] {}", s);
+        println!("[WARN] {s}");
     }
     /// Log an error message.
     pub fn error(s: &str) {
-        eprintln!("[ERROR] {}", s);
+        eprintln!("[ERROR] {s}");
     }
 }
 
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn test_version() {
-        assert!(!VERSION.is_empty());
+        assert_eq!(VERSION, env!("CARGO_PKG_VERSION"));
     }
 
     #[test]

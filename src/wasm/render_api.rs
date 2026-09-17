@@ -33,23 +33,19 @@ impl AsciiEditor {
 
         let mut svg = String::new();
         svg.push_str(&format!(
-            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="{w}" height="{h}">"##,
-            w = svg_width,
-            h = svg_height
+            r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {svg_width} {svg_height}" width="{svg_width}" height="{svg_height}">"##
         ));
 
         // Background
         svg.push_str(&format!(
-            r##"<rect width="{w}" height="{h}" fill="{bg}" />"##,
-            w = svg_width,
-            h = svg_height,
-            bg = self.theme.background
+            r##"<rect width="{svg_width}" height="{svg_height}" fill="{background}" />"##,
+            background = self.theme.background
         ));
 
         // Group with shared styling
         svg.push_str(&format!(
-            r##"<g fill="{fg}" font-family="JetBrains Mono, Fira Code, Consolas, monospace" font-size="{size}px">"##,
-            fg = self.theme.foreground,
+            r##"<g fill="{foreground}" font-family="JetBrains Mono, Fira Code, Consolas, monospace" font-size="{size}px">"##,
+            foreground = self.theme.foreground,
             size = self.renderer.metrics().size
         ));
 
@@ -61,10 +57,7 @@ impl AsciiEditor {
                         let py = y as f64 * line_height;
                         let escaped = escape_xml_char(cell.ch);
                         svg.push_str(&format!(
-                            r##"<text x="{x}" y="{y}" dominant-baseline="hanging">{char}</text>"##,
-                            x = px,
-                            y = py,
-                            char = escaped
+                            r##"<text x="{px}" y="{py}" dominant-baseline="hanging">{escaped}</text>"##
                         ));
                     }
                 }

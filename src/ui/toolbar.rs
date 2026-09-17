@@ -31,7 +31,7 @@ impl ToolbarItem {
             icon: Self::tool_icon(tool_id),
             shortcut: tool_id.shortcut().to_string(),
             is_tool: true,
-            tool_id: Some(format!("{:?}", tool_id)),
+            tool_id: Some(format!("{tool_id:?}")),
             is_separator: false,
         }
     }
