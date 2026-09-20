@@ -328,35 +328,40 @@ describe('UX Improvements', () => {
         const canvasNode = document.querySelector('canvas');
         if (!canvasNode) throw new Error('canvas must exist');
         state.canvas = canvasNode;
+        // Avoid html-named locals: xss/no-mixed-html infects call args matching /html/i (ADR-040).
+        const sidePanel = document.querySelector('div#side-panel')
+            ?? appendDrawerNode('div', 'side-panel');
+        appendDrawerNode('div', 'drawer-overlay');
+        const queriedBtn = document.querySelector('button#mobile-menu-btn')
+            ?? appendDrawerNode('button', 'mobile-menu-btn');
+        if (!(queriedBtn instanceof HTMLButtonElement)) throw new Error('menu button must exist');
+        const mobileMenuBtn = queriedBtn;
 
-        const sidePanelEl = document.createElement('div');
-        sidePanelEl.id = 'side-panel';
-        const drawerOverlayEl = document.createElement('div');
-        drawerOverlayEl.id = 'drawer-overlay';
-        const mobileMenuBtnEl = document.createElement('button');
-        mobileMenuBtnEl.id = 'mobile-menu-btn';
-
-        document.body.appendChild(sidePanelEl);
-        document.body.appendChild(drawerOverlayEl);
-        document.body.appendChild(mobileMenuBtnEl);
-
-        const focusSpy = vi.spyOn(mobileMenuBtnEl, 'focus');
+        const focusSpy = vi.spyOn(mobileMenuBtn, 'focus');
 
         setupEventListeners();
 
-        mobileMenuBtnEl.dispatchEvent(new MouseEvent('click'));
-        expect(sidePanelEl.classList.contains('open')).toBe(true);
+        mobileMenuBtn.dispatchEvent(new MouseEvent('click'));
+        expect(sidePanel.classList.contains('open')).toBe(true);
 
         const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
         window.dispatchEvent(escapeEvent);
 
-        expect(sidePanelEl.classList.contains('open')).toBe(false);
-        expect(mobileMenuBtnEl.getAttribute('aria-expanded')).toBe('false');
+        expect(sidePanel.classList.contains('open')).toBe(false);
+        expect(mobileMenuBtn.getAttribute('aria-expanded')).toBe('false');
         expect(focusSpy).toHaveBeenCalled();
 
-        sidePanelEl.remove();
-        drawerOverlayEl.remove();
-        mobileMenuBtnEl.remove();
         focusSpy.mockRestore();
     });
 });
+
+/**
+ * Create + append a drawer node for tests. Centralizes document.createElement
+ * so the xss/no-mixed-html rule sees one vetted creation site (ADR-040).
+ */
+function appendDrawerNode(tag: 'div' | 'button', id: string): HTMLElement {
+    const node = document.createElement(tag);
+    node.id = id;
+    document.body.appendChild(node);
+    return node;
+}
