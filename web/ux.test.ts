@@ -323,4 +323,40 @@ describe('UX Improvements', () => {
         canvasNode.dispatchEvent(zoomOutEvent);
         expect(state.editor.setZoom).toHaveBeenCalledWith(0.8);
     });
+
+    it('should close side panel drawer and restore focus to menu button when Escape key is pressed', () => {
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas must exist');
+        state.canvas = canvasNode;
+
+        const sidePanelEl = document.createElement('div');
+        sidePanelEl.id = 'side-panel';
+        const drawerOverlayEl = document.createElement('div');
+        drawerOverlayEl.id = 'drawer-overlay';
+        const mobileMenuBtnEl = document.createElement('button');
+        mobileMenuBtnEl.id = 'mobile-menu-btn';
+
+        document.body.appendChild(sidePanelEl);
+        document.body.appendChild(drawerOverlayEl);
+        document.body.appendChild(mobileMenuBtnEl);
+
+        const focusSpy = vi.spyOn(mobileMenuBtnEl, 'focus');
+
+        setupEventListeners();
+
+        mobileMenuBtnEl.dispatchEvent(new MouseEvent('click'));
+        expect(sidePanelEl.classList.contains('open')).toBe(true);
+
+        const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        window.dispatchEvent(escapeEvent);
+
+        expect(sidePanelEl.classList.contains('open')).toBe(false);
+        expect(mobileMenuBtnEl.getAttribute('aria-expanded')).toBe('false');
+        expect(focusSpy).toHaveBeenCalled();
+
+        sidePanelEl.remove();
+        drawerOverlayEl.remove();
+        mobileMenuBtnEl.remove();
+        focusSpy.mockRestore();
+    });
 });

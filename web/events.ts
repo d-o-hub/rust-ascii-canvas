@@ -442,6 +442,13 @@ export function setupEventListeners(): void {
             const modal = document.getElementById('shortcuts-modal');
             if (modal && !modal.classList.contains('hidden')) {
                 hideShortcutsModal();
+            } else if (sidePanel && sidePanel.classList.contains('open')) {
+                // Don't yank focus mid-typing: Text-tool Escape belongs to the
+                // canvas handler (commit/dismiss text cursor), not the drawer.
+                const isTextTool = state.editor?.tool.toLowerCase() === 'text';
+                if (!isTextTool) {
+                    closeDrawer(true);
+                }
             }
         } else if (e.key === 'Tab') {
             const modal = document.getElementById('shortcuts-modal');
@@ -717,10 +724,14 @@ export function setupEventListeners(): void {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
 
-    function closeDrawer(): void {
+    function closeDrawer(restoreFocus = false): void {
+        const isOpen = sidePanel?.classList.contains('open');
         if (sidePanel) sidePanel.classList.remove('open');
         if (drawerOverlay) drawerOverlay.classList.remove('open');
         if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        if (restoreFocus && isOpen && mobileMenuBtn) {
+            mobileMenuBtn.focus();
+        }
     }
 
     if (mobileMenuBtn && sidePanel && drawerOverlay) {
@@ -738,11 +749,11 @@ export function setupEventListeners(): void {
 
     if (closeDrawerBtn) {
         closeDrawerBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        closeDrawerBtn.addEventListener('click', closeDrawer);
+        closeDrawerBtn.addEventListener('click', () => closeDrawer());
     }
 
     if (drawerOverlay) {
-        drawerOverlay.addEventListener('click', closeDrawer);
+        drawerOverlay.addEventListener('click', () => closeDrawer());
     }
 
     // Mobile Actions Wiring
