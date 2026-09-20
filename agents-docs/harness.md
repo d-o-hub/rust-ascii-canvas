@@ -155,3 +155,14 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Root cause** | Dependabot bumps `wasm-bindgen` in `Cargo.toml` alone; repo pins the CLI separately in `mise.toml`, CI wasm job, and `package.json` `netlify:build`. Dep and CLI must move together. Recurred: #173 closed unmerged, #179 merged only because pins aligned, #186 red. |
 | **Prevention** | Coordinated bump covering `Cargo.toml` + `mise.toml` + CI wasm-bindgen-cli install + `netlify:build` + `Cargo.lock`, verified by `npm run build:wasm`. Candidate computational sensor: `quality-gates.sh` greps the pins for equality and fails fast with FIX hint. |
 | **Agent rule** | Never merge a lone `wasm-bindgen` dep bump. Check `mise.toml`, CI, and `netlify:build` pins match first; if not, close with pointer to coordinated bump. |
+| **Resolution** | 2026-09-17: coordinated upgrade to 0.2.128 (ADR-042). `quality-gates.sh` §2b pin-parity sensor now fails fast on skew. |
+
+### L-006 — pnpm v11 `approve-builds` gate blocks web sensors (2026-09-17)
+
+| | |
+|--|--|
+| **Symptom** | `cd web && pnpm run lint` fails before linting: `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.7`, caused by `pnpm approve-builds` interactive gate in pnpm v11 (supply-chain policy). Direct `./node_modules/.bin/eslint` passes; `pnpm run lint` does not. |
+| **Root cause** | `web/package.json` lists esbuild under `pnpm.ignoredBuiltDependencies`; fresh `pnpm install` refuses to run its postinstall without approval, and `pnpm run` re-triggers the install check. `pnpm approve-builds` is interactive (no TTY in agent/CI). |
+| **Why harness failed** | `quality-gates.sh` web section runs `pnpm run lint`, which inherits the gate. CI may hit the same failure on clean install. |
+| **Prevention** | (1) In CI/agent non-interactive runs use `CI=true pnpm approve-builds esbuild` non-interactively or set `confirmModulesPurge=false`; (2) candidate sensor: gate web section should surface the `ERR_PNPM_IGNORED_BUILDS` FIX hint explicitly. |
+| **Agent rule** | When `pnpm run` fails with `ERR_PNPM_IGNORED_BUILDS`, approve the named build non-interactively (`printf 'y\n' \| pnpm approve-builds <pkg>` creates `pnpm-workspace.yaml` — delete it after if untracked noise, the approval persists in the store) then re-run; verify with direct `./node_modules/.bin/<tool>` in parallel. |

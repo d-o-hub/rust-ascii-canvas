@@ -262,8 +262,7 @@ mod tests {
             assert_eq!(
                 line.chars().count(),
                 3,
-                "Line '{}' should be padded to length 3",
-                line
+                "Line '{line}' should be padded to length 3"
             );
         }
 
@@ -420,24 +419,23 @@ mod tests {
         assert_eq!(lines.len(), 3);
         assert!(
             lines[0].ends_with('┐'),
-            "Top row must end with ┐, got: {:?}",
-            lines[0]
+            "Top row must end with ┐, got: {row:?}",
+            row = lines[0]
         );
         assert!(
             lines[1].ends_with('│'),
-            "Middle row must end with │, got: {:?}",
-            lines[1]
+            "Middle row must end with │, got: {row:?}",
+            row = lines[1]
         );
         assert!(
             lines[2].ends_with('┘'),
-            "Bottom row must end with ┘, got: {:?}",
-            lines[2]
+            "Bottom row must end with ┘, got: {row:?}",
+            row = lines[2]
         );
         let widths: Vec<usize> = lines.iter().map(|l| l.chars().count()).collect();
         assert!(
             widths.windows(2).all(|w| w[0] == w[1]),
-            "All lines must be the same width: {:?}",
-            widths
+            "All lines must be the same width: {widths:?}"
         );
     }
 

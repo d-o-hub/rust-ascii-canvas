@@ -21,14 +21,13 @@ fn benchmark_render_to_pixel_buffer_large_grid() {
                 if !cells_json.is_empty() {
                     cells_json.push(',');
                 }
-                cells_json.push_str(&format!(r#"{{"x":{},"y":{},"ch":"X"}}"#, x, y));
+                cells_json.push_str(&format!(r#"{{"x":{x},"y":{y},"ch":"X"}}"#));
             }
         }
     }
 
     let doc_json = format!(
-        r#"{{"format":"ascii-canvas","version":1,"canvas":{{"width":240,"height":80}},"active_layer":0,"layers":[{{"name":"Layer 1","visible":true,"cells":[{}]}}]}}"#,
-        cells_json
+        r#"{{"format":"ascii-canvas","version":1,"canvas":{{"width":240,"height":80}},"active_layer":0,"layers":[{{"name":"Layer 1","visible":true,"cells":[{cells_json}]}}]}}"#
     );
 
     assert!(editor.load_document(doc_json));
@@ -44,11 +43,8 @@ fn benchmark_render_to_pixel_buffer_large_grid() {
     }
     let duration_full = start_full.elapsed();
     let avg_full = duration_full / iterations;
-    println!(
-        "Full Redraw (240x80 grid x {} iterations): {:?}",
-        iterations, duration_full
-    );
-    println!("Average Full Redraw frame time: {:?}", avg_full);
+    println!("Full Redraw (240x80 grid x {iterations} iterations): {duration_full:?}");
+    println!("Average Full Redraw frame time: {avg_full:?}");
 
     // 2. Partial/Dirty-Rect Redraw (simulate modifying 1 cell / small region)
     // Clear dirty state first
@@ -64,19 +60,13 @@ fn benchmark_render_to_pixel_buffer_large_grid() {
     }
     let duration_partial = start_partial.elapsed();
     let avg_partial = duration_partial / iterations;
-    println!(
-        "Partial Redraw (1 cell x {} iterations): {:?}",
-        iterations, duration_partial
-    );
-    println!("Average Partial Redraw frame time: {:?}", avg_partial);
+    println!("Partial Redraw (1 cell x {iterations} iterations): {duration_partial:?}");
+    println!("Average Partial Redraw frame time: {avg_partial:?}");
 
     println!("------------------------------------------------------------");
     if avg_partial < avg_full {
         let speedup = avg_full.as_nanos() as f64 / avg_partial.as_nanos() as f64;
-        println!(
-            "Dirty-rect partial render is {:.2}x FASTER than full redraw!",
-            speedup
-        );
+        println!("Dirty-rect partial render is {speedup:.2}x FASTER than full redraw!");
     } else {
         println!("Note: Frame timings are too small/noisy to compute speedup accurately.");
     }

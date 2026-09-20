@@ -104,6 +104,30 @@ fi
 printf "\n"
 
 # ============================================================
+# 2b. WASM-BINDGEN PIN PARITY (harness L-005)
+# ============================================================
+# Dependabot bumps Cargo.toml alone; the CLI pin lives in mise.toml,
+# package.json netlify:build, and CI (mise-action). Dep and CLI schemas
+# must match exactly or `wasm-bindgen` fails with a schema-version error.
+info "wasm-bindgen pin parity (L-005)..."
+WBG_CARGO="$(sed -n 's/^wasm-bindgen = \"=\([0-9.]*\)\".*/\1/p' "$REPO_ROOT/Cargo.toml" | head -n 1)"
+WBG_MISE="$(sed -n 's/.*cargo:wasm-bindgen-cli\" = \"\([0-9.]*\)\".*/\1/p' "$REPO_ROOT/mise.toml" | head -n 1)"
+WBG_NETLIFY="$(sed -n 's/.*wasm-bindgen-cli --version \([0-9.]*\).*/\1/p' "$REPO_ROOT/package.json" | head -n 1)"
+if [[ -z "$WBG_CARGO" ]] || [[ -z "$WBG_MISE" ]] || [[ -z "$WBG_NETLIFY" ]]; then
+  fail "wasm-bindgen pins unreadable (cargo=$WBG_CARGO mise=$WBG_MISE netlify=$WBG_NETLIFY)"
+  echo "  FIX: Keep =X.Y.Z pins in Cargo.toml, mise.toml, package.json netlify:build."
+else
+  if [[ "$WBG_CARGO" != "$WBG_MISE" ]] || [[ "$WBG_CARGO" != "$WBG_NETLIFY" ]]; then
+    fail "wasm-bindgen pin skew (cargo=$WBG_CARGO mise=$WBG_MISE netlify=$WBG_NETLIFY)"
+    echo "  FIX: Bump all three together (Cargo.toml + mise.toml + netlify:build + Cargo.lock), then npm run build:wasm."
+    echo "  See agents-docs/harness.md L-005."
+  else
+    pass "wasm-bindgen pins aligned ($WBG_CARGO)"
+  fi
+fi
+printf "\n"
+
+# ============================================================
 # 3. RUST CHECKS
 # ============================================================
 info "Rust checks..."
@@ -164,7 +188,7 @@ if [[ -d "$REPO_ROOT/web" ]]; then
     info "web/pkg missing (gitignored) — building WASM for typecheck parity with CI..."
     if ! OUTPUT=$(pnpm run build:wasm 2>&1); then
       fail "web/pkg / WASM build"
-      echo "  FIX: npm run build:wasm (mise: wasm-bindgen-cli 0.2.126, target wasm32-unknown-unknown)."
+      echo "  FIX: npm run build:wasm (mise: wasm-bindgen-cli 0.2.128, target wasm32-unknown-unknown)."
       echo "  WHY: main.ts imports ./pkg/ascii_canvas.js; CI downloads wasm-pkg artifact before tsc."
       printf "%s\n" "$OUTPUT" >&2
     else
@@ -286,7 +310,7 @@ if ! $FAST; then
   info "WASM build + size..."
   if ! OUTPUT=$(pnpm run build:wasm 2>&1); then
     fail "WASM build"
-    echo "  FIX: Ensure rustup target wasm32-unknown-unknown and wasm-bindgen-cli 0.2.126 (mise.toml)."
+    echo "  FIX: Ensure rustup target wasm32-unknown-unknown and wasm-bindgen-cli 0.2.128 (mise.toml)."
     printf "%s\n" "$OUTPUT" >&2
   else
     pass "WASM build: OK"
