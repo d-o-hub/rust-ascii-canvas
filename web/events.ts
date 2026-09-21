@@ -442,13 +442,8 @@ export function setupEventListeners(): void {
             const modal = document.getElementById('shortcuts-modal');
             if (modal && !modal.classList.contains('hidden')) {
                 hideShortcutsModal();
-            } else if (sidePanel && sidePanel.classList.contains('open')) {
-                // Don't yank focus mid-typing: Text-tool Escape belongs to the
-                // canvas handler (commit/dismiss text cursor), not the drawer.
-                const isTextTool = state.editor?.tool.toLowerCase() === 'text';
-                if (!isTextTool) {
-                    closeDrawer(true);
-                }
+            } else if (shouldCloseDrawerOnEscape()) {
+                closeDrawer(true);
             }
         } else if (e.key === 'Tab') {
             const modal = document.getElementById('shortcuts-modal');
@@ -732,6 +727,14 @@ export function setupEventListeners(): void {
         if (restoreFocus && isOpen && mobileMenuBtn) {
             mobileMenuBtn.focus();
         }
+    }
+
+    // Escape closes the drawer unless the Text tool owns Escape (canvas
+    // commits/dismisses the text cursor). Narrowed before use (ADR-040).
+    function shouldCloseDrawerOnEscape(): boolean {
+        if (!sidePanel) return false;
+        if (!sidePanel.classList.contains('open')) return false;
+        return state.editor?.tool.toLowerCase() !== 'text';
     }
 
     if (mobileMenuBtn && sidePanel && drawerOverlay) {
