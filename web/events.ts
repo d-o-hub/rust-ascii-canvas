@@ -752,11 +752,11 @@ export function setupEventListeners(): void {
 
     if (closeDrawerBtn) {
         closeDrawerBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        closeDrawerBtn.addEventListener('click', () => closeDrawer());
+        closeDrawerBtn.addEventListener('click', () => { closeDrawer(); });
     }
 
     if (drawerOverlay) {
-        drawerOverlay.addEventListener('click', () => closeDrawer());
+        drawerOverlay.addEventListener('click', () => { closeDrawer(); });
     }
 
     // Mobile Actions Wiring
