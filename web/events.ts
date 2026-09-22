@@ -442,6 +442,8 @@ export function setupEventListeners(): void {
             const modal = document.getElementById('shortcuts-modal');
             if (modal && !modal.classList.contains('hidden')) {
                 hideShortcutsModal();
+            } else if (shouldCloseDrawerOnEscape()) {
+                closeDrawer(true);
             }
         } else if (e.key === 'Tab') {
             const modal = document.getElementById('shortcuts-modal');
@@ -717,10 +719,22 @@ export function setupEventListeners(): void {
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
     const closeDrawerBtn = document.getElementById('close-drawer-btn');
 
-    function closeDrawer(): void {
+    function closeDrawer(restoreFocus = false): void {
+        const isOpen = sidePanel?.classList.contains('open');
         if (sidePanel) sidePanel.classList.remove('open');
         if (drawerOverlay) drawerOverlay.classList.remove('open');
         if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
+        if (restoreFocus && isOpen && mobileMenuBtn) {
+            mobileMenuBtn.focus();
+        }
+    }
+
+    // Escape closes the drawer unless the Text tool owns Escape (canvas
+    // commits/dismisses the text cursor). Narrowed before use (ADR-040).
+    function shouldCloseDrawerOnEscape(): boolean {
+        if (!sidePanel) return false;
+        if (!sidePanel.classList.contains('open')) return false;
+        return state.editor?.tool.toLowerCase() !== 'text';
     }
 
     if (mobileMenuBtn && sidePanel && drawerOverlay) {
@@ -738,11 +752,11 @@ export function setupEventListeners(): void {
 
     if (closeDrawerBtn) {
         closeDrawerBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        closeDrawerBtn.addEventListener('click', closeDrawer);
+        closeDrawerBtn.addEventListener('click', () => { closeDrawer(); });
     }
 
     if (drawerOverlay) {
-        drawerOverlay.addEventListener('click', closeDrawer);
+        drawerOverlay.addEventListener('click', () => { closeDrawer(); });
     }
 
     // Mobile Actions Wiring

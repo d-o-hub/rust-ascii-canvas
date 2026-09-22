@@ -323,4 +323,45 @@ describe('UX Improvements', () => {
         canvasNode.dispatchEvent(zoomOutEvent);
         expect(state.editor.setZoom).toHaveBeenCalledWith(0.8);
     });
+
+    it('should close side panel drawer and restore focus to menu button when Escape key is pressed', () => {
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas must exist');
+        state.canvas = canvasNode;
+        // Avoid html-named locals: xss/no-mixed-html infects call args matching /html/i (ADR-040).
+        const sidePanel = document.querySelector('div#side-panel')
+            ?? appendDrawerNode('div', 'side-panel');
+        appendDrawerNode('div', 'drawer-overlay');
+        const queriedBtn = document.querySelector('button#mobile-menu-btn')
+            ?? appendDrawerNode('button', 'mobile-menu-btn');
+        if (!(queriedBtn instanceof HTMLButtonElement)) throw new Error('menu button must exist');
+        const mobileMenuBtn = queriedBtn;
+
+        const focusSpy = vi.spyOn(mobileMenuBtn, 'focus');
+
+        setupEventListeners();
+
+        mobileMenuBtn.dispatchEvent(new MouseEvent('click'));
+        expect(sidePanel.classList.contains('open')).toBe(true);
+
+        const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        window.dispatchEvent(escapeEvent);
+
+        expect(sidePanel.classList.contains('open')).toBe(false);
+        expect(mobileMenuBtn.getAttribute('aria-expanded')).toBe('false');
+        expect(focusSpy).toHaveBeenCalled();
+
+        focusSpy.mockRestore();
+    });
 });
+
+/**
+ * Create + append a drawer node for tests. Centralizes document.createElement
+ * so the xss/no-mixed-html rule sees one vetted creation site (ADR-040).
+ */
+function appendDrawerNode(tag: 'div' | 'button', id: string): HTMLElement {
+    const node = document.createElement(tag);
+    node.id = id;
+    document.body.appendChild(node);
+    return node;
+}
