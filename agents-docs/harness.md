@@ -28,6 +28,7 @@ This document is the inventory of **our outer harness** — everything outside t
 | TypeScript standards | FF | Inferential | `.agents/skills/typescript-expert`, ADR-018 |
 | fmt / clippy / eslint / tsc | FB | Computational | quality-gates, CI |
 | LOC limit (500) | FB | Computational | quality-gates + allowlist |
+| Release process | FF | Inferential | `plans/RELEASING.md`, `scripts/release.sh` (preflight) |
 | Privacy / secret scan | FB | Computational | quality-gates |
 | cargo audit / deny | FB | Computational | CI, quality-gates full |
 | Dead-code / debt allowlist | Continuous | Computational | `.loc-allowlist` |
@@ -166,3 +167,13 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Why harness failed** | `quality-gates.sh` web section runs `pnpm run lint`, which inherits the gate. CI may hit the same failure on clean install. |
 | **Prevention** | (1) In CI/agent non-interactive runs use `CI=true pnpm approve-builds esbuild` non-interactively or set `confirmModulesPurge=false`; (2) candidate sensor: gate web section should surface the `ERR_PNPM_IGNORED_BUILDS` FIX hint explicitly. |
 | **Agent rule** | When `pnpm run` fails with `ERR_PNPM_IGNORED_BUILDS`, approve the named build non-interactively (`printf 'y\n' \| pnpm approve-builds <pkg>` creates `pnpm-workspace.yaml` — delete it after if untracked noise, the approval persists in the store) then re-run; verify with direct `./node_modules/.bin/<tool>` in parallel. |
+
+### L-007 — Release dispatched without a version bump (2026-08-08, 2026-09-22)
+
+| | |
+|--|--|
+| **Symptom** | Release workflow fails in Guard Rails → `Determine version`: `Error: Version 0.1.3 already has a GitHub Release (v0.1.3)`. `Build WASM` / `Create Release` / `Publish WASM` are skipped; nothing is released. Observed twice, 45 days apart (runs `31246709284`, `35771785803`). |
+| **Root cause** | `Release` is `workflow_dispatch`-only and evaluates the `VERSION` committed on `main`. Dispatching it right after a code merge — without a release-prep PR that bumps `VERSION`, `Cargo.toml`, `package.json`, and `web/package.json` together — must fail the L-004 guard-rail by design. |
+| **Why harness failed** | No guide stated the required order (bump PR → merge → dispatch). The old `scripts/release.sh` *implied* a one-shot release path: it never wrote the version files, never ran the workflow, and pushed tag/`main` directly — bypassing guard-rails entirely. |
+| **Prevention** | (1) `plans/RELEASING.md` runbook: bump 4 pins → PR → gates → merge → `dry_run=true` → real dispatch. (2) `scripts/release.sh` repurposed as a **read-only preflight** that validates pin parity + GitHub Release state and prints the exact fix; it no longer tags, pushes, or publishes. (3) Linked from `AGENTS.md` reference docs. |
+| **Agent rule** | Never dispatch `Release` against an unreleased `VERSION`. Run `./scripts/release.sh` first: if it reports the version is already released, open/merge a release-prep bump PR, then dispatch with `dry_run=true` before the real run. |

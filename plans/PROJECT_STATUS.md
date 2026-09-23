@@ -2,14 +2,14 @@
 
 ## Overview
 
-A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
+A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like UI.
 
-## Current Status: **Feature Bundle Merged (2026-07-16)** ✅
+## Current Status: **Roadmap complete — release v0.1.4 pending (2026-09-23)** ✅
 
-**Focus completed**: Issue #21 copy-paste fidelity + product roadmap items (persistence, PNG, grid UI, basic layers, frontend modules).
+**Shipped since v0.1.3 (2026-08-05)**: clipboard export fidelity (#176/#177), coordinated wasm-bindgen 0.2.128 + pin-parity sensor (ADR-042, #192), zoom keyboard shortcuts (#194), mobile drawer Escape dismissal + focus restore (#195).
 
-**Shipped**: [PR #107](https://github.com/d-o-hub/rust-ascii-canvas/pull/107) merged to `main` (`fa8d0ee`). Issue **#21** closed.  
-**Next**: follow-ups in [FOLLOW_UPS.md](FOLLOW_UPS.md) and linked GitHub issues.
+**Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)); 0 open PRs; docs reconciled in this pass.  
+**Next**: cut **v0.1.4** via the [release runbook](RELEASING.md) — the 2026-08-08 and 2026-09-22 Release dispatches failed `Determine version` because `VERSION` was never bumped (harness L-007) — then curate the changelog backfill (R-01).
 
 ---
 
@@ -17,24 +17,24 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
 | Item | Value |
 |------|--------|
-| Version | 0.1.1 |
-| WASM toolchain | cargo + wasm-bindgen **0.2.126** |
+| Version | 0.1.3 on `main`; **0.1.4 pending** (release-prep PR not yet opened) |
+| WASM toolchain | cargo + wasm-bindgen **0.2.128** (dep + CLI pins enforced by `quality-gates.sh` §2b, ADR-042) |
 | Target | `wasm32-unknown-unknown` / ES modules |
-| Rust | stable |
+| Rust | stable (`rust-toolchain.toml`) |
 | WASM size budget | ≤ 1.5MB (`npm run check-size`) |
-| wasm-opt | Optional in local build if binaryen missing |
+| wasm-opt | Required in CI; local build fails without binaryen unless `SKIP_WASM_OPT=1` |
 
-### Test Results (Verified 2026-07-16)
+### Test Results (Verified 2026-09-23)
 
 | Suite | Result |
 |-------|--------|
-| `cargo clippy --all-targets --all-features -- -D warnings` | ✅ clean |
-| `cargo test --lib` | ✅ **98** passed (incl. `clipboard_tests`) |
+| `cargo clippy --all-targets --all-features -- -D warnings` | ✅ clean (`npm run gate:fast`) |
+| `cargo test --lib` | ✅ **117** passed (incl. `clipboard_tests`) |
 | Integration + doc tests | ✅ |
-| Vitest (`web/`) | ✅ **14** passed (clipboard CRLF, logger, UX) |
-| ESLint (`web/`) | ✅ |
-| Playwright **Chromium** | ✅ **71** passed |
-| Playwright Firefox / WebKit | Configured; not required in last local gate |
+| Vitest (`web/`) | ✅ **28** passed (3 files; clipboard CRLF, logger, UX) |
+| ESLint + `tsc --noEmit` (`web/`) | ✅ (`npm run gate:fast`) |
+| Playwright **Chromium** | ✅ **79** tests in 4 files (`--list`; CI runs the full matrix) |
+| Playwright Firefox / WebKit | ✅ CI matrix (#117, `ci.yml:319`) |
 
 ### Features (current)
 
@@ -42,16 +42,31 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 |---------|--------|
 | 8 drawing tools + 6 border styles | ✅ |
 | Undo/redo, zoom/pan, select move/delete | ✅ |
-| Selection-aware copy + OS clipboard (CRLF) | ✅ (2026-07) |
-| Internal cut/copy/paste with paste origin | ✅ |
+| Zoom keyboard shortcuts (`+` / `-`) | ✅ #194 |
+| Selection-aware copy + OS clipboard (CRLF) | ✅ #176 / ADR-041 |
+| External paste / plain-ASCII import at cursor | ✅ e2e `clipboard.spec.ts` |
 | File save/load (`.asc`) + localStorage auto-save | ✅ |
 | PNG export | ✅ |
+| SVG export | ✅ `web/exportSvg.ts` (F-10) |
 | Grid size UI + responsive defaults | ✅ |
-| Basic layers (add/switch; composite export + composite pixel render) | ✅ basic |
-| SVG export | ❌ deferred (F-10) |
-| Full layer editor (lock/reorder/history) | ❌ (F-11, F-13) |
+| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) — layer ops are **not undoable** (F-13 residual, verified 2026-09-23) |
+| Light theme + switcher | ✅ (F-31) |
+| Preview rendering style | ✅ ADR-011 (F-15) |
+| Enhanced text tool (caret, multi-line) | ✅ ADR-010 (F-14) |
+| Eraser radius 1/3/5 | ✅ (F-16) |
+| Dirty-rect pixel buffer | ✅ ADR-028 (F-28) |
+| Mobile UX audit + drawer Escape/focus restore | ✅ #195 (F-32) |
 
 ---
+
+## Recent Completions (2026-08 → 2026-09)
+
+### Accessibility + infrastructure wave (2026-09-23 reconciliation) ✅
+- **#195 drawer**: Escape dismisses the mobile side panel and restores focus to the menu button (guarded while the Text tool owns Escape); Codacy-clean.
+- **#194 zoom**: `+` / `-` keyboard shortcuts for canvas zoom (rebased PR #185).
+- **#192 / ADR-042**: coordinated wasm-bindgen 0.2.128 bump + pin-parity sensor; L-005 resolved.
+- **#176 / #177 + ADR-041**: clipboard export fidelity controls + pure-ASCII fallback.
+- **Harness**: L-006 (pnpm `approve-builds`), **L-007** + [release runbook](RELEASING.md); `scripts/release.sh` converted to a read-only preflight checker.
 
 ## Recent Completions (2026-07-15 → 2026-07-28)
 
@@ -90,11 +105,13 @@ A production-grade Rust/WASM ASCII diagram editor with a dark Figma-like UI.
 
 ---
 
-## Immediate next steps
+## Immediate next steps (2026-09-23)
 
-1. **F-03** — Dependabot #98 / #99
-2. **F-10 / F-11** — SVG export and layer polish when product prioritizes
-4. **Harness** — Adopted ADR-037 (2026-07-16): tiered gates, architecture fitness, web CI, verify/code-review skills  
+1. **R-01 — cut v0.1.4**: release-prep PR (4 pins) → gates → merge → `dry_run=true` → dispatch; curated changelog backfill ([RELEASING.md](RELEASING.md)).
+2. **R-02 — changelog range fix** (candidate): derive release notes from the latest GitHub Release tag instead of `git describe`.
+3. **R-03 — dev-only Dependabot advisory** esbuild GHSA-g7r4-m6w7-qqqr; pick up with the next web-deps bump.
+4. **New product work** — no open issues remain; candidates in [FOLLOW_UPS.md](FOLLOW_UPS.md#new-work-candidates-need-issues) (incl. the layer-op history F-13 residual).
+5. **Harness** — Adopted ADR-037 (2026-07-16): tiered gates, architecture fitness, web CI, verify/code-review skills
 
 Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
 
@@ -134,11 +151,13 @@ ascii-canvas/
 | Ctrl+C / X / V | Copy / cut / paste (selection-aware) |
 | Ctrl+Z / Y | Undo / redo |
 | B | Cycle border style |
+| + / - | Zoom in / out (#194) |
+| Escape | Close shortcuts modal → close mobile drawer (Text tool keeps Escape) |
 | Space+drag | Pan |
 
 ---
 
-## PR Queue Triage (2026-08-07) — goap orchestrator run
+## PR Queue Triage (2026-08-07, historical) — goap orchestrator run
 
 Reviewed all 3 open PRs with an agent swarm (a11y deep-review + local Codacy rule repro):
 
@@ -154,4 +173,4 @@ Reviewed all 3 open PRs with an agent swarm (a11y deep-review + local Codacy rul
 - **Hardening**: `change` handler guards against no-op renames so Escape-cancel can't re-commit restored names.
 - Learnings documented in ADR-040 (Follow-up 3).
 
-*Last updated: 2026-08-07*
+*Last updated: 2026-09-23 — docs reconciled with code, issue states, and CI (Track B).*

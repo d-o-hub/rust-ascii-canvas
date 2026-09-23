@@ -64,6 +64,8 @@ on:
 ./scripts/release.sh patch
 ```
 
+> **Deprecated (2026-09-23)**: `scripts/release.sh` no longer creates releases — it is now a **read-only preflight checker** (no arguments). Releases are cut through the `Release` workflow; see [plans/RELEASING.md](../plans/RELEASING.md) and harness L-007.
+
 ### Release Build: wasm-opt Feature Flags (2026-03-19)
 
 **Problem**: Release build failed at wasm-opt step with `wasm-validator error: all used features should be allowed` on `i32.extend16_s`, `i32.extend8_s`, `i32.trunc_sat_f32_u`.
