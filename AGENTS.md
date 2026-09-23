@@ -101,6 +101,7 @@ Use the `tool-validation` skill for the full procedure.
 - [Harness map](agents-docs/harness.md)
 - [Architecture](agents-docs/architecture.md)
 - [Best practices](agents-docs/best-practices.md)
+- [Release runbook](plans/RELEASING.md)
 - [Production learnings](agents-docs/learnings-archive.md)
 - [Responsive grid](agents-docs/responsive-grid.md)
 - ADRs: `plans/ADRs/` (see **037-harness-engineering**)

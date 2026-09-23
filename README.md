@@ -9,14 +9,14 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 - 🖼️ **6 Border Styles**: Single, Double, Heavy, Rounded, ASCII, Dotted
 - 🔠 **Dynamic Font Atlas**: High-fidelity character rendering using frontend rasterization (JetBrains Mono)
 - ↩️ **Full Undo/Redo**: Command pattern with configurable history depth
-- 🔍 **Zoom & Pan**: Mouse wheel zoom, Space+drag panning
+- 🔍 **Zoom & Pan**: Mouse wheel zoom, `+` / `-` keyboard zoom, Space+drag panning
 - 📋 **One-Click Copy**: Selection-aware ASCII export with CRLF for Windows editors
 - 💾 **Save / Load**: `.asc` JSON documents + localStorage auto-save
-- 🖼 **PNG Export**: Download the rendered canvas as an image
-- 📚 **Layers**: Multiple named layers with composite export
+- 🖼 **PNG & SVG Export**: Download the rendered canvas as an image or vector SVG
+- 📚 **Layers**: Named layers with rename, visibility, lock, reorder, delete, merge + composite export
 - 📐 **Custom Grid Size**: Responsive defaults plus manual cols/rows
 - ⌨️ **Keyboard-First**: Full keyboard shortcut support
-- 🌙 **Dark Theme**: Professional Figma-inspired dark UI
+- 🎨 **Dark + Light Theme**: Figma-inspired UI with theme switcher
 - ⚡ **60 FPS Rendering**: Dirty-rect optimization, high-performance WASM pixel buffer path
 - 📦 **Offline-First**: Works offline after first load
 
@@ -69,7 +69,7 @@ ascii-canvas/
 │   └── utils/              # Utilities
 ├── web/
 │   ├── index.html          # HTML template
-│   ├── style.css           # Dark theme styles
+│   ├── style.css           # Theme styles (dark/light)
 │   ├── main.ts             # TypeScript entry / orchestration
 │   ├── clipboard.ts        # OS clipboard + CRLF
 │   ├── persistence.ts      # Auto-save / .asc files
