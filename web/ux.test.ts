@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
-import { refreshLayerList, toggleTheme } from './ui';
+import { refreshLayerList, toggleTheme, setZoom } from './ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -352,6 +352,45 @@ describe('UX Improvements', () => {
         expect(focusSpy).toHaveBeenCalled();
 
         focusSpy.mockRestore();
+    });
+
+    it('should reflect zoom boundary state on the zoom controls', () => {
+        const inNode = appendDrawerNode('button', 'zoom-in');
+        const outNode = appendDrawerNode('button', 'zoom-out');
+        if (!(inNode instanceof HTMLButtonElement)) throw new Error('zoom-in must be a button');
+        if (!(outNode instanceof HTMLButtonElement)) throw new Error('zoom-out must be a button');
+        state.zoomInBtn = inNode;
+        state.zoomOutBtn = outNode;
+
+        state.editor = {
+            zoom: 1.0,
+            setZoom: vi.fn(),
+            requestRedraw: vi.fn(),
+        } as unknown as typeof state.editor;
+
+        setZoom(1.0);
+        expect(inNode.disabled).toBe(false);
+        expect(inNode.title).toBe('Zoom In (+ or =)');
+        expect(outNode.disabled).toBe(false);
+        expect(outNode.title).toBe('Zoom Out (- or _)');
+
+        setZoom(4.0);
+        expect(inNode.disabled).toBe(true);
+        expect(inNode.title).toBe('Maximum zoom level reached (400%)');
+        expect(inNode.getAttribute('aria-label')).toBe('Zoom in (Maximum zoom 400% reached)');
+        expect(outNode.disabled).toBe(false);
+
+        setZoom(0.3);
+        expect(outNode.disabled).toBe(true);
+        expect(outNode.title).toBe('Minimum zoom level reached (30%)');
+        expect(outNode.getAttribute('aria-label')).toBe('Zoom out (Minimum zoom 30% reached)');
+        expect(inNode.disabled).toBe(false);
+
+        // Clean up appended nodes + cached refs so later tests stay isolated.
+        inNode.remove();
+        outNode.remove();
+        state.zoomInBtn = null;
+        state.zoomOutBtn = null;
     });
 });
 
