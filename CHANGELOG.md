@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.3] - 2026-08-05
+
+### Added
+- **SVG export** next to PNG (composite, monospace layout).
+- **Full layer editor**: rename, visibility, lock, reorder, delete, merge down.
+- **External paste / plain-ASCII import** at the cursor.
+- **Preview rendering style**: distinct tint for in-progress drawing operations.
+- **Enhanced text tool**: visible caret and multi-line polish.
+- **Eraser radius** selector (1 / 3 / 5).
+- **Light theme** with theme switcher (`data-theme`, localStorage).
+- **Mobile UX audit**: drawer, touch targets, grid and layer panels.
+- **Dirty-rect pixel buffer** rendering (sparse invalidation).
+- **Collaborative editing research spike** (documentation only).
+
+### Changed
+- `web/main.ts` split into `events` / `render` / `ui` modules (entry point 230 LOC).
+- **CI**: E2E matrix is Chromium + Firefox + WebKit; `cargo-nextest` runs the unit tests.
+- **Types**: WASM-generated TypeScript definitions (ADR-033).
+- **Docs**: ADR 001-036 status audit; app-only distribution decision (ADR-040).
+- **Build**: `wasm-opt` (binaryen) required in CI with a documented local install; `#![allow(missing_docs)]` removed from the WASM layer.
+
+### Harness
+- Tiered quality gates (fast / full), an architecture-fitness sensor, and a learned-failure steering log (ADR-037).
+- Release workflow: `VERSION` file, guard-rails that check GitHub Releases (not only tags), changelog-branch release flow.
+
+## [0.1.2] - 2026-04-22
+
+### Security
+- Fixed an **XSS** in the ASCII clipboard copy path (HTML-interpretable clipboard payloads).
+
+### Fixed
+- **ASCII export geometry**: preserve spatial alignment and support a dual-format clipboard (plain text + spatial layout).
+- Dotted border-style rendering.
+- Clippy: `std::f64` constants replaced with plain `f64`; dropped `any` casting for global `window` extensions.
+
+### Performance
+- Optimized the drawing-tool hot loops.
+
+### Tests
+- Added coverage for `math::signum` and the manhattan / chebyshev / euclidean distance helpers.
+
 ## [0.1.1] - 2026-03-20
 
 ### Added
