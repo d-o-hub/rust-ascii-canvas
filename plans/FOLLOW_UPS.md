@@ -3,7 +3,7 @@
 **Updated**: 2026-09-23
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
-**Latest triage**: 2026-09-23 — **Track B reconciliation**: all roadmap issues #110–#127 closed and features re-verified against code; merged branches pruned; harness **L-007** + [release runbook](RELEASING.md) added; `scripts/release.sh` is now a read-only preflight. Carry-over work: deferred **v0.1.4 release** (R-01/R-02) and new product direction.
+**Latest triage**: 2026-09-24 — **v0.1.4 shipped**: release-prep PR merged, dry run + real run green, notes anchored to the previous release tag (R-02), changelog synced back to `main`. Remaining: R-03 (dev-only advisory), R-04 (attach WASM to the release), and new product direction.
 
 Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
 **GitHub issues** track open work (numbers below).
@@ -14,9 +14,10 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
-| **R-01** | in progress | — | **0.1.4 prep PR open** (VERSION 0.1.4 + propagated pins + curated `[0.1.2]`/`[0.1.3]` changelog + notes anchoring); then: edit `VERSION` → `./scripts/propagate-version.sh` → `./scripts/release.sh` preflight; gates green; merge; dispatch `dry_run=true` then real. Plus curated `[0.1.2]`/`[0.1.3]`/`[0.1.4]` changelog backfill (recover older entries via `git show v0.1.3:CHANGELOG.md`). Runbook: [RELEASING.md](RELEASING.md) |
+| **R-01** | ✅ done | — | 2026-09-24: **v0.1.4 released** — `VERSION` 0.1.4 propagated via `scripts/propagate-version.sh`, `scripts/release.sh` preflight OK, dry run + real run green, tag on the changelog branch, `[0.1.2]`/`[0.1.3]` curated + `[0.1.4]` generated and synced back to `main`. Runbook: [RELEASING.md](RELEASING.md) |
 | **R-02** | ✅ resolved | — | 2026-09-24: `release.yml` anchors the notes range to the latest GitHub Release tag (with a `git describe` fallback). `v0.1.3` is not an ancestor of `main`, so the old behaviour re-listed 217 commits instead of the 27 unreleased ones |
 | **R-03** | open | [security/dependabot/11](https://github.com/d-o-hub/rust-ascii-canvas/security/dependabot/11) | Dev-only esbuild advisory GHSA-g7r4-m6w7-qqqr (arbitrary file read on Windows dev server); pick up with the next web-deps bump |
+| **R-04** | open | — | Attach the optimized `web/pkg` to the GitHub Release: `create-release` builds + downloads it and never uploads it, so the binary only exists as a 1-day workflow artifact. Make the upload idempotent/`--clobber` so a failure can be re-run without a half-finished release |
 
 ---
 
