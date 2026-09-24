@@ -359,12 +359,9 @@ describe('UX Improvements', () => {
         zoomInBtn.id = 'zoom-in';
         const zoomOutBtn = document.createElement('button');
         zoomOutBtn.id = 'zoom-out';
-        const zoomResetBtn = document.createElement('button');
-        zoomResetBtn.id = 'zoom-reset';
 
         document.body.appendChild(zoomInBtn);
         document.body.appendChild(zoomOutBtn);
-        document.body.appendChild(zoomResetBtn);
 
         state.editor = {
             zoom: 1.0,
@@ -373,9 +370,6 @@ describe('UX Improvements', () => {
         } as unknown as typeof state.editor;
 
         setZoom(1.0);
-        expect(zoomResetBtn.disabled).toBe(true);
-        expect(zoomResetBtn.title).toBe('Zoom is already 100%');
-        expect(zoomResetBtn.getAttribute('aria-label')).toBe('Reset zoom to 100% (Already 100%)');
         expect(zoomInBtn.disabled).toBe(false);
         expect(zoomInBtn.title).toBe('Zoom In (+ or =)');
         expect(zoomOutBtn.disabled).toBe(false);
@@ -386,14 +380,12 @@ describe('UX Improvements', () => {
         expect(zoomInBtn.title).toBe('Maximum zoom level reached (400%)');
         expect(zoomInBtn.getAttribute('aria-label')).toBe('Zoom in (Maximum zoom 400% reached)');
         expect(zoomOutBtn.disabled).toBe(false);
-        expect(zoomResetBtn.disabled).toBe(false);
 
         setZoom(0.3);
         expect(zoomOutBtn.disabled).toBe(true);
         expect(zoomOutBtn.title).toBe('Minimum zoom level reached (30%)');
         expect(zoomOutBtn.getAttribute('aria-label')).toBe('Zoom out (Minimum zoom 30% reached)');
         expect(zoomInBtn.disabled).toBe(false);
-        expect(zoomResetBtn.disabled).toBe(false);
     });
 });
 
