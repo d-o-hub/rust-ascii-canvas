@@ -72,9 +72,11 @@
 
 ## Known state (2026-09-24)
 
-- Latest release: **v0.1.3** (2026-08-05). The 0.1.4 prep PR sets `VERSION` to `0.1.4` and propagates the other three pins; a dispatch only succeeds **after** that PR is merged (otherwise the L-007 guard-rail fails again).
-- **27 commits** are unreleased since `v0.1.3` — with the notes anchored to that tag, the generated entry lists exactly those.
-- `CHANGELOG.md` on `main` gained curated `[0.1.2]` and `[0.1.3]` entries in the same prep PR (the old auto-generated dumps remain recoverable from the tag via `git show v0.1.3:CHANGELOG.md`). The workflow prepends the generated `[0.1.4]` entry on `release/v0.1.4-changelog`; a follow-up PR syncs it back to `main`.
+- Latest release: **v0.1.4** (2026-09-24) — dry run and real run both green. The L-007 guard-rail now has a version that actually passes.
+- `VERSION` on `main` is `0.1.4` and matches the published release, so the **next** release needs a fresh bump PR (0.1.5) before any dispatch.
+- Notes anchoring is live: the generated `[0.1.4]` entry lists the 28 commits since `v0.1.3` (the old `git describe` fallback would have re-listed 217).
+- `CHANGELOG.md` on `main` is coherent again: `[0.1.4]` (generated, synced back from the tag) -> `[0.1.3]` / `[0.1.2]` (curated) -> `[0.1.1]`.
+- Known gap (**R-04**): the release job builds and downloads the optimized `web/pkg` but never attaches it; consumers build locally or pull the 1-day workflow artifact.
 
 ## Failure playbook
 

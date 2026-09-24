@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - 2026-09-24
+
+### Changes
+- chore(release): prepare v0.1.4 (version bump + changelog backfill + notes anchoring) (#202) (7c0499f)
+- feat(zoom): dynamic disabled state + accessible labels for zoom controls (#201) (9822696)
+- chore(harness): single-source version pins (propagate script + gate/CI check) (#200) (399640e)
+- docs(harness): reconcile docs with reality + release runbook (L-007) (#196) (ee47ca5)
+- feat(drawer): Escape dismissal + focus restore for mobile side panel (rebased PR #191) (#195) (61337dd)
+- Merge pull request #194 from d-o-hub/fix/pr-185-zoom-rebase (96055f1)
+- feat(zoom): add + and - keyboard shortcuts for canvas zoom (rebased PR #185) (47d0fd2)
+- Merge pull request #192 from d-o-hub/chore/wasm-bindgen-pin-parity-042 (8ba0497)
+- chore(wasm): coordinated wasm-bindgen 0.2.128 upgrade + pin-parity sensor (ADR-042) (ef8e857)
+- feat(clipboard): export fidelity controls and pure ASCII fallback (#176) (#177) (e5d9d58)
+- build(deps-dev): bump the dependencies group across 1 directory with 6 updates (#190) (2895675)
+- docs(triage): 2026-09-15 PR queue review, L-005 wasm-bindgen skew, F-03 status (#189) (42c7682)
+- build(deps-dev): bump the dependencies group with 4 updates (#187) (767c0fe)
+- build(deps-dev): bump the dependencies group with 2 updates (fb74305)
+- build(deps-dev): bump the dependencies group in /web with 5 updates (3ff3f7d)
+- palette: handle Escape key in grid dimension inputs (b8b9c7a)
+- build(deps): update wasm-bindgen requirement in the dependencies group (769f42f)
+- build(deps-dev): bump binaryen in the dependencies group (6f2e3ae)
+- fix(a11y): add dynamic accessible labels for theme toggle buttons (fe3c8cf)
+- fix(a11y): add dynamic accessible labels for theme toggle buttons (8314edf)
+- fix(a11y): add dynamic accessible labels for theme toggle buttons (58ead85)
+- build(deps-dev): bump the dependencies group in /web with 4 updates (#175) (caec6b8)
+- build(deps-dev): bump the dependencies group with 2 updates (#174) (5bca854)
+- 🎨 Palette: Dynamic Screen-Reader Labeling for State Switches (#172) (b018417)
+- docs(plans): record PR queue triage results (2026-08-07) (#171) (0b44401)
+- 🎨 Palette: Keyboard navigation parity and mobile ARIA disclosures (#168) (3c9c06d)
+- build(deps-dev): bump the dependencies group in /web with 3 updates (#170) (716809d)
+- build(deps-dev): bump the dependencies group with 4 updates (#169) (a920a5c)
+
 ## [0.1.3] - 2026-08-05
 
 ### Added
