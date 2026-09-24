@@ -9,6 +9,11 @@ import { logger } from './logger.js';
 
 const VALID_TOOLS = new Set(Object.keys(TOOL_INFO));
 
+// Zoom bounds enforced in setZoom; also drive the disabled state of the
+// zoom-in / zoom-out controls.
+const ZOOM_MIN = 0.3;
+const ZOOM_MAX = 4.0;
+
 export function focusCanvasElement(): void {
     if (state.canvas) {
         state.canvas.focus();
@@ -103,15 +108,42 @@ export function showToast(message: string, isError = false): void {
     }, 2000);
 }
 
+/**
+ * Reflect the zoom boundary state on the zoom controls: at the lower/upper
+ * bound the matching control is disabled and both its tooltip and its
+ * accessible name explain why. Reads the cached state refs (wired in main.ts)
+ * instead of re-querying the DOM, so no HTML-named local ever sits next to a
+ * cast (the ADR-040 `xss/no-mixed-html` pattern).
+ */
+export function updateZoomButtonsState(zoom: number): void {
+    const atMax = zoom >= ZOOM_MAX;
+    const atMin = zoom <= ZOOM_MIN;
+
+    const zoomInBtn = state.zoomInBtn;
+    if (zoomInBtn) {
+        zoomInBtn.disabled = atMax;
+        zoomInBtn.title = atMax ? 'Maximum zoom level reached (400%)' : 'Zoom In (+ or =)';
+        zoomInBtn.setAttribute('aria-label', atMax ? 'Zoom in (Maximum zoom 400% reached)' : 'Zoom in');
+    }
+
+    const zoomOutBtn = state.zoomOutBtn;
+    if (zoomOutBtn) {
+        zoomOutBtn.disabled = atMin;
+        zoomOutBtn.title = atMin ? 'Minimum zoom level reached (30%)' : 'Zoom Out (- or _)';
+        zoomOutBtn.setAttribute('aria-label', atMin ? 'Zoom out (Minimum zoom 30% reached)' : 'Zoom out');
+    }
+}
+
 export function setZoom(zoom: number): void {
     if (!state.editor) return;
-    const clampedZoom = Math.max(0.3, Math.min(4.0, zoom));
+    const clampedZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, zoom));
     state.editor.setZoom(clampedZoom);
     state.editor.requestRedraw();
     if (state.requestRender) state.requestRender();
     if (state.zoomLevelEl) {
         state.zoomLevelEl.textContent = `${Math.round(clampedZoom * 100)}%`;
     }
+    updateZoomButtonsState(clampedZoom);
 }
 
 export function resetZoom(): void {
@@ -448,6 +480,7 @@ export function updateUI(): void {
 
         if (state.gridSizeEl) state.gridSizeEl.textContent = `${state.editor.width} × ${state.editor.height}`;
         if (state.statusToolEl) state.statusToolEl.textContent = `Tool: ${capitalize(state.editor.tool)}`;
+        updateZoomButtonsState(state.editor.zoom);
         refreshLayerList();
     } catch (error) {
         logger.error('Failed to update UI:', error);
