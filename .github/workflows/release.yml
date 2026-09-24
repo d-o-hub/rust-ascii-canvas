@@ -183,13 +183,27 @@ jobs:
 
       - name: Update Changelog
         id: changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="${{ needs.guard-rails.outputs.version }}"
           TAG_NAME="v$VERSION"
           DATE=$(date +'%Y-%m-%d')
           
-          # Get previous tag for changelog
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          # Anchor the notes range to the latest GitHub Release tag (R-02).
+          # A release tag can live on a release branch and is therefore not an
+          # ancestor of main, so `git describe` silently falls back to an older
+          # tag and re-lists already-released commits (217 vs 27 here).
+          PREV_TAG=$(gh release list --limit 1 --json tagName --jq '.[0].tagName' 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ] && ! git rev-parse --verify "$PREV_TAG^{commit}" >/dev/null 2>&1; then
+            echo "Tag $PREV_TAG not fetched locally; fetching tags"
+            git fetch --tags --force
+          fi
+          if [ -z "$PREV_TAG" ] || ! git rev-parse --verify "$PREV_TAG^{commit}" >/dev/null 2>&1; then
+            echo "Falling back to git describe for the notes range"
+            PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          fi
+          echo "Previous release tag for notes: ${PREV_TAG:-<none>}"
           
           if [ -n "$PREV_TAG" ]; then
             CHANGES=$(git log --pretty=format:"- %s (%h)" "$PREV_TAG..HEAD" 2>/dev/null | grep -v "^$" || true)

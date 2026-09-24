@@ -14,8 +14,8 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
-| **R-01** | open | — | Cut **v0.1.4**: edit `VERSION` → `./scripts/propagate-version.sh` → `./scripts/release.sh` preflight; gates green; merge; dispatch `dry_run=true` then real. Plus curated `[0.1.2]`/`[0.1.3]`/`[0.1.4]` changelog backfill (recover older entries via `git show v0.1.3:CHANGELOG.md`). Runbook: [RELEASING.md](RELEASING.md) |
-| **R-02** | candidate | — | `release.yml` derives notes via `git describe`; derive from the latest GitHub Release tag instead so old commits can't re-appear in new release notes |
+| **R-01** | in progress | — | **0.1.4 prep PR open** (VERSION 0.1.4 + propagated pins + curated `[0.1.2]`/`[0.1.3]` changelog + notes anchoring); then: edit `VERSION` → `./scripts/propagate-version.sh` → `./scripts/release.sh` preflight; gates green; merge; dispatch `dry_run=true` then real. Plus curated `[0.1.2]`/`[0.1.3]`/`[0.1.4]` changelog backfill (recover older entries via `git show v0.1.3:CHANGELOG.md`). Runbook: [RELEASING.md](RELEASING.md) |
+| **R-02** | ✅ resolved | — | 2026-09-24: `release.yml` anchors the notes range to the latest GitHub Release tag (with a `git describe` fallback). `v0.1.3` is not an ancestor of `main`, so the old behaviour re-listed 217 commits instead of the 27 unreleased ones |
 | **R-03** | open | [security/dependabot/11](https://github.com/d-o-hub/rust-ascii-canvas/security/dependabot/11) | Dev-only esbuild advisory GHSA-g7r4-m6w7-qqqr (arbitrary file read on Windows dev server); pick up with the next web-deps bump |
 
 ---

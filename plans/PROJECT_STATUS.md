@@ -17,7 +17,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 | Item | Value |
 |------|--------|
-| Version | 0.1.3 on `main`; **0.1.4 pending** (release-prep PR not yet opened) |
+| Version | **0.1.4 in release prep** (unreleased until the prep PR merges and the Release workflow runs) |
 | WASM toolchain | cargo + wasm-bindgen **0.2.128** (dep + CLI pins enforced by `quality-gates.sh` §2b, ADR-042) |
 | Target | `wasm32-unknown-unknown` / ES modules |
 | Rust | stable (`rust-toolchain.toml`) |
