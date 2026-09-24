@@ -14,7 +14,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
-| **R-01** | open | — | Cut **v0.1.4**: release-prep PR bumps `VERSION` + `Cargo.toml` + `package.json` + `web/package.json`; gates green; merge; dispatch `dry_run=true` then real. Plus curated `[0.1.2]`/`[0.1.3]`/`[0.1.4]` changelog backfill (recover older entries via `git show v0.1.3:CHANGELOG.md`). Runbook: [RELEASING.md](RELEASING.md) |
+| **R-01** | open | — | Cut **v0.1.4**: edit `VERSION` → `./scripts/propagate-version.sh` → `./scripts/release.sh` preflight; gates green; merge; dispatch `dry_run=true` then real. Plus curated `[0.1.2]`/`[0.1.3]`/`[0.1.4]` changelog backfill (recover older entries via `git show v0.1.3:CHANGELOG.md`). Runbook: [RELEASING.md](RELEASING.md) |
 | **R-02** | candidate | — | `release.yml` derives notes via `git describe`; derive from the latest GitHub Release tag instead so old commits can't re-appear in new release notes |
 | **R-03** | open | [security/dependabot/11](https://github.com/d-o-hub/rust-ascii-canvas/security/dependabot/11) | Dev-only esbuild advisory GHSA-g7r4-m6w7-qqqr (arbitrary file read on Windows dev server); pick up with the next web-deps bump |
 
@@ -103,6 +103,7 @@ No open issues remain. Candidates for the next planning cycle:
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)
 - [RELEASING.md](RELEASING.md)
 - [goal-state.md](goal-state.md)
+- Open implementation issues: [#198](https://github.com/d-o-hub/rust-ascii-canvas/issues/198) (version single-source), [#199](https://github.com/d-o-hub/rust-ascii-canvas/issues/199) (do-harness adoption)
 - [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007)
 - [ADR-042](ADRs/042-wasm-bindgen-pin-parity.md), [ADR-041](ADRs/041-clipboard-export-modes.md), [ADR-036](ADRs/036-clipboard-fidelity-and-product-features.md)
 - Issues: [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108)–[#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) (all closed)

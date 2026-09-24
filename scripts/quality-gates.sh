@@ -128,6 +128,22 @@ fi
 printf "\n"
 
 # ============================================================
+# 2c. VERSION PIN PARITY (single source: VERSION)
+# ============================================================
+# VERSION is the single source of truth; scripts/propagate-version.sh writes it
+# to Cargo.toml / package.json / web/package.json. Checking here makes dev-time
+# drift fail the fast tier; scripts/release.sh is the release-time guard.
+info "Version pin parity (VERSION SSOT)..."
+if ! OUTPUT=$(bash "$REPO_ROOT/scripts/propagate-version.sh" --check 2>&1); then
+  fail "Version pins drifted from VERSION"
+  echo "  FIX: run ./scripts/propagate-version.sh (see plans/RELEASING.md)."
+  printf "%s\n" "$OUTPUT" >&2
+else
+  pass "Version pins aligned ($(tr -d '[:space:]' < "$REPO_ROOT/VERSION"))"
+fi
+printf "\n"
+
+# ============================================================
 # 3. RUST CHECKS
 # ============================================================
 info "Rust checks..."

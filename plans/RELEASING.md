@@ -12,14 +12,15 @@
    git checkout main && git pull --ff-only
    ```
 
-2. **Release-prep PR** — bump the version in all four pins together (same value):
+2. **Release-prep PR** — `VERSION` is the single source of truth; edit it and propagate:
 
-   - `VERSION`
-   - `Cargo.toml` (`[package] version`)
-   - `package.json` (`version`)
-   - `web/package.json` (`version`)
+   ```bash
+   # 1. Edit VERSION (e.g. 0.1.3 -> 0.1.4)
+   ./scripts/propagate-version.sh    # writes Cargo.toml, package.json, web/package.json
+   ./scripts/release.sh              # preflight: pins agree + target not already released
+   ```
 
-   Then run `./scripts/release.sh`; it must report the new version is **not** yet released.
+   The fast gate also runs `propagate-version.sh --check`, so pin drift fails CI.
 
 3. **Verify + merge**
 
@@ -56,6 +57,7 @@
 ## Guard rails (what blocks a bad release)
 
 - `Determine version` fails when `VERSION` is not valid semver, equals the latest GitHub Release, or is not a valid major/minor/patch increment over it.
+- Version pins are checked twice: dev-time (`gate:fast` → `scripts/propagate-version.sh --check`) and release-time (`scripts/release.sh`).
 - `wasm-opt` is required in CI; the release build compiles its own optimized WASM (`wasm-pack` + `wasm-opt`), `web/pkg` is gitignored.
 - Version bumps land through PRs; the Release workflow only dispatches from `main`.
 
