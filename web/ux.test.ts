@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
-import { refreshLayerList, toggleTheme } from './ui';
+import { refreshLayerList, toggleTheme, setZoom } from './ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -352,6 +352,48 @@ describe('UX Improvements', () => {
         expect(focusSpy).toHaveBeenCalled();
 
         focusSpy.mockRestore();
+    });
+
+    it('should dynamically update zoom control disabled states, titles, and aria-labels', () => {
+        const zoomInBtn = document.createElement('button');
+        zoomInBtn.id = 'zoom-in';
+        const zoomOutBtn = document.createElement('button');
+        zoomOutBtn.id = 'zoom-out';
+        const zoomResetBtn = document.createElement('button');
+        zoomResetBtn.id = 'zoom-reset';
+
+        document.body.appendChild(zoomInBtn);
+        document.body.appendChild(zoomOutBtn);
+        document.body.appendChild(zoomResetBtn);
+
+        state.editor = {
+            zoom: 1.0,
+            setZoom: vi.fn(),
+            requestRedraw: vi.fn(),
+        } as unknown as typeof state.editor;
+
+        setZoom(1.0);
+        expect(zoomResetBtn.disabled).toBe(true);
+        expect(zoomResetBtn.title).toBe('Zoom is already 100%');
+        expect(zoomResetBtn.getAttribute('aria-label')).toBe('Reset zoom to 100% (Already 100%)');
+        expect(zoomInBtn.disabled).toBe(false);
+        expect(zoomInBtn.title).toBe('Zoom In (+ or =)');
+        expect(zoomOutBtn.disabled).toBe(false);
+        expect(zoomOutBtn.title).toBe('Zoom Out (- or _)');
+
+        setZoom(4.0);
+        expect(zoomInBtn.disabled).toBe(true);
+        expect(zoomInBtn.title).toBe('Maximum zoom level reached (400%)');
+        expect(zoomInBtn.getAttribute('aria-label')).toBe('Zoom in (Maximum zoom 400% reached)');
+        expect(zoomOutBtn.disabled).toBe(false);
+        expect(zoomResetBtn.disabled).toBe(false);
+
+        setZoom(0.3);
+        expect(zoomOutBtn.disabled).toBe(true);
+        expect(zoomOutBtn.title).toBe('Minimum zoom level reached (30%)');
+        expect(zoomOutBtn.getAttribute('aria-label')).toBe('Zoom out (Minimum zoom 30% reached)');
+        expect(zoomInBtn.disabled).toBe(false);
+        expect(zoomResetBtn.disabled).toBe(false);
     });
 });
 

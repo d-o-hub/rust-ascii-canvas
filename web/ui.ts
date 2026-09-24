@@ -103,6 +103,33 @@ export function showToast(message: string, isError = false): void {
     }, 2000);
 }
 
+export function updateZoomButtonsState(zoom: number): void {
+    const zoomInBtn = document.querySelector('#zoom-in') as HTMLButtonElement | null;
+    const zoomOutBtn = document.querySelector('#zoom-out') as HTMLButtonElement | null;
+    const zoomResetBtn = document.querySelector('#zoom-reset') as HTMLButtonElement | null;
+
+    if (zoomInBtn) {
+        const isMax = zoom >= 4.0;
+        zoomInBtn.disabled = isMax;
+        zoomInBtn.title = isMax ? 'Maximum zoom level reached (400%)' : 'Zoom In (+ or =)';
+        zoomInBtn.setAttribute('aria-label', isMax ? 'Zoom in (Maximum zoom 400% reached)' : 'Zoom in');
+    }
+
+    if (zoomOutBtn) {
+        const isMin = zoom <= 0.3;
+        zoomOutBtn.disabled = isMin;
+        zoomOutBtn.title = isMin ? 'Minimum zoom level reached (30%)' : 'Zoom Out (- or _)';
+        zoomOutBtn.setAttribute('aria-label', isMin ? 'Zoom out (Minimum zoom 30% reached)' : 'Zoom out');
+    }
+
+    if (zoomResetBtn) {
+        const isReset = Math.abs(zoom - 1.0) < 0.001;
+        zoomResetBtn.disabled = isReset;
+        zoomResetBtn.title = isReset ? 'Zoom is already 100%' : 'Reset Zoom (0)';
+        zoomResetBtn.setAttribute('aria-label', isReset ? 'Reset zoom to 100% (Already 100%)' : 'Reset zoom to 100%');
+    }
+}
+
 export function setZoom(zoom: number): void {
     if (!state.editor) return;
     const clampedZoom = Math.max(0.3, Math.min(4.0, zoom));
@@ -112,6 +139,7 @@ export function setZoom(zoom: number): void {
     if (state.zoomLevelEl) {
         state.zoomLevelEl.textContent = `${Math.round(clampedZoom * 100)}%`;
     }
+    updateZoomButtonsState(clampedZoom);
 }
 
 export function resetZoom(): void {
@@ -448,6 +476,7 @@ export function updateUI(): void {
 
         if (state.gridSizeEl) state.gridSizeEl.textContent = `${state.editor.width} × ${state.editor.height}`;
         if (state.statusToolEl) state.statusToolEl.textContent = `Tool: ${capitalize(state.editor.tool)}`;
+        updateZoomButtonsState(state.editor.zoom);
         refreshLayerList();
     } catch (error) {
         logger.error('Failed to update UI:', error);

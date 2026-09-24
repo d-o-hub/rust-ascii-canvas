@@ -647,13 +647,18 @@ body {
     transition: background-color var(--transition-fast), border-color var(--transition-fast);
 }
 
-.zoom-btn:hover {
+.zoom-btn:hover:not(:disabled) {
     background-color: var(--hover);
     border-color: var(--muted);
 }
 
-.zoom-btn:active {
+.zoom-btn:active:not(:disabled) {
     background-color: var(--active);
+}
+
+.zoom-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 /* Shortcuts List */
