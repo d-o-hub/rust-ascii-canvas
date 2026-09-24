@@ -53,6 +53,7 @@ jobs:
               - 'pnpm-lock.yaml'
             harness:
               - 'scripts/**'
+              - 'VERSION'
               - 'AGENTS.md'
               - 'agents-docs/**'
               - '.agents/**'
@@ -141,6 +142,8 @@ jobs:
             fi
           done < <(find ./src -name '*.rs' -type f | sort)
           exit $failed
+      - name: Version pin parity
+        run: bash scripts/propagate-version.sh --check
 
   rust:
     name: Rust (Build + Tests)

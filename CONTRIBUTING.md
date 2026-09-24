@@ -8,7 +8,7 @@ Thank you for your interest in contributing!
 
 - Rust (stable) with target `wasm32-unknown-unknown`
 - Node.js 22+ and pnpm 10
-- [mise](https://mise.jdx.dev/) recommended (`mise.toml` pins wasm-bindgen-cli **0.2.126** and binaryen)
+- [mise](https://mise.jdx.dev/) recommended (`mise.toml` pins wasm-bindgen-cli **0.2.128** and binaryen)
 
 ### Quick start
 
@@ -76,9 +76,10 @@ Details: `agents-docs/architecture.md`. File size target: ≤500 lines (known de
 
 1. Branch from `main`
 2. Keep `gate:fast` green while iterating; `gate:full` before review
-3. Fill `.github/PULL_REQUEST_TEMPLATE.md` honestly
-4. Link issues (`Closes #…`)
-5. Call out harness/CI/doc changes in the PR body
+3. Version bumps: edit `VERSION` (single source), then run `./scripts/propagate-version.sh`
+4. Fill `.github/PULL_REQUEST_TEMPLATE.md` honestly
+5. Link issues (`Closes #…`)
+6. Call out harness/CI/doc changes in the PR body
 
 ## Areas to contribute
 
