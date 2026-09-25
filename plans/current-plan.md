@@ -1,9 +1,9 @@
 # Current Plan: GOAP Codebase Improvement & Feature Roadmap 2026
 
-## Status: COMPLETE (roadmap shipped) — next cycle = release + new product direction
+## Status: ACTIVE — next cycle planned 2026-09-25 (R-03 → F-13/#207; #199 deferred)
 
 **Created**: 2026-03-03  
-**Last updated**: 2026-09-23 (Track B reconciliation)  
+**Last updated**: 2026-09-25 (GOAP cycle planned by agent swarm)  
 **Supersedes (partially)**: Production-readiness-only focus; March 2026 world-state snapshot  
 **Methodology**: Goal-Oriented Action Planning (GOAP) with ADRs  
 **Latest execution**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
@@ -36,7 +36,7 @@
 | rust_integration + doc | passing |
 | e2e_chromium | **79** tests (4 files) |
 | e2e_firefox / webkit | ✅ CI matrix (F-21) |
-| vitest_frontend | **28** passing |
+| vitest_frontend | **29** passing |
 | waitForTimeout in e2e | **0** |
 | page_object_model | yes (`e2e/pages/EditorPage.ts`) |
 | selection_copy_paste | ✅ implemented (ADR-009 / #21) |
@@ -49,8 +49,8 @@
 | light_theme | ✅ (F-31) |
 | main.ts modules | ✅ split; `main.ts` 230 LOC (F-20) |
 | package_metadata | ✅ d-o-hub URLs |
-| release | v0.1.3 released; **v0.1.4 pending** (R-01, [RELEASING.md](RELEASING.md)) |
-| open_issues / PRs | 0 / 0 |
+| release | **v0.1.4** released 2026-09-24; R-01/R-02/R-04 done ([RELEASING.md](RELEASING.md)) |
+| open_issues / PRs | 2 (#207 next, #199 deferred) / 0 |
 | open_dependabot | R-03 (low, dev-only esbuild advisory) |
 
 ---
@@ -83,10 +83,10 @@
 
 | Order | ID | Action | Owner hint |
 |-------|-----|--------|------------|
-| 1 | R-01 | Release-prep PR → v0.1.4 (+ curated changelog backfill) | release |
-| 2 | F-13 | Layer-operation undo/history (open fresh issue) | product/core |
-| 3 | R-03 | Dev-only esbuild advisory (GHSA-g7r4-m6w7-qqqr) with next web-deps bump | deps |
-| 4 | — | New product direction (F-30 prototype decision, dogfood pass) | product |
+| 1 | R-03 | esbuild override >= 0.28.1 (isolated PR) → close alert #11 | deps |
+| 2 | F-13 | Layer-command history: core model → wasm/UI → E2E (issue #207, ADR-043) | core/product |
+| 3 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
+| 4 | — | Planning docs + AGENTS.md pin reconciled (done in this pass) | harness |
 
 ---
 

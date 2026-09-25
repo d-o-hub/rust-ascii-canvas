@@ -26,7 +26,7 @@ tests:
   e2e_chromium: 79
   e2e_firefox: in_ci
   e2e_webkit: in_ci
-  vitest_frontend: 28
+  vitest_frontend: 29
   flaky_patterns: 0
   page_object_model: true
 
@@ -59,9 +59,9 @@ documentation:
   adr_count: 42
   plans_refreshed: 2026-09-23
   release_runbook: true            # plans/RELEASING.md
-  open_issues: 0
+  open_issues: 2                  # #207 (next), #199 (deferred)
   open_prs: 0
-  release: v0.1.3                  # v0.1.4 pending (R-01)
+  release: v0.1.4 (2026-09-24)    # R-01/R-02/R-04 done
 ```
 
 ### Target State (next horizon — post-roadmap)
@@ -95,7 +95,7 @@ harness:
 
 - [x] Zero `waitForTimeout` flaky patterns
 - [x] Page Object Model present
-- [x] Vitest frontend tests (28)
+- [x] Vitest frontend tests (29)
 - [x] Chromium E2E green (79)
 - [x] Firefox + WebKit in CI (F-21)
 
