@@ -170,12 +170,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download WASM artifact
-        uses: actions/download-artifact@v8
-        with:
-          name: wasm-pkg
-          path: web/pkg
-
       - name: Configure Git
         run: |
           git config --global user.name "github-actions[bot]"
@@ -310,12 +304,36 @@ jobs:
     needs: create-release
     runs-on: ubuntu-latest
     if: needs.guard-rails.outputs.is_dry_run != 'true'
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
+      # The optimized build comes from the build-wasm job. Attach it to the
+      # release so consumers get the binary instead of only a 1-day workflow
+      # artifact (R-04). --clobber keeps a re-run idempotent, so a failed
+      # upload can be retried without recreating the release.
+      - name: Download WASM artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: wasm-pkg
+          path: web/pkg
+
+      - name: Attach optimized WASM
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+          # Rename before upload: gh's `file#label` syntax only sets a display
+          # label, so the download filename would stay ascii_canvas_bg.wasm.
+          # Copying gives a versioned asset name that --clobber can replace.
+          cp web/pkg/ascii_canvas_bg.wasm "web/pkg/ascii-canvas-$VERSION.wasm"
+          gh release upload "v$VERSION" "web/pkg/ascii-canvas-$VERSION.wasm" \
+            --clobber \
+            --repo "${{ github.repository }}"
+
       - name: Summary
         run: |
           VERSION="${{ needs.create-release.outputs.version }}"
           echo "Release v$VERSION created successfully!"
           echo "Tag v$VERSION pushed by gh release create."
+          echo "Asset attached: ascii-canvas-$VERSION.wasm"
 
   dry-run:
     name: Dry Run

@@ -17,7 +17,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 | **R-01** | ✅ done | — | 2026-09-24: **v0.1.4 released** — `VERSION` 0.1.4 propagated via `scripts/propagate-version.sh`, `scripts/release.sh` preflight OK, dry run + real run green, tag on the changelog branch, `[0.1.2]`/`[0.1.3]` curated + `[0.1.4]` generated and synced back to `main`. Runbook: [RELEASING.md](RELEASING.md) |
 | **R-02** | ✅ resolved | — | 2026-09-24: `release.yml` anchors the notes range to the latest GitHub Release tag (with a `git describe` fallback). `v0.1.3` is not an ancestor of `main`, so the old behaviour re-listed 217 commits instead of the 27 unreleased ones |
 | **R-03** | open | [security/dependabot/11](https://github.com/d-o-hub/rust-ascii-canvas/security/dependabot/11) | Dev-only esbuild advisory GHSA-g7r4-m6w7-qqqr (arbitrary file read on Windows dev server); pick up with the next web-deps bump |
-| **R-04** | open | — | Attach the optimized `web/pkg` to the GitHub Release: `create-release` builds + downloads it and never uploads it, so the binary only exists as a 1-day workflow artifact. Make the upload idempotent/`--clobber` so a failure can be re-run without a half-finished release |
+| **R-04** | ✅ done | — | 2026-09-25: the `Publish WASM` job downloads the release build and attaches `ascii-canvas-<version>.wasm` with `--clobber` (idempotent re-runs). The artifact is **copied to a versioned name first** — `gh release upload`'s `file#label` syntax only sets a display label (verified against a scratch draft), so the download filename would otherwise remain `ascii_canvas_bg.wasm`. v0.1.4 has no asset; v0.1.5 is the first with one |
 
 ---
 
