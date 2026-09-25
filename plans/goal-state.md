@@ -74,7 +74,7 @@ features:
 process:
   release_0_1_4: published         # R-01
   changelog_backfill: curated      # R-01
-  esbuild_advisory: resolved       # R-03
+  esbuild_advisory: open          # R-03 re-scoped, removal in R-05
 
 harness:
   loc_sensor_covers_web: true      # candidate — see FOLLOW_UPS
