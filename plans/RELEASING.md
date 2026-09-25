@@ -49,6 +49,7 @@
    ```bash
    gh run watch
    gh release view vX.Y.Z
+   gh release view vX.Y.Z --json assets --jq '.assets[].name'   # ascii-canvas-X.Y.Z.wasm
    gh release list --limit 3
    ```
 
@@ -59,9 +60,13 @@
    not an ancestor of `main`, where `git describe` would fall back to an older tag
    and re-list already-released commits.
 
-   The optimized `web/pkg` is built and uploaded as a workflow artifact (1-day
-   retention) but is **not** attached to the release — build it locally with
-   `pnpm run build:wasm` when you need the binary.
+   The `Publish WASM` job attaches the optimized build to the release as
+   `ascii-canvas-X.Y.Z.wasm` (`R-04`). It copies the artifact to a versioned
+   filename first: `gh release upload`'s `file#label` syntax only sets a display
+   label, so the download filename would otherwise stay `ascii_canvas_bg.wasm`.
+   The upload uses `--clobber`, so a re-run replaces the asset instead of
+   needing a fresh release. **v0.1.4 predates this change** and therefore has no
+   attached asset; v0.1.5 is the first release that ships the binary.
 
 ## Guard rails (what blocks a bad release)
 
@@ -76,7 +81,7 @@
 - `VERSION` on `main` is `0.1.4` and matches the published release, so the **next** release needs a fresh bump PR (0.1.5) before any dispatch.
 - Notes anchoring is live: the generated `[0.1.4]` entry lists the 28 commits since `v0.1.3` (the old `git describe` fallback would have re-listed 217).
 - `CHANGELOG.md` on `main` is coherent again: `[0.1.4]` (generated, synced back from the tag) -> `[0.1.3]` / `[0.1.2]` (curated) -> `[0.1.1]`.
-- Known gap (**R-04**): the release job builds and downloads the optimized `web/pkg` but never attaches it; consumers build locally or pull the 1-day workflow artifact.
+- **R-04 resolved**: the `Publish WASM` job now attaches `ascii-canvas-<version>.wasm` to the release (`--clobber`, copy-then-upload). v0.1.4 has no asset because it shipped before the change.
 
 ## Failure playbook
 
