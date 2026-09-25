@@ -108,8 +108,8 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 ## Immediate next steps (2026-09-25)
 
-1. **R-03 — esbuild advisory** (isolated, human-reviewed): pin `esbuild ^0.28.1` via a pnpm override in `web/pnpm-workspace.yaml` (Vite's optional peer already allows 0.28), keep `allowBuilds.esbuild:false`, regenerate the lock, close alert #11.
-2. **F-13 — layer-operation undo** (issue #207, [ADR-043](ADRs/043-layer-command-history.md)): core `LayerStack` + `LayerCommand` first, then wasm/UI wiring, then E2E.
+1. **F-13 — layer-operation undo** (issue #207, [ADR-043](ADRs/043-layer-command-history.md)): core `LayerStack` + `LayerCommand` first, then wasm/UI wiring, then E2E.
+2. **R-05 — dependency refresh**: prune the unused optional-peer lock entries (esbuild 27, jsdom 43) and review the 28 version bumps; closes alert #11 and dissolves the L-006 trigger. R-03 is *not exploitable here* (Vite never calls esbuild's dev server) and its pin-by-override plan was disproved by the verification swarm.
 3. **#199 — do-harness adoption**: deferred until upstream #235/#236/#237 ship in a pinned release; sensor mapping and migration hazards already captured.
 4. **Harness** — ADR-037 contract stands; this cycle adds ADR-043 (Proposed) and a steering entry if the F-13 design produces one.
 
