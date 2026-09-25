@@ -10,7 +10,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
 **Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
-**Next** (cycle planned 2026-09-25 by agent swarm): R-03 esbuild override, then F-13 layer history (issue #207, ADR-043); #199 (do-harness adoption) deferred until the upstream fixes ship pinned.
+**Next** (cycle planned 2026-09-25 by agent swarm): F-13 layer history (issue #207, ADR-043), then R-05 dependency refresh. R-03 is **re-scoped** — the esbuild advisory is unreachable here (unused optional peer) and the pin-by-override plan was disproved; #199 (do-harness adoption) deferred until the upstream fixes ship pinned.
 
 ---
 
@@ -25,7 +25,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 | WASM size budget | ≤ 1.5MB (`npm run check-size`) |
 | wasm-opt | Required in CI; local build fails without binaryen unless `SKIP_WASM_OPT=1` |
 
-### Test Results (Verified 2026-09-23)
+### Test Results (Verified 2026-09-25)
 
 | Suite | Result |
 |-------|--------|

@@ -162,7 +162,7 @@ Append here when the same class of failure hits CI or agents twice (or once with
 
 | | |
 |--|--|
-| **Symptom** | `cd web && pnpm run lint` fails before linting: `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.7`, caused by `pnpm approve-builds` interactive gate in pnpm v11 (supply-chain policy). Direct `./node_modules/.bin/eslint` passes; `pnpm run lint` does not. |
+| **Symptom** | `cd web && pnpm run lint` fails before linting: `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.7`, caused by pnpm's build-approval policy (`pnpm approve-builds` is interactive; pnpm 11 no longer auto-approves). Direct `./node_modules/.bin/eslint` passes; `pnpm run lint` does not. |
 | **Root cause** | esbuild is in the tree only as an **unused optional peer** of `vite@8.3.0` (nothing in `web/` calls it), auto-installed by an earlier pnpm resolve; its native postinstall then trips pnpm's build-approval gate, and `pnpm run` re-triggers the install check. |
 | **Why harness failed** | `quality-gates.sh` web section runs `pnpm run lint`, which inherits the gate. CI may hit the same failure on clean install. |
 | **Prevention** | (1) Never rely on manifest-level `pnpm` settings — pnpm 11 ignores them, so a `pnpm.overrides` / approval written there is a silent no-op; (2) single-source the pnpm major (`packageManager` + CI), because CI installs pnpm 10 while the agent shell ran 11.7.0 and the two disagree on where settings live; (3) the durable fix is to stop installing esbuild at all (optional-peer prune, `FOLLOW_UPS.md` R-05), which removes the gate's trigger. |

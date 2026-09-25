@@ -1,6 +1,6 @@
 # Current Plan: GOAP Codebase Improvement & Feature Roadmap 2026
 
-## Status: ACTIVE — next cycle planned 2026-09-25 (R-03 → F-13/#207; #199 deferred)
+## Status: ACTIVE — next cycle planned 2026-09-25 (F-13/#207 → R-05; #199 deferred)
 
 **Created**: 2026-03-03  
 **Last updated**: 2026-09-25 (GOAP cycle planned by agent swarm)  
@@ -60,7 +60,7 @@
 | Goal | Priority | Status | Notes |
 |------|----------|--------|-------|
 | 1 Code quality & maintainability | HIGH | ✅ Done | Clippy/fmt clean; `main.ts` 230 LOC; architecture + LOC sensors in gate |
-| 2 Test reliability & coverage | HIGH | ✅ Done | waitForTimeout gone; vitest 28; chromium 79 (local list) + firefox/webkit CI matrix; POM |
+| 2 Test reliability & coverage | HIGH | ✅ Done | waitForTimeout gone; vitest 29; chromium 79 (local list) + firefox/webkit CI matrix; POM |
 | 3 Robustness & error handling | HIGH | 🟡 Partial | Clipboard hardened; more unwrap audit optional |
 | 4 Layer system | MEDIUM | ✅ Editor done | F-11 editor shipped; **F-13 history residual** (fresh issue needed) |
 | 5 File persistence | MEDIUM | ✅ Done | ADR-027 |
@@ -83,10 +83,10 @@
 
 | Order | ID | Action | Owner hint |
 |-------|-----|--------|------------|
-| 1 | R-03 | esbuild override >= 0.28.1 (isolated PR) → close alert #11 | deps |
-| 2 | F-13 | Layer-command history: core model → wasm/UI → E2E (issue #207, ADR-043) | core/product |
-| 3 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
-| 4 | — | Planning docs + AGENTS.md pin reconciled (done in this pass) | harness |
+| 1 | F-13 | Layer-command history: core model → wasm/UI → E2E (issue #207, ADR-043) | core/product |
+| 2 | R-05 | Dependency refresh: prune unused optional peers (esbuild, jsdom), review the 28 bumps → closes alert #11 | deps |
+| 3 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) | frontend/security |
+| 4 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
 
 ---
 
