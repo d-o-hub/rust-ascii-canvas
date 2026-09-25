@@ -163,10 +163,11 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | | |
 |--|--|
 | **Symptom** | `cd web && pnpm run lint` fails before linting: `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.7`, caused by `pnpm approve-builds` interactive gate in pnpm v11 (supply-chain policy). Direct `./node_modules/.bin/eslint` passes; `pnpm run lint` does not. |
-| **Root cause** | `web/package.json` lists esbuild under `pnpm.ignoredBuiltDependencies`; fresh `pnpm install` refuses to run its postinstall without approval, and `pnpm run` re-triggers the install check. `pnpm approve-builds` is interactive (no TTY in agent/CI). |
+| **Root cause** | esbuild is in the tree only as an **unused optional peer** of `vite@8.3.0` (nothing in `web/` calls it), auto-installed by an earlier pnpm resolve; its native postinstall then trips pnpm's build-approval gate, and `pnpm run` re-triggers the install check. |
 | **Why harness failed** | `quality-gates.sh` web section runs `pnpm run lint`, which inherits the gate. CI may hit the same failure on clean install. |
-| **Prevention** | (1) In CI/agent non-interactive runs use `CI=true pnpm approve-builds esbuild` non-interactively or set `confirmModulesPurge=false`; (2) candidate sensor: gate web section should surface the `ERR_PNPM_IGNORED_BUILDS` FIX hint explicitly. |
-| **Agent rule** | When `pnpm run` fails with `ERR_PNPM_IGNORED_BUILDS`, approve the named build non-interactively (`printf 'y\n' \| pnpm approve-builds <pkg>` creates `pnpm-workspace.yaml` — delete it after if untracked noise, the approval persists in the store) then re-run; verify with direct `./node_modules/.bin/<tool>` in parallel. |
+| **Prevention** | (1) Never rely on manifest-level `pnpm` settings — pnpm 11 ignores them, so a `pnpm.overrides` / approval written there is a silent no-op; (2) single-source the pnpm major (`packageManager` + CI), because CI installs pnpm 10 while the agent shell ran 11.7.0 and the two disagree on where settings live; (3) the durable fix is to stop installing esbuild at all (optional-peer prune, `FOLLOW_UPS.md` R-05), which removes the gate's trigger. |
+| **Agent rule** | When `pnpm run` fails with `ERR_PNPM_IGNORED_BUILDS`, first check which pnpm major is running and whether the package is actually needed (`pnpm why <pkg>`). Do **not** approve interactively and do not assume an approval persists in the store (it does not, for this project). Prefer removing the unused dependency; verify behaviour with a direct `./node_modules/.bin/<tool>` run in parallel. |
+| **Resolution** | 2026-09-25 (corrected): a verification swarm proved the earlier entry wrong on two points — the trigger is esbuild's auto-installed optional peer, not the approval workflow, and the "approval persists in the store" claim was false. Superseded by R-03 (re-scoped) and R-05 (prune). |
 
 ### L-007 — Release dispatched without a version bump (2026-08-08, 2026-09-22)
 
