@@ -3,7 +3,7 @@
 **Updated**: 2026-09-23
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
-**Latest triage**: 2026-09-24 — **v0.1.4 shipped**: release-prep PR merged, dry run + real run green, notes anchored to the previous release tag (R-02), changelog synced back to `main`. Remaining: R-03 (dev-only advisory), R-04 (attach WASM to the release), and new product direction.
+**Latest triage**: 2026-09-25 — **next cycle planned by a read-only agent swarm + critic**: v0.1.4 shipped and R-04 done. Cycle order: (1) R-03 esbuild advisory as an isolated PR, (2) F-13 layer-operation history under [ADR-043](ADRs/043-layer-command-history.md) and issue #207, (3) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
 
 Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
 **GitHub issues** track open work (numbers below).
@@ -16,7 +16,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 |----|--------|-------|--------|
 | **R-01** | ✅ done | — | 2026-09-24: **v0.1.4 released** — `VERSION` 0.1.4 propagated via `scripts/propagate-version.sh`, `scripts/release.sh` preflight OK, dry run + real run green, tag on the changelog branch, `[0.1.2]`/`[0.1.3]` curated + `[0.1.4]` generated and synced back to `main`. Runbook: [RELEASING.md](RELEASING.md) |
 | **R-02** | ✅ resolved | — | 2026-09-24: `release.yml` anchors the notes range to the latest GitHub Release tag (with a `git describe` fallback). `v0.1.3` is not an ancestor of `main`, so the old behaviour re-listed 217 commits instead of the 27 unreleased ones |
-| **R-03** | open | [security/dependabot/11](https://github.com/d-o-hub/rust-ascii-canvas/security/dependabot/11) | Dev-only esbuild advisory GHSA-g7r4-m6w7-qqqr (arbitrary file read on Windows dev server); pick up with the next web-deps bump |
+| **R-03** | next | [security/dependabot/11](https://github.com/d-o-hub/rust-ascii-canvas/security/dependabot/11) | Dev-only esbuild advisory GHSA-g7r4-m6w7-qqqr (fix 0.28.1). The lock resolves 0.27.7 and Vite 8.3 declares an **optional** peer `^0.27.0 \|\| ^0.28.0` (`web/pnpm-lock.yaml:1194`), so 0.28.x is in range. Plan: pin `esbuild: ^0.28.1` with a pnpm override in `web/pnpm-workspace.yaml` (pnpm 11 ignores manifest `pnpm` settings), keep `allowBuilds.esbuild:false` (L-006), drop the obsolete `web/package.json` block, regenerate the lock. A Vite bump alone does not move an optional peer. Risk: a future Vite major may drop 0.28 — reassess per major |
 | **R-04** | ✅ done | — | 2026-09-25: the `Publish WASM` job downloads the release build and attaches `ascii-canvas-<version>.wasm` with `--clobber` (idempotent re-runs). The artifact is **copied to a versioned name first** — `gh release upload`'s `file#label` syntax only sets a display label (verified against a scratch draft), so the download filename would otherwise remain `ascii_canvas_bg.wasm`. v0.1.4 has no asset; v0.1.5 is the first with one |
 
 ---
@@ -75,16 +75,17 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 ## New work candidates (need issues)
 
-No open issues remain. Candidates for the next planning cycle:
+Open implementation issues: **#207** (F-13, next) and **#199** (do-harness adoption, deferred). Candidates for the cycle:
 
 | Candidate | Why | First step |
 |-----------|-----|------------|
-| Layer-operation undo/history (**F-13 residual**) | Layer ops bypass history (verified 2026-09-23); issue #111 closed without it | Open issue + ADR for layer commands |
+| Layer-operation undo/history (**F-13**) | Layer ops bypass history (verified 2026-09-23); issue #111 closed without it | **Next**: core `LayerStack` + `LayerCommand` per [ADR-043](ADRs/043-layer-command-history.md), issue #207 |
 | `web/events.ts` 853 LOC (> 500 guideline) + LOC sensor gap | Sensor scans only `src/**/*.rs`; `web/` growth is unchecked | Either extract modules or extend the LOC sensor (ADR), then keep gate honest |
 | Dogfood pass over "closed" features (layers, SVG fidelity, light theme) | Fastest way to catch regressions behind closed-issue claims | `dogfood` skill run; file findings |
 | F-30 prototype decision (collaborative editing) | Spike complete, no product decision | Open issue + ADR |
 | Render performance follow-ups (ADR-028 residual) | Dirty-rect shipped; measure and set budgets | Open perf issue with metric |
 | WebKit / Firefox flake watch | Multi-browser CI matrix is new | Track flake rate across releases |
+| do-harness adoption (**#199**) | XL / high risk; sensor mapping and migration hazards already captured | Defer until upstream #235–#237 ship in a pinned release; then phase 0 audit in a disposable copy |
 
 ---
 
@@ -104,7 +105,7 @@ No open issues remain. Candidates for the next planning cycle:
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)
 - [RELEASING.md](RELEASING.md)
 - [goal-state.md](goal-state.md)
-- Open implementation issues: [#198](https://github.com/d-o-hub/rust-ascii-canvas/issues/198) (version single-source), [#199](https://github.com/d-o-hub/rust-ascii-canvas/issues/199) (do-harness adoption)
+- Implementation issues: #198 (version single-source — closed 2026-09-24), #207 (F-13 layer history — open, next), #199 (do-harness adoption — open, deferred)
 - [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007)
 - [ADR-042](ADRs/042-wasm-bindgen-pin-parity.md), [ADR-041](ADRs/041-clipboard-export-modes.md), [ADR-036](ADRs/036-clipboard-fidelity-and-product-features.md)
 - Issues: [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108)–[#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) (all closed)

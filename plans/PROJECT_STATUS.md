@@ -10,7 +10,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
 **Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
-**Next**: new product direction — the only open implementation issue is do-harness adoption; R-04 (attach the optimized WASM to the release) is queued.
+**Next** (cycle planned 2026-09-25 by agent swarm): R-03 esbuild override, then F-13 layer history (issue #207, ADR-043); #199 (do-harness adoption) deferred until the upstream fixes ship pinned.
 
 ---
 
@@ -32,7 +32,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 | `cargo clippy --all-targets --all-features -- -D warnings` | ✅ clean (`npm run gate:fast`) |
 | `cargo test --lib` | ✅ **117** passed (incl. `clipboard_tests`) |
 | Integration + doc tests | ✅ |
-| Vitest (`web/`) | ✅ **28** passed (3 files; clipboard CRLF, logger, UX) |
+| Vitest (`web/`) | ✅ **29** passed (3 files; clipboard CRLF, logger, UX) |
 | ESLint + `tsc --noEmit` (`web/`) | ✅ (`npm run gate:fast`) |
 | Playwright **Chromium** | ✅ **79** tests in 4 files (`--list`; CI runs the full matrix) |
 | Playwright Firefox / WebKit | ✅ CI matrix (#117, `ci.yml:319`) |
@@ -106,13 +106,12 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 ---
 
-## Immediate next steps (2026-09-23)
+## Immediate next steps (2026-09-25)
 
-1. **R-01 — cut v0.1.4**: release-prep PR (4 pins) → gates → merge → `dry_run=true` → dispatch; curated changelog backfill ([RELEASING.md](RELEASING.md)).
-2. **R-02 — changelog range fix** (candidate): derive release notes from the latest GitHub Release tag instead of `git describe`.
-3. **R-03 — dev-only Dependabot advisory** esbuild GHSA-g7r4-m6w7-qqqr; pick up with the next web-deps bump.
-4. **New product work** — no open issues remain; candidates in [FOLLOW_UPS.md](FOLLOW_UPS.md#new-work-candidates-need-issues) (incl. the layer-op history F-13 residual).
-5. **Harness** — Adopted ADR-037 (2026-07-16): tiered gates, architecture fitness, web CI, verify/code-review skills
+1. **R-03 — esbuild advisory** (isolated, human-reviewed): pin `esbuild ^0.28.1` via a pnpm override in `web/pnpm-workspace.yaml` (Vite's optional peer already allows 0.28), keep `allowBuilds.esbuild:false`, regenerate the lock, close alert #11.
+2. **F-13 — layer-operation undo** (issue #207, [ADR-043](ADRs/043-layer-command-history.md)): core `LayerStack` + `LayerCommand` first, then wasm/UI wiring, then E2E.
+3. **#199 — do-harness adoption**: deferred until upstream #235/#236/#237 ship in a pinned release; sensor mapping and migration hazards already captured.
+4. **Harness** — ADR-037 contract stands; this cycle adds ADR-043 (Proposed) and a steering entry if the F-13 design produces one.
 
 Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
 
