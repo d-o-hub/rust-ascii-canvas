@@ -81,6 +81,9 @@ A PR may be merged when **all** of these hold — nothing else:
 | 4 | No outstanding `CHANGES_REQUESTED` | `npm run gate:pr` | — |
 | 5 | Adversarial pass clean | `pr-roast` | — |
 
+`Codacy Static Code Analysis` is required by the ruleset, so it is part of
+condition 2 — see the **Codacy** section and the `codacy` skill.
+
 ```bash
 npm run gate:fast          # while iterating
 npm run gate:full          # before the PR is mergeable
@@ -126,6 +129,7 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Run sensors / self-correct | `verify` |
 | Semantic review | `code-review` |
 | Adversarial review ("roast") | `pr-roast` |
+| **Codacy findings / blocked PR** | **`codacy`** |
 | Decide + perform the merge | `merge-gate` |
 | Ship safely (shadow → canary → promote) | `production-loop` |
 | Rust implementation | `rust-engineer`, `rust-best-practices`, `rust-wasm` |
@@ -133,6 +137,18 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Tool QA | `tool-validation` |
 | Exploratory UX | `dogfood` |
 | Maintain this doc | `agents-md` |
+
+## Codacy
+
+**Any Codacy warning, issue, or failing/stuck check on a GitHub PR — use the
+`codacy` skill.** Read it before touching code or deciding the PR can merge.
+
+`Codacy Static Code Analysis` is a **required** status check, so a non-`SUCCESS`
+Codacy state blocks the merge and `npm run gate:pr` reports `MERGE BLOCKED`.
+Codacy is a third-party GitHub App: there is no Actions run to re-dispatch and
+no CLI path to clear it. When it sits in `ACTION_REQUIRED` the commit was never
+evaluated — **escalate to a human**, and never force the merge with
+`--admin` or by dropping the required check.
 
 ## Reference docs
 

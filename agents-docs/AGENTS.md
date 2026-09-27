@@ -19,6 +19,11 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 - **Role**: Inferential feedback, **adversarial** — "how do we break this?", cited against official docs
 - **Use when**: Before merging; after a large agent-authored diff; when asked to "roast" or red-team a PR
 
+### codacy
+- **Location**: `.agents/skills/codacy/SKILL.md`
+- **Role**: Triage Codacy findings and status on a PR. Third-party app; a required check that cannot be cleared from the CLI
+- **Use when**: Any Codacy warning, issue, or failing/stuck `Codacy Static Code Analysis` check on a PR — and before deciding a Codacy-blocked PR may merge
+
 ### merge-gate
 - **Location**: `.agents/skills/merge-gate/SKILL.md`
 - **Role**: The merge contract — decide, and arm auto-merge. Backed by `scripts/pr-merge-gate.sh`
