@@ -38,7 +38,7 @@ Specializes in creating and maintaining agent documentation, best practices guid
 - Organizing ADRs in plans/ folder
 
 ### Best Practices Implementation
-- Following 120 LOC max for AGENTS.md
+- Following length budgets for AGENTS.md and per-skill files
 - Creating clear agent invocation patterns
 - Documenting escalation triggers
 - Setting up integration patterns between skills
@@ -86,8 +86,20 @@ Specializes in creating and maintaining agent documentation, best practices guid
 
 ## Best Practices
 
-1. Keep AGENTS.md under 120 lines
-2. Always document in plans/ folder for architectural decisions
-3. Update documentation after each successful task
-4. Use consistent formatting across all docs
-5. Link skills to their SKILL.md files
+1. **AGENTS.md is an index, not a manual.** Budget ≈160 lines. If a section
+   outgrows that, the detail belongs in `agents-docs/` and AGENTS.md keeps the
+   link. Root `AGENTS.md` is the only file loaded by default — anything critical
+   that lives only in `agents-docs/` will be missed, so the merge contract and
+   the architecture rules stay here even though they push the file past the
+   original 120-line guideline. Do not duplicate a skill's content here: point at
+   the skill instead.
+2. **Per-skill budget: ≤300 lines** for `SKILL.md`. Push detail into
+   `references/` (lowercase) and `templates/` (lowercase) — these are the
+   directory names this repo actually uses; do not invent `REFERENCES/`.
+3. Always document in plans/ folder for architectural decisions
+4. Update documentation after each successful task
+5. Use consistent formatting across all docs
+6. Link skills to their SKILL.md files
+7. **Coherence check before finishing:** a guide that contradicts a sensor is a
+   bug. If you change a threshold in `AGENTS.md`, confirm `quality-gates.sh` and
+   CI agree — see `agents-docs/harness.md` §Coherence rules.

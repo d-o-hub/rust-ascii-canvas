@@ -3,8 +3,8 @@ name: verify
 description: >
   Run tiered computational quality sensors and self-correct. Use after code changes,
   before commits/PRs, when asked to "verify", "run gates", "quality check", or when
-  AGENTS.md requires verification. Prefer gate:fast during iteration and gate:full
-  before handoff.
+  AGENTS.md requires verification. Prefer gate:fast during iteration, gate:full
+  before handoff, and gate:pr before merging.
 ---
 
 # Verify (Computational Feedback)
@@ -22,6 +22,7 @@ Part of the project **harness** ([agents-docs/harness.md](../../../agents-docs/h
 
 - Pure documentation-only edits with no scripts/CI change (optional smoke only)
 - You only need a single focused unit test mid-TDD (run that test first, then verify)
+- You are asking whether a PR may merge → that is `merge-gate`, not `verify`
 
 ## Tiers (keep quality left)
 
@@ -29,6 +30,8 @@ Part of the project **harness** ([agents-docs/harness.md](../../../agents-docs/h
 |------|---------|-----|
 | **fast** | `npm run gate:fast` | Default after edits |
 | **full** | `npm run gate:full` | Before PR |
+| **pr** | `npm run gate:pr` | Before merging (read-only merge contract) |
+| **merge-gate logic** | `npm run gate:pr:test` | After editing the merge gate itself |
 | **architecture only** | `./scripts/check-architecture.sh` | Layer/import changes |
 | **focused** | `cargo test …` / `cd web && pnpm test` / one Playwright file | Tight loop |
 
@@ -40,11 +43,13 @@ Part of the project **harness** ([agents-docs/harness.md](../../../agents-docs/h
    npm run gate:fast
    # or
    npm run gate:full
+   # or, once a PR exists
+   npm run gate:pr
    ```
 3. **On failure** — read `[FAIL]` and `FIX:` lines. Fix root cause. Re-run the same tier.
 4. **Do not** disable sensors, add blanket `#[allow]`, skip tests, or expand `.loc-allowlist` without an ADR.
 5. **Behaviour changes** to tools — also run `tool-validation` skill / relevant E2E.
-6. **Before human review** — run `code-review` skill after full gates are green.
+6. **Before merge** — `code-review` after full gates, then `pr-roast`, then `merge-gate`.
 
 ## What fast covers
 
@@ -60,6 +65,20 @@ Part of the project **harness** ([agents-docs/harness.md](../../../agents-docs/h
 - cargo audit / deny (if installed)
 - `pnpm run build:wasm` + `check-size` (≤ 1.5MB) if not already built
 - Playwright Chromium E2E
+
+## What the pr tier covers
+
+`npm run gate:pr` (`scripts/pr-merge-gate.sh`) checks the **merge contract**, not the code:
+
+- not a draft, and mergeable (no conflicts)
+- every status check concluded `SUCCESS` (a running check is not a pass)
+- every review thread resolved, no outstanding `CHANGES_REQUESTED`
+- it is read-only: it never merges
+
+Server-side enforcement lives in the `main` ruleset (`CI Success` +
+`PR Readiness (merge gate)` are required checks; thread resolution is required).
+The script is the local mirror so the agent learns about a blocked merge
+*before* pushing. `npm run gate:pr:test` self-tests its predicates offline.
 
 ## CI parity checks (do not skip)
 
@@ -84,5 +103,5 @@ If you hit the **same** failure class twice in a session (or it recurred from a 
 ## Integration
 
 - **Handoff from** `rust-engineer` / `typescript-expert` → verify
-- **Handoff to** `code-review` → human PR
-- **Related** `tool-validation`, `dogfood`
+- **Handoff to** `code-review` → `pr-roast` → `merge-gate` (auto-merge)
+- **Related** `tool-validation`, `dogfood`, `production-loop`

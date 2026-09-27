@@ -13,6 +13,8 @@ pub mod cell;
 pub mod commands;
 pub mod grid;
 pub mod history;
+pub mod layer;
+mod layer_stack;
 pub mod selection;
 pub mod tools;
 
@@ -23,7 +25,9 @@ pub use ascii_export::{
 pub use cell::{Cell, CellStyle};
 pub use commands::Command;
 pub use grid::Grid;
-pub use history::History;
+pub use history::{History, HistoryOutcome};
+pub use layer::Layer;
+pub use layer_stack::LayerStack;
 pub use selection::Selection;
 pub use tools::{BorderStyle, DrawOp, Tool, ToolId, ToolResult};
 

@@ -1,19 +1,24 @@
 ---
 name: code-review
 description: >
-  Inferential code review sensor for this repo. Use before asking a human to review,
-  after verify gates are green, or when asked to "review", "review changes", or
+  Inferential code review sensor for this repo. Use before merging, after verify
+  gates are green, or when asked to "review", "review changes", or
   "pre-review". Checks harness compliance, architecture layers, test adequacy, and
-  agent failure modes — not a substitute for cargo/clippy/CI.
+  agent failure modes — not a substitute for cargo/clippy/CI. For an adversarial
+  attack on a PR, use `pr-roast` instead.
 ---
 
 # Code Review (Inferential Feedback)
 
 Semantic review **after** computational sensors (`verify` skill / `npm run gate:*`) are green. Complements CI; does not replace it.
 
+This skill asks *"is this change sound?"*. `pr-roast` then asks *"how do we
+break this?"*. Do both — a change that passes only the first has not been tested
+adversarially.
+
 ## When to Use
 
-- Before opening a PR or requesting human review
+- Before opening a PR or merging
 - After a large agent-authored diff
 - User asks for review / pre-review / sanity check of changes
 
@@ -21,13 +26,27 @@ Semantic review **after** computational sensors (`verify` skill / `npm run gate:
 
 - Gates are still red — run `verify` first
 - You need automated rustc/clippy (use computational sensors)
+- The user wants an adversarial pass — use `pr-roast`
 
 ## Prerequisites
 
 ```bash
 npm run gate:fast   # minimum
 # Prefer gate:full if product behaviour changed
+npm run gate:pr     # the merge contract, once a PR exists
 ```
+
+## Citation rule
+
+**Every API or standard-library finding must cite the official source**, not
+recall: [Rust API Guidelines](https://rust-lang.github.io/api-guidelines/),
+[Clippy lints](https://rust-lang.github.io/rust-clippy/master/index.html#lint-groups),
+[wasm-bindgen](https://rustwasm.github.io/docs/wasm-bindgen/),
+[TypeScript](https://www.typescriptlang.org/docs/handbook/intro.html),
+[MDN](https://developer.mozilla.org/),
+[Playwright](https://playwright.dev/docs/best-practices). If you cannot cite
+it, either verify it or drop the claim — an uncited "this is wrong" costs the
+reader more than it saves.
 
 ## Review checklist
 
@@ -95,5 +114,8 @@ npm run gate:fast   # minimum
 ## Integration
 
 - **After** `verify`
-- **Before** human PR / `create-github-pull-request-from-specification`
+- **Then** `pr-roast` — this skill cannot substitute for the adversarial pass
+- **Then** `merge-gate` arms auto-merge; a `Request changes` verdict is a reason
+  to fix, not to merge
 - **Escalation:** architecture disputes → ADR via `goap-adr-planner`
+- **Related** `merge-gate`, `production-loop`, `dogfood`

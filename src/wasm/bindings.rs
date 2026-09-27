@@ -1,6 +1,6 @@
 //! WASM bindings - struct definition, constructor, and core methods.
 
-use crate::core::history::{History, DEFAULT_MAX_DEPTH};
+use crate::core::layer::LayerStack;
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, EraserTool, RectangleTool, Tool, ToolId};
 use crate::core::EditorState;
@@ -18,7 +18,7 @@ use wasm_bindgen::prelude::*;
 #[wasm_bindgen]
 pub struct AsciiEditor {
     pub(crate) state: EditorState,
-    pub(crate) history: History,
+    pub(crate) layer_stack: LayerStack,
     pub(crate) renderer: CanvasRenderer,
     pub(crate) dirty_tracker: DirtyTracker,
     pub(crate) active_tool: Box<dyn Tool>,
@@ -38,34 +38,8 @@ pub struct AsciiEditor {
     pub(crate) dirty_render_count: u32,
     pub(crate) pixel_buffer: Vec<u8>,
     pub(crate) font_atlas: FontAtlas,
-    /// Named layers (background layers + active content mirrored in `state.grid`).
-    pub(crate) layers: Vec<LayerData>,
-    pub(crate) active_layer: usize,
     pub(crate) eraser_size: i32,
     pub(crate) theme: crate::ui::Theme,
-}
-
-/// Serializable layer metadata + content snapshot.
-#[derive(Debug)]
-pub(crate) struct LayerData {
-    pub name: String,
-    pub visible: bool,
-    pub locked: bool,
-    pub grid: crate::core::Grid,
-    pub history: History,
-}
-
-impl Clone for LayerData {
-    // NOTE: history is intentionally reset on clone to avoid sharing undo history state.
-    fn clone(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            visible: self.visible,
-            locked: self.locked,
-            grid: self.grid.clone(),
-            history: History::new(DEFAULT_MAX_DEPTH),
-        }
-    }
 }
 
 #[wasm_bindgen]
@@ -78,7 +52,7 @@ impl AsciiEditor {
 
         Self {
             state,
-            history: History::new(DEFAULT_MAX_DEPTH),
+            layer_stack: LayerStack::new(width, height),
             renderer,
             dirty_tracker: DirtyTracker::new(),
             active_tool: Box::new(RectangleTool::new()),
@@ -97,26 +71,21 @@ impl AsciiEditor {
             dirty_render_count: 0,
             pixel_buffer: vec![0u8; width * 8 * height * 20 * 4],
             font_atlas: FontAtlas::new(),
-            layers: vec![LayerData {
-                name: "Layer 1".to_string(),
-                visible: true,
-                locked: false,
-                grid: crate::core::Grid::new(width, height),
-                history: History::new(DEFAULT_MAX_DEPTH),
-            }],
-            active_layer: 0,
             eraser_size: 1,
             theme: crate::ui::Theme::figma_dark(),
         }
     }
 
     /// Resizes the editor canvas and all its layers to the new dimensions.
+    ///
+    /// Every layer's history is dropped: recorded draw commands carry
+    /// coordinates (and clear-canvas a size) that no longer match the resized
+    /// grids, so replaying them would corrupt or misplace content.
     #[wasm_bindgen]
     pub fn resize(&mut self, new_width: usize, new_height: usize) {
         self.state.grid.resize(new_width, new_height);
-        for layer in &mut self.layers {
-            layer.grid.resize(new_width, new_height);
-        }
+        self.layer_stack.resize(new_width, new_height);
+        self.layer_stack.clear_all_histories();
         self.pixel_buffer = vec![0u8; new_width * 8 * new_height * 20 * 4];
         self.dirty_tracker.request_full_redraw();
     }
@@ -241,42 +210,33 @@ impl AsciiEditor {
         self.dirty_tracker.request_full_redraw();
     }
 
-    /// Reverts the last drawing operation. Returns true if successful.
+    /// Reverts the newest drawing or layer operation on the active layer.
+    ///
+    /// A locked active layer blocks drawing history, but never blocks undoing a
+    /// lock change itself, so a user cannot get stuck behind a lock.
     #[wasm_bindgen]
     pub fn undo(&mut self) -> bool {
-        if self.is_active_layer_locked() {
-            return false;
-        }
-        let result = self.history.undo(&mut self.state.grid);
-        if result {
-            self.dirty_tracker.request_full_redraw();
-        }
-        result
+        let outcome = self.layer_stack.undo_active(&mut self.state.grid);
+        self.apply_history_outcome(outcome)
     }
 
-    /// Re-applies a previously undone operation. Returns true if successful.
+    /// Re-applies the newest undone drawing or layer operation.
     #[wasm_bindgen]
     pub fn redo(&mut self) -> bool {
-        if self.is_active_layer_locked() {
-            return false;
-        }
-        let result = self.history.redo(&mut self.state.grid);
-        if result {
-            self.dirty_tracker.request_full_redraw();
-        }
-        result
+        let outcome = self.layer_stack.redo_active(&mut self.state.grid);
+        self.apply_history_outcome(outcome)
     }
 
-    /// Returns whether there is an action that can be undone in the history.
+    /// Returns whether there is an action that can be undone on the active layer.
     #[wasm_bindgen(getter)]
     pub fn can_undo(&self) -> bool {
-        self.history.can_undo()
+        self.layer_stack.can_undo()
     }
 
-    /// Returns whether there is an action that can be redone in the history.
+    /// Returns whether there is an action that can be redone on the active layer.
     #[wasm_bindgen(getter)]
     pub fn can_redo(&self) -> bool {
-        self.history.can_redo()
+        self.layer_stack.can_redo()
     }
 
     /// Clears the canvas, history, clipboard, and reset layers.
@@ -286,10 +246,8 @@ impl AsciiEditor {
             return;
         }
         self.state.grid.clear();
-        if let Some(layer) = self.layers.get_mut(self.active_layer) {
-            layer.grid.clear();
-        }
-        self.history.clear();
+        self.layer_stack.active_mut().grid_mut().clear();
+        self.layer_stack.active_mut().history_mut().clear();
         self.clipboard.clear();
         self.dirty_tracker.request_full_redraw();
     }

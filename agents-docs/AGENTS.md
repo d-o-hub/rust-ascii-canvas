@@ -6,13 +6,28 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 
 ### verify
 - **Location**: `.agents/skills/verify/SKILL.md`
-- **Role**: Computational feedback — run `gate:fast` / `gate:full`, self-correct
+- **Role**: Computational feedback — run `gate:fast` / `gate:full` / `gate:pr`, self-correct
 - **Use when**: After code changes, before PR, CI failures
 
 ### code-review
 - **Location**: `.agents/skills/code-review/SKILL.md`
 - **Role**: Inferential feedback — architecture, failure modes, harness coherence
-- **Use when**: Gates green; before human review
+- **Use when**: Gates green; before merging
+
+### pr-roast
+- **Location**: `.agents/skills/pr-roast/SKILL.md`
+- **Role**: Inferential feedback, **adversarial** — "how do we break this?", cited against official docs
+- **Use when**: Before merging; after a large agent-authored diff; when asked to "roast" or red-team a PR
+
+### merge-gate
+- **Location**: `.agents/skills/merge-gate/SKILL.md`
+- **Role**: The merge contract — decide, and arm auto-merge. Backed by `scripts/pr-merge-gate.sh`
+- **Use when**: Before merging anything; when a PR will not merge
+
+### production-loop
+- **Location**: `.agents/skills/production-loop/SKILL.md`
+- **Role**: failure → reproduce → fix → evaluate → adversarial → shadow → canary → promote/rollback
+- **Use when**: A production bug arrives; shipping a risky change; rolling out or rolling back
 
 ### tool-validation
 - **Location**: `.agents/skills/tool-validation/SKILL.md`
@@ -22,7 +37,7 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 ### goap-adr-planner
 - **Location**: `.agents/skills/goap-adr-planner/SKILL.md`
 - **Role**: Feedforward planning / ADRs
-- **Use when**: Multi-step work, architecture decisions
+- **Use when**: Multi-step work, architecture decisions, or changing a merge guard-rail
 
 ## Available skills
 
@@ -70,3 +85,16 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 3. Run tests before marking tasks complete
 4. Keep code under 500 LOC per file
 5. Update PROJECT_STATUS.md and TECHNICAL_ANALYSIS.md with findings
+6. AGENTS.md is an index: keep it ≈160 lines and push detail into `agents-docs/`
+7. A guide that contradicts a sensor is a bug — reconcile before finishing
+
+## Retired skills (2026-09-27, ADR-044)
+
+| Skill | Why retired |
+|-------|-------------|
+| `my-pull-requests` | A thin `gh` wrapper; the `merge-gate` skill covers PR state properly |
+| `ln-732-cicd-generator` | Generated .NET/Python CI and would **overwrite** this repo's `ci.yml` |
+| `create-github-pull-request-from-specification` | Referenced tool syntax (`create_pull_request`, `${workspaceFolder}`) that does not exist in this harness |
+
+Their `skills-lock.json` entries were removed as well — a lockfile sync would
+otherwise resurrect them.

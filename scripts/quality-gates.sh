@@ -144,6 +144,64 @@ fi
 printf "\n"
 
 # ============================================================
+# 2d. MERGE-GATE COHERENCE (harness L-008)
+# CI Success is a REQUIRED status check, so the set of jobs it aggregates is
+# load-bearing. A PR can edit .github/workflows/**, so without this sensor a
+# change could quietly drop a job from `needs` and the check would still go
+# green — a guard-rail weakened by an edit to the guard-rail itself.
+info "Merge-gate coherence (L-008)..."
+CI_YML="$REPO_ROOT/.github/workflows/ci.yml"
+if [[ -f "$CI_YML" ]]; then
+  MERGE_JOBS=(fmt clippy architecture rust security deny web wasm e2e)
+  # Read the `needs:` line of the ci-success job. It is NOT at a fixed offset:
+  # comment blocks above it (which explain *why* the list matters) push it
+  # further down, so scan until the next top-level job key.
+  NEEDS_LINE="$(awk '
+    /^  ci-success:/ { injob=1; next }
+    injob && /^  [a-zA-Z0-9_-]+:/ { exit }
+    injob && /needs:/ { print; exit }
+  ' "$CI_YML")"
+  COHERENCE_OK=true
+  for job in "${MERGE_JOBS[@]}"; do
+    if ! grep -qw "$job" <<<"$NEEDS_LINE"; then
+      COHERENCE_OK=false
+      echo "  ci-success.needs is missing '$job'"
+    fi
+  done
+  # `changes` must be present: if it fails, every dependant is skipped and
+  # CI Success would see all-skipped and report green (L-002/L-003).
+  if ! grep -qw "changes" <<<"$NEEDS_LINE"; then
+    COHERENCE_OK=false
+    echo "  ci-success.needs is missing 'changes' (all-skipped would read as green)"
+  fi
+  if $COHERENCE_OK; then
+    pass "ci-success aggregates all ${#MERGE_JOBS[@]} sensors + changes"
+  else
+    fail "ci-success.needs drifted from the required job set"
+    echo "  FIX: restore 'needs: [changes, ${MERGE_JOBS[*]}]' on the ci-success job."
+    echo "       It is a REQUIRED status check; dropping a job silently weakens the merge gate."
+    echo "       See agents-docs/harness.md L-008."
+  fi
+
+  # The merge gate must be able to prove itself.
+  if [[ -x "$REPO_ROOT/scripts/pr-merge-gate.sh" || -f "$REPO_ROOT/scripts/pr-merge-gate.sh" ]]; then
+    if bash "$REPO_ROOT/scripts/pr-merge-gate.sh" --self-test >/dev/null 2>&1; then
+      pass "Merge-gate self-test: predicates still block correctly"
+    else
+      fail "Merge-gate self-test FAILED"
+      echo "  FIX: scripts/pr-merge-gate.sh --self-test must pass. A required check that"
+      echo "       can no longer detect a red PR must not ship."
+    fi
+  else
+    fail "scripts/pr-merge-gate.sh is missing"
+    echo "  FIX: restore it; 'npm run gate:pr' is the local mirror of the merge contract."
+  fi
+else
+  warn "ci.yml not found — skipped merge-gate coherence check"
+fi
+printf "\n"
+
+# ============================================================
 # 3. RUST CHECKS
 # ============================================================
 info "Rust checks..."

@@ -353,6 +353,10 @@ export function refreshLayerList(): void {
         nameInput.addEventListener('change', () => {
             if (state.editor && nameInput.value !== state.editor.layerName(i)) {
                 state.editor.renameLayer(i, nameInput.value);
+                // A rename is an undoable step, so the undo/redo buttons have to be
+                // refreshed here: nothing else would update them until the next
+                // unrelated UI refresh.
+                updateUI();
                 if (state.scheduleAutoSave) state.scheduleAutoSave();
             }
         });
@@ -427,7 +431,7 @@ export function refreshLayerList(): void {
         delBtn.disabled = isOnlyLayer;
         delBtn.addEventListener('click', () => {
             if (state.editor) {
-                if (confirm('Delete this layer? This cannot be undone.')) {
+                if (confirm('Delete this layer? You can undo this with Ctrl+Z.')) {
                     state.editor.deleteLayer(i);
                     if (state.requestRender) state.requestRender();
                     updateUI();
@@ -454,26 +458,34 @@ export function updateUI(): void {
     try {
         const canUndo = state.editor.can_undo;
         const canRedo = state.editor.can_redo;
+        // Name the step being undone, so a layer change reads as "Undo Hide
+        // layer" rather than a mystery (ADR-043 decision 4).
+        const undoLabel = state.editor.undoLabel;
+        const redoLabel = state.editor.redoLabel;
+        const undoTitle = canUndo && undoLabel ? `Undo ${undoLabel} (Ctrl+Z)` : canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo';
+        const undoAria = canUndo && undoLabel ? `Undo ${undoLabel}` : canUndo ? 'Undo' : 'Nothing to undo';
+        const redoTitle = canRedo && redoLabel ? `Redo ${redoLabel} (Ctrl+Shift+Z or Ctrl+Y)` : canRedo ? 'Redo (Ctrl+Shift+Z or Ctrl+Y)' : 'Nothing to redo';
+        const redoAria = canRedo && redoLabel ? `Redo ${redoLabel}` : canRedo ? 'Redo' : 'Nothing to redo';
 
         if (state.undoBtn) {
             state.undoBtn.disabled = !canUndo;
-            state.undoBtn.title = canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo';
-            state.undoBtn.setAttribute('aria-label', canUndo ? 'Undo' : 'Nothing to undo');
+            state.undoBtn.title = undoTitle;
+            state.undoBtn.setAttribute('aria-label', undoAria);
         }
         if (state.redoBtn) {
             state.redoBtn.disabled = !canRedo;
-            state.redoBtn.title = canRedo ? 'Redo (Ctrl+Shift+Z or Ctrl+Y)' : 'Nothing to redo';
-            state.redoBtn.setAttribute('aria-label', canRedo ? 'Redo' : 'Nothing to redo');
+            state.redoBtn.title = redoTitle;
+            state.redoBtn.setAttribute('aria-label', redoAria);
         }
         if (state.mobileUndoBtn) {
             state.mobileUndoBtn.disabled = !canUndo;
-            const title = canUndo ? 'Undo' : 'Nothing to undo';
+            const title = undoAria;
             state.mobileUndoBtn.title = title;
             state.mobileUndoBtn.setAttribute('aria-label', title);
         }
         if (state.mobileRedoBtn) {
             state.mobileRedoBtn.disabled = !canRedo;
-            const title = canRedo ? 'Redo' : 'Nothing to redo';
+            const title = redoAria;
             state.mobileRedoBtn.title = title;
             state.mobileRedoBtn.setAttribute('aria-label', title);
         }

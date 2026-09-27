@@ -38,6 +38,8 @@
     "gate:fast": "bash scripts/quality-gates.sh --fast",
     "gate:full": "bash scripts/quality-gates.sh",
     "gate:fix": "bash scripts/quality-gates.sh --fix",
+    "gate:pr": "bash scripts/pr-merge-gate.sh",
+    "gate:pr:test": "bash scripts/pr-merge-gate.sh --self-test",
     "precommit": "bash scripts/pre-commit-fast.sh"
   },
   "devDependencies": {

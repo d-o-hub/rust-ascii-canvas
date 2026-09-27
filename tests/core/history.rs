@@ -4,6 +4,7 @@ use ascii_canvas::core::cell::Cell;
 use ascii_canvas::core::commands::{Command, SetCellCommand};
 use ascii_canvas::core::grid::Grid;
 use ascii_canvas::core::history::History;
+use ascii_canvas::core::layer::LayerStack;
 
 #[test]
 fn test_history_push() {
@@ -18,6 +19,7 @@ fn test_history_push() {
 #[test]
 fn test_history_undo_redo() {
     let mut grid = Grid::new(10, 10);
+    let mut layers = LayerStack::new(10, 2);
     let mut history = History::new(10);
 
     // Push and apply a command
@@ -28,13 +30,13 @@ fn test_history_undo_redo() {
     assert_eq!(grid.get(5, 5).unwrap().ch, 'X');
 
     // Undo
-    history.undo(&mut grid);
+    history.undo(&mut grid, &mut layers);
     assert!(grid.get(5, 5).unwrap().is_empty());
     assert!(!history.can_undo());
     assert!(history.can_redo());
 
     // Redo
-    history.redo(&mut grid);
+    history.redo(&mut grid, &mut layers);
     assert_eq!(grid.get(5, 5).unwrap().ch, 'X');
     assert!(history.can_undo());
     assert!(!history.can_redo());
@@ -54,6 +56,7 @@ fn test_history_max_depth() {
 #[test]
 fn test_history_clear_on_push() {
     let mut grid = Grid::new(10, 10);
+    let mut layers = LayerStack::new(10, 2);
     let mut history = History::new(10);
 
     // Push first command
@@ -62,7 +65,7 @@ fn test_history_clear_on_push() {
     history.push(Box::new(cmd1));
 
     // Undo to create redo stack
-    history.undo(&mut grid);
+    history.undo(&mut grid, &mut layers);
     assert_eq!(history.redo_count(), 1);
 
     // Push new command - should clear redo
@@ -82,7 +85,8 @@ fn test_history_descriptions() {
     assert_eq!(history.redo_description(), None);
 
     let mut grid = Grid::new(10, 10);
-    history.undo(&mut grid);
+    let mut layers = LayerStack::new(10, 2);
+    history.undo(&mut grid, &mut layers);
 
     assert_eq!(history.redo_description(), Some("Set cell"));
 }

@@ -105,103 +105,6 @@ impl AsciiEditor {
         self.load_document_impl(&json)
     }
 
-    /// Number of layers.
-    #[wasm_bindgen(getter = layerCount)]
-    pub fn layer_count(&self) -> usize {
-        self.layers.len()
-    }
-
-    /// Active layer index.
-    #[wasm_bindgen(getter = activeLayer)]
-    pub fn active_layer_index(&self) -> usize {
-        self.active_layer
-    }
-
-    /// Layer name by index.
-    #[wasm_bindgen(js_name = layerName)]
-    pub fn layer_name(&self, index: usize) -> String {
-        self.layers
-            .get(index)
-            .map(|l| l.name.clone())
-            .unwrap_or_default()
-    }
-
-    /// Whether a layer is visible.
-    #[wasm_bindgen(js_name = layerVisible)]
-    pub fn layer_visible(&self, index: usize) -> bool {
-        self.layers.get(index).map(|l| l.visible).unwrap_or(false)
-    }
-
-    /// Set layer visibility.
-    #[wasm_bindgen(js_name = setLayerVisible)]
-    pub fn set_layer_visible(&mut self, index: usize, visible: bool) {
-        if let Some(layer) = self.layers.get_mut(index) {
-            layer.visible = visible;
-            self.dirty_tracker.request_full_redraw();
-        }
-    }
-
-    /// Switch active layer (saves current grid into previous layer).
-    #[wasm_bindgen(js_name = setActiveLayer)]
-    pub fn set_active_layer(&mut self, index: usize) -> bool {
-        self.set_active_layer_impl(index)
-    }
-
-    /// Add a new empty layer and switch to it.
-    #[wasm_bindgen(js_name = addLayer)]
-    pub fn add_layer(&mut self) -> usize {
-        self.add_layer_impl()
-    }
-
-    /// Rename a layer.
-    #[wasm_bindgen(js_name = renameLayer)]
-    pub fn rename_layer(&mut self, index: usize, name: String) {
-        if let Some(layer) = self.layers.get_mut(index) {
-            layer.name = name;
-        }
-    }
-
-    /// Whether a layer is locked.
-    #[wasm_bindgen(js_name = layerLocked)]
-    pub fn layer_locked(&self, index: usize) -> bool {
-        self.layers.get(index).map(|l| l.locked).unwrap_or(false)
-    }
-
-    /// Set layer lock state.
-    #[wasm_bindgen(js_name = setLayerLocked)]
-    pub fn set_layer_locked(&mut self, index: usize, locked: bool) {
-        if let Some(layer) = self.layers.get_mut(index) {
-            layer.locked = locked;
-            self.dirty_tracker.request_full_redraw();
-        }
-    }
-
-    /// Move a layer to a new index in the stack.
-    #[wasm_bindgen(js_name = moveLayer)]
-    pub fn move_layer(&mut self, from_index: usize, to_index: usize) {
-        self.move_layer_impl(from_index, to_index);
-    }
-
-    /// Delete a layer.
-    #[wasm_bindgen(js_name = deleteLayer)]
-    pub fn delete_layer(&mut self, index: usize) -> bool {
-        self.delete_layer_impl(index)
-    }
-
-    /// Merge the specified layer down into the one below it.
-    #[wasm_bindgen(js_name = mergeLayerDown)]
-    pub fn merge_layer_down(&mut self, index: usize) -> bool {
-        self.merge_down_impl(index)
-    }
-
-    /// Returns whether the active layer is locked.
-    pub(crate) fn is_active_layer_locked(&self) -> bool {
-        self.layers
-            .get(self.active_layer)
-            .map(|l| l.locked)
-            .unwrap_or(false)
-    }
-
     /// Returns the full list of drawing instructions/commands to render the entire canvas in JS.
     #[wasm_bindgen(js_name = getRenderCommands)]
     pub fn get_render_commands(&mut self) -> JsValue {
@@ -395,15 +298,19 @@ impl AsciiEditor {
         for gy in dirty.y1..=dirty.y2 {
             for gx in dirty.x1..=dirty.x2 {
                 let mut composite_cell = None;
-                for i in (0..self.layers.len()).rev() {
-                    let layer = &self.layers[i];
-                    if !layer.visible {
+                let active = self.layer_stack.active_index();
+                for i in (0..self.layer_stack.len()).rev() {
+                    let layer = self
+                        .layer_stack
+                        .get(i)
+                        .expect("index comes from the stack length");
+                    if !layer.is_visible() {
                         continue;
                     }
-                    let grid = if i == self.active_layer {
+                    let grid = if i == active {
                         &self.state.grid
                     } else {
-                        &layer.grid
+                        layer.grid()
                     };
                     if let Some(cell) = grid.get(gx, gy) {
                         if cell.is_visible() {
