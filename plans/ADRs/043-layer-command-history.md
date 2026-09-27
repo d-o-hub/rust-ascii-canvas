@@ -1,7 +1,17 @@
 # ADR-043: Undoable Layer Operations
 
 ## Status
-Proposed — 2026-09-25, **corrected after a design review** (the first draft asserted a seam that does not exist in the code and a history model with a prohibitive cost). Not yet implemented; see "Open decisions" before any code lands. Tracked by issue #207.
+Implemented — landed on `main` 2026-09-27 as part of **#213**. Not yet adversarially reviewed.
+
+> **Attribution note (2026-09-27, harness L-011).** This ADR was tracked by #212
+> (`feat(f13-layer-undo)`, commit `8edf869`). The implementation reached `main`
+> **inside #213** — `chore(harness): make CI green a merge precondition` — because
+> that branch was created from `feat/f13-layer-undo` rather than from `main` and
+> so carried this unmerged feature commit. **F-13 = #213 in history**; #212 is
+> closed as already-landed. The code is CI-verified (#213 passed 20 checks,
+> including E2E on chromium/firefox/webkit), but it merged **without a
+> `pr-roast` adversarial pass** and under a non-feature title. Treat the
+> adversarial pass as outstanding.
 
 ## Context
 

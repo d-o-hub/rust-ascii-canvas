@@ -159,6 +159,12 @@ roast, comment tracking, shadow E2E, and clicking merge.
 
 ## PR / handoff
 
+- **Branch from the base branch, never from another feature branch.** Before
+  opening a PR, `git log origin/main..HEAD` must list only commits you authored
+  this session. If it lists more, the branch is wrong — rebase it. A per-commit
+  "no product code staged" check cannot catch a foreign commit that was never
+  staged; that is exactly how the F-13 feature merged under a `chore:` title
+  (harness **L-011**). `npm run gate:pr` now prints the commit list.
 - Fast gates green on every push-worthy change; full gates green before review.
 - PR template checkboxes must reflect reality.
 - Call out harness changes (new sensors, allowlist, CI) explicitly in the PR body.

@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed / Notes
+
+- **F-13 layer history (ADR-043) landed under a `chore(harness):` commit.** The
+  implementation was authored in #212 but reached `main` inside #213
+  (`chore(harness): make CI green a merge precondition`), because that branch
+  was created from `feat/f13-layer-undo` rather than from `main` and therefore
+  carried the unmerged feature commit. Attribution: **F-13 = #213 in history**,
+  designed under #212. The code is CI-verified (#213 passed 20 checks including
+  E2E on three browsers), but it merged without a `pr-roast` adversarial pass
+  and without a feature-accurate title. Harness L-011; ADR-043 updated.
+- #212 closed as already-landed. Layer-history test bodies were subsequently
+  extracted out of `src/wasm/layer_api.rs` into two sibling test modules to hold
+  the 500-line budget.
+
 ## [0.1.4] - 2026-09-24
 
 ### Changes

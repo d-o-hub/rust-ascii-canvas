@@ -272,6 +272,17 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Agent rule** | Never mutate the ruleset without (a) capturing current state, (b) writing an ADR, and (c) running `--update` in the same change. If you change a merge guard-rail, `git revert` is not your rollback — `--restore` is. |
 | **Verification** | Six drift cases proven by tampering the snapshot: thread-resolution off, required checks gutted, approvals raised, enforcement disabled, linear history off — each detected; clean state and restore both byte-identical to the committed snapshot. |
 
+### L-011 — A feature merged by accident under a `chore(harness):` title (2026-09-27)
+
+| | |
+|--|--|
+| **Symptom** | The F-13 layer-history implementation (commit `8edf869`, PR #212) landed on `main` as part of #213, whose title is `chore(harness): make CI green a merge precondition`. Verification: **0** product files differ between `8edf869` and `origin/main`. |
+| **Root cause** | The agent branched with `git checkout -b chore/harness-merge-automation` while `HEAD` was `feat/f13-layer-undo` at `8edf869` — a commit **not yet on `main`**. The branch was therefore `main + 8edf869 + harness work`, and the PR against `main` carried the feature along. |
+| **Why harness failed** | The pre-commit check "no product code staged" was correct and passed every time — the feature was never *staged*. The defect lived one level up, in the branch's commit history, and no control looked there. **A per-commit check cannot see foreign commits that arrived before the commit existed.** |
+| **Prevention** | (1) `pr-merge-gate.sh` now reports **which commits a PR would merge**, so foreign commits are visible in the gate output instead of only in `git log`. (2) `AGENTS.md` states the branch rule and the pre-PR check. (3) #212 closed with a full account; `CHANGELOG.md` and ADR-043 record the true attribution. |
+| **Agent rule** | **Branch from the base branch, never from another feature branch.** Before opening a PR, run `git log origin/main..HEAD` and confirm every commit listed is one you authored this session. If the list is longer than your work, the branch is wrong — rebase it. Cost of the check: one command. Cost of skipping it: a feature ships mislabeled and unreviewed. |
+| **Consequence** | The code is safe — #213's CI ran on the combined content and passed 20 checks including E2E on three browsers. The loss is traceability: `git log`, `git bisect`, and the auto-generated v0.1.5 changelog attribute the feature to a chore commit, and the feature never received a `pr-roast` pass. |
+
 ### L-009 — `agents-md` mandated a length its own repo violated (2026-09-27)
 
 | | |
