@@ -148,11 +148,22 @@ test('rename is one undo step and redoes exactly', async ({ page }) => {
     expect(await layerName(page)).toBe('Renamed');
 });
 
-test('adding a layer is undoable straight away', async ({ page }) => {
+test('adding a layer is undoable from the layer the add was made on', async ({
+    page,
+}) => {
     await page.locator('#add-layer-btn').click();
     await expect(page.locator(LAYER_ITEM)).toHaveCount(2);
     await expect(await layerRow(page, 1)).toHaveClass(/active/);
 
+    // The add is recorded on the layer the user was on (layer 0), so the new
+    // layer starts with no history of its own. Undo is reachable only from
+    // layer 0 — ADR-043 puts layer commands on the active layer's history, so
+    // undo returns you to the layer you acted from.
+    await activateLayer(page, 1);
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+
+    await activateLayer(page, 0);
+    await expect(page.locator('#undo-btn')).toBeEnabled();
     await page.locator('#undo-btn').click();
     await expect(page.locator(LAYER_ITEM)).toHaveCount(1);
     await expect(await layerRow(page, 0)).toHaveClass(/active/);
@@ -201,10 +212,19 @@ test('a lock can be undone while the layer is still locked', async ({ page }) =>
 
 test('switching layers does not create history', async ({ page }) => {
     await page.locator('#add-layer-btn').click();
-    await activateLayer(page, 0);
 
-    // Layer 0 has no history of its own, so undo is honestly unavailable.
+    // Layer 1 was created empty, so navigating onto it must not conjure history.
+    await activateLayer(page, 1);
     await expect(page.locator('#undo-btn')).toBeDisabled();
+    await expect(page.locator('#redo-btn')).toBeDisabled();
+
+    // Going back and forth is navigation, not an edit: the counts must not move.
+    await activateLayer(page, 0);
+    await expect(page.locator('#undo-btn')).toBeEnabled();
+    await activateLayer(page, 1);
+    await expect(page.locator('#undo-btn')).toBeDisabled();
+    await activateLayer(page, 0);
+    await expect(page.locator('#undo-btn')).toBeEnabled();
 });
 
 test('adding a layer can be redone', async ({ page }) => {
@@ -250,11 +270,18 @@ test('merging drawn content is undone cell for cell', async ({ page }) => {
 });
 
 test('a blocked undo says the layer is locked', async ({ page }) => {
-    // Draw on layer 0, then lock it from layer 1 so the drawing stays on top of
-    // the locked layer's own history.
-    await dragOnCanvas(page, 0.15, 0.2, 0.35, 0.4);
+    // Order matters. The add is recorded on the layer the user was on (layer 0),
+    // so a drawing made AFTER the add is the top entry there. Drawing first would
+    // leave the add on top, and an add is not blocked by a content lock - the
+    // undo would simply succeed and never explain itself.
     await page.locator('#add-layer-btn').click();
+    await expect(page.locator(LAYER_ITEM)).toHaveCount(2);
     await activateLayer(page, 0);
+
+    // Draw on layer 0 so its newest entry is a drawing...
+    await dragOnCanvas(page, 0.15, 0.2, 0.35, 0.4);
+    // ...then lock it from layer 1, so the lock lands on layer 1's history and
+    // the drawing stays on top of layer 0's.
     await activateLayer(page, 1);
     await (await layerRow(page, 0)).getByRole('button', { name: 'Lock layer' }).click();
 
