@@ -85,7 +85,7 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 3. Run tests before marking tasks complete
 4. Keep code under 500 LOC per file
 5. Update PROJECT_STATUS.md and TECHNICAL_ANALYSIS.md with findings
-6. AGENTS.md is an index: keep it ~120 lines and push detail into `agents-docs/`
+6. AGENTS.md is an index: keep it ≈160 lines and push detail into `agents-docs/`
 7. A guide that contradicts a sensor is a bug — reconcile before finishing
 
 ## Retired skills (2026-09-27, ADR-044)

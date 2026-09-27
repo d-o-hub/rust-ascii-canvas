@@ -414,12 +414,17 @@ jobs:
 
   ci-success:
     name: CI Success
-    needs: [fmt, clippy, architecture, rust, security, deny, web, wasm, e2e]
+    # `changes` MUST be listed here. If the Detect Changes job fails, GitHub
+    # skips every dependant — and this job would then see nine `skipped`
+    # results and report green. That is the L-002/L-003 trap reproduced inside
+    # the very check that gates merges, so the upstream job is verified too.
+    needs: [changes, fmt, clippy, architecture, rust, security, deny, web, wasm, e2e]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Check all jobs passed
         env:
+          CHANGES: ${{ needs.changes.result }}
           FMT: ${{ needs.fmt.result }}
           CLIPPY: ${{ needs.clippy.result }}
           ARCHITECTURE: ${{ needs.architecture.result }}
@@ -432,17 +437,26 @@ jobs:
         run: |
           set -uo pipefail
           declare -A results=(
-            [fmt]="$FMT" [clippy]="$CLIPPY" [architecture]="$ARCHITECTURE"
-            [rust]="$RUST" [security]="$SECURITY" [deny]="$DENY"
-            [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E"
+            [changes]="$CHANGES" [fmt]="$FMT" [clippy]="$CLIPPY"
+            [architecture]="$ARCHITECTURE" [rust]="$RUST" [security]="$SECURITY"
+            [deny]="$DENY" [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E"
           )
           blocked=0
           for job in "${!results[@]}"; do
             res="${results[$job]}"
             case "$res" in
-              # 'skipped' is legitimate: path filters skip jobs for docs-only changes.
-              success|skipped)
+              success)
                 echo "  $job: $res" ;;
+              # 'skipped' is legitimate ONLY for the sensor jobs: path filters skip
+              # them on docs-only changes. `changes` never has a skip path — if it
+              # is skipped, the detection step did not run and nothing is verified.
+              skipped)
+                if [[ "$job" == "changes" ]]; then
+                  echo "  $job: $res  <-- detection did not run; blocks merge"
+                  blocked=1
+                else
+                  echo "  $job: $res (path filter)"
+                fi ;;
               # 'cancelled' means unverified code. Concurrency cancellation always
               # triggers a fresh run on the new head, so failing here is safe — and
               # this job is a REQUIRED status check (harness L-008), so a cancelled

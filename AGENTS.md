@@ -22,25 +22,17 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
 | **pr** | Before merging anything | `npm run gate:pr` |
 | **focused** | While iterating on one area | relevant `cargo test …` / `cd web && pnpm test` / single Playwright file |
 
-### What fast includes
+### What the tiers cover
 
-- `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`
-- `cargo test` (native)
-- Architecture layer check
-- LOC limit (see `.loc-allowlist`)
-- **WASM pkg for typecheck**: `web/pkg` is gitignored; gate builds it if missing (CI downloads the wasm artifact before `tsc`)
-- Web: `pnpm lint`, `tsc --noEmit`, `pnpm test` (when `web/` present)
-- Privacy / secret scan
+- **fast** — fmt, clippy `-D warnings`, build, `cargo test`, architecture, LOC,
+  web lint/tsc/Vitest, privacy + secret scan. Builds `web/pkg` if missing (it is
+  gitignored, and CI downloads the wasm artifact before `tsc` — L-001).
+- **full** — adds cargo audit/deny, WASM build + size budget, Playwright E2E.
+- **pr** — the merge contract only; see *Merge & ship* below.
 
 ### CI vs local (learned)
 
 If CI is red and local is green, **do not** only re-run CI. Diff assumptions (artifacts, path filters, env). Fix the **sensor** so local fails the same way next time — see [harness learned failures](agents-docs/harness.md#learned-failure-modes-steering-log) (e.g. L-001 `web/pkg`).
-
-### What full adds
-
-- WASM build (`npm run build:wasm`) + size budget
-- E2E Chromium (`npm run test:e2e` / Playwright)
-- `cargo audit` when available
 
 Self-correct on red sensors before asking a human to review. Sensor output includes fix hints — follow them.
 
@@ -72,20 +64,9 @@ core (pure) ← render, ui ← wasm ← web/
 
 ## Tool behaviour checklist (behaviour harness)
 
-When changing drawing tools or canvas interaction, validate:
-
-| Tool | Core requirement |
-|------|------------------|
-| **Select** | Visible blue highlight; move & delete work |
-| **Rect** | Correct border style corners/lines |
-| **Line** | Continuous lines in all directions |
-| **Arrow** | Visible arrowhead (▲▼◄►) at end |
-| **Diamond** | Diagonal characters (╱╲) |
-| **Text** | Enter / Backspace / Delete |
-| **Free** | Character syncs with Border Style |
-| **Erase** | Radius-based clear; no OOB |
-
-Use the `tool-validation` skill for the full procedure.
+All 8 drawing tools (Select / Rect / Line / Arrow / Diamond / Text / Free /
+Erase) have per-tool acceptance criteria — use the `tool-validation` skill for
+the full procedure whenever tools or canvas interaction change.
 
 ## Merge & ship (less human in the loop)
 
@@ -117,16 +98,14 @@ production → failure → reproduce → candidate fix → evaluate
            → adversarial → shadow → canary → promote / rollback
 ```
 
-| Stage | This repo |
-|---|---|
-| **reproduce** | an automated failing test — no repro, no fix |
-| **evaluate** | `gate:fast` green |
-| **adversarial** | `pr-roast` skill, cited against official docs |
-| **shadow** | full E2E matrix against a build/preview (`BASE_URL`) |
-| **canary** | opt-in RC tag — this is a static app, so no true % split |
-| **promote / rollback** | Release workflow; revert the merge to roll back |
+Two stages carry most of the value: **reproduce** (an automated failing test —
+no repro, no fix) and **shadow** (full E2E against a production-shaped build;
+`playwright.config.ts` already honours `BASE_URL`, so a Netlify Deploy Preview
+works with no config change). Canary here is an opt-in RC tag, **not** a
+percentage rollout — this is a static app with no traffic splitting.
 
-Runbook: [agents-docs/delivery.md](agents-docs/delivery.md) · skill `production-loop`.
+Runbook and per-stage exit criteria: [agents-docs/delivery.md](agents-docs/delivery.md)
+· skill `production-loop`.
 
 **Human judgment stays** for scope/spec, ADRs, disputed roast blockers, and
 production rollback. **Human chore is gone** for gates, self-correction, the

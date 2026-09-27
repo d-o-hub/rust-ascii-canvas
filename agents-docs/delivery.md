@@ -110,11 +110,12 @@ gh workflow run release.yml && gh run watch
 gh release view vX.Y.Z
 
 # Roll back
-git revert -m 1 <merge-sha> && git push origin main     # redeploys prior state
+git revert <merge-sha> && git push origin main     # redeploys prior state
 ```
 
-Rollback detail, including the versioned WASM asset, is in
-[RELEASING.md](../plans/RELEASING.md#rollback).
+`git revert` takes **no** `-m` flag here: this repo mandates squash merges
+(`AGENTS.md`), so each PR is a single commit. `-m 1` is for merge commits and
+will fail. Full runbook: [RELEASING.md](../plans/RELEASING.md#rollback).
 
 ## What the human still decides
 

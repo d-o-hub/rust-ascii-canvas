@@ -86,10 +86,13 @@ Specializes in creating and maintaining agent documentation, best practices guid
 
 ## Best Practices
 
-1. **AGENTS.md is an index, not a manual.** Budget ≈120 lines. If a section
+1. **AGENTS.md is an index, not a manual.** Budget ≈160 lines. If a section
    outgrows that, the detail belongs in `agents-docs/` and AGENTS.md keeps the
    link. Root `AGENTS.md` is the only file loaded by default — anything critical
-   that lives only in `agents-docs/` will be missed.
+   that lives only in `agents-docs/` will be missed, so the merge contract and
+   the architecture rules stay here even though they push the file past the
+   original 120-line guideline. Do not duplicate a skill's content here: point at
+   the skill instead.
 2. **Per-skill budget: ≤300 lines** for `SKILL.md`. Push detail into
    `references/` (lowercase) and `templates/` (lowercase) — these are the
    directory names this repo actually uses; do not invent `REFERENCES/`.

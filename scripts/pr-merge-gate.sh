@@ -33,8 +33,10 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+# Resolve this script's own path BEFORE cd, so --help still works when invoked
+# from another directory (BASH_SOURCE is absolute; $0 is not).
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+ROOT="$(cd "$(dirname "$SCRIPT_PATH")/.." && pwd)"
 
 RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; YELLOW=$'\033[1;33m'; NC=$'\033[0m'
 [[ -t 1 ]] || { RED=''; GREEN=''; YELLOW=''; NC=''; }
@@ -46,15 +48,25 @@ for arg in "$@"; do
   case $arg in
     --json) JSON_OUT=true ;;
     --self-test) SELF_TEST=true ;;
-    -h|--help) sed -n '2,34p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,34p' "$SCRIPT_PATH" | sed 's/^# \{0,1\}//'; exit 0 ;;
     [0-9]*) PR_ARG="$arg" ;;
     *) echo "Unknown argument: $arg (try a PR number, --json, --self-test, --help)" >&2; exit 1 ;;
   esac
 done
 
-fail() { printf '%s✗ %s%s\n' "$RED" "$1" "$NC"; BLOCKED=$((BLOCKED + 1)); }
-ok()   { printf '%s✓ %s%s\n' "$GREEN" "$1" "$NC"; }
-warn() { printf '%s! %s%s\n' "$YELLOW" "$1" "$NC"; }
+cd "$ROOT"
+
+# In --json mode stdout is reserved for the JSON document, so every human-facing
+# line goes to stderr. Otherwise `script --json | jq .` would fail to parse.
+if $JSON_OUT; then
+  fail() { printf '%s✗ %s%s\n' "$RED" "$1" "$NC" >&2; BLOCKED=$((BLOCKED + 1)); }
+  ok()   { printf '%s✓ %s%s\n' "$GREEN" "$1" "$NC" >&2; }
+  warn() { printf '%s! %s%s\n' "$YELLOW" "$1" "$NC" >&2; }
+else
+  fail() { printf '%s✗ %s%s\n' "$RED" "$1" "$NC"; BLOCKED=$((BLOCKED + 1)); }
+  ok()   { printf '%s✓ %s%s\n' "$GREEN" "$1" "$NC"; }
+  warn() { printf '%s! %s%s\n' "$YELLOW" "$1" "$NC"; }
+fi
 
 BLOCKED=0
 
@@ -70,10 +82,12 @@ checks_not_green() {
              and $s != "PENDING" and $s != "IN_PROGRESS" and $s != "QUEUED" and $s != "")
     ] | length'
 }
-# Checks still running — not yet a pass, so they block.
+# Checks still running — not yet a pass, so they block. 'EXPECTED' is a legacy
+# "allowed to fail, awaiting" state; treat it as pending, never as green.
 checks_pending() {
   jq '[.statusCheckRollup[] | ((.conclusion // .state)) as $s
-    | select($s == "PENDING" or $s == "IN_PROGRESS" or $s == "QUEUED" or $s == "")
+    | select($s == "PENDING" or $s == "IN_PROGRESS" or $s == "QUEUED"
+             or $s == "EXPECTED" or $s == "WAITING" or $s == "REQUESTED" or $s == "")
     ] | length'
 }
 checks_total() { jq '.statusCheckRollup | length'; }
@@ -81,15 +95,25 @@ checks_failed_names() {
   jq -r '[.statusCheckRollup[]
     | select(((.conclusion // .state)) as $s
         | ($s != "SUCCESS" and $s != "NEUTRAL" and $s != "SKIPPED"
-           and $s != "PENDING" and $s != "IN_PROGRESS" and $s != "QUEUED" and $s != ""))
+           and $s != "PENDING" and $s != "IN_PROGRESS" and $s != "QUEUED"
+           and $s != "EXPECTED" and $s != "WAITING" and $s != "REQUESTED" and $s != ""))
     | (.name // .context // "?")] | unique | .[]'
 }
+# GraphQL thread accessors. `has("data")` guards against a null pullRequest,
+# which would otherwise make `length` of null read as "0 threads" — i.e. a
+# failure to query would look exactly like a clean PR.
+threads_data_ok() { jq -e '.data.repository.pullRequest != null' >/dev/null; }
 threads_total()  { jq '.data.repository.pullRequest.reviewThreads.nodes | length'; }
 threads_open()   { jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length'; }
 threads_open_list() {
   jq -r '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)
     | "\(.comments.nodes[0].author.login // "?"):\(.comments.nodes[0].path // "?")"] | .[]'
 }
+# reviewDecision is GitHub's authoritative roll-up: it already accounts for
+# dismissal and staleness. Counting every CHANGES_REQUESTED ever submitted
+# would block forever on a review the author has since addressed.
+review_decision() { jq -r '.reviewDecision // ""'; }
+# Informational only — kept for the report, not used to block.
 changes_requested() { jq '[.reviews[] | select(.state == "CHANGES_REQUESTED")] | length'; }
 
 # --- Offline self-test ------------------------------------------------------
@@ -123,13 +147,23 @@ if $SELF_TEST; then
   S='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"Clippy","conclusion":"SUCCESS"},{"name":"Web","conclusion":"SKIPPED"}],"reviews":[]}'
   # No CI ran at all — the L-002/L-003 trap.
   Z='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[],"reviews":[]}'
-  # Changes requested.
+  # A check cancelled mid-run must never read as green.
+  X='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"E2E Tests","conclusion":"CANCELLED"}],"reviews":[]}'
+  # Legacy 'expected to fail' state: pending, not a hard failure.
+  E='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"Legacy","state":"EXPECTED"}],"reviews":[]}'
+  # conclusion:null with a state field — the common real-world shape.
+  N='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"CI Success","conclusion":null,"state":"PENDING"}],"reviews":[]}'
+  # Review roll-up states.
   C='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"CI Success","conclusion":"SUCCESS"}],"reviews":[{"state":"CHANGES_REQUESTED"}]}'
+  CA='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"CI Success","conclusion":"SUCCESS"}],"reviews":[{"state":"CHANGES_REQUESTED"}],"reviewDecision":"APPROVED"}'
+  CR='{"isDraft":false,"mergeable":"MERGEABLE","statusCheckRollup":[{"name":"CI Success","conclusion":"SUCCESS"}],"reviews":[],"reviewDecision":"CHANGES_REQUESTED"}'
 
   # GraphQL thread fixtures.
   GT='{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[]}}}}}'
   GO='{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[{"isResolved":false,"comments":{"nodes":[{"author":{"login":"reviewer"},"path":"src/core/history.rs"}]}}]}}}}}'
   GR='{"data":{"repository":{"pullRequest":{"reviewThreads":{"nodes":[{"isResolved":true,"comments":{"nodes":[{"author":{"login":"reviewer"},"path":"web/ui.ts"}]}}]}}}}}'
+  # Query failed / PR not visible — must NOT read as "0 threads, all clear".
+  GN='{"data":{"repository":{"pullRequest":null}}}'
 
   echo "— status checks —"
   expect "green: not-green count"        0 "$(checks_not_green <<<"$G")"
@@ -141,6 +175,11 @@ if $SELF_TEST; then
   expect "pending: not NOT a failure"    0 "$(checks_not_green <<<"$P")"
   expect "skipped job still satisfies"   0 "$(checks_not_green <<<"$S")"
   expect "zero-check PR: total"          0 "$(checks_total <<<"$Z")"
+  expect "cancelled blocks (not green)"  1 "$(checks_not_green <<<"$X")"
+  expect "cancelled is not 'pending'"    0 "$(checks_pending <<<"$X")"
+  expect "EXPECTED treated as pending"   1 "$(checks_pending <<<"$E")"
+  expect "conclusion:null+state pending" 1 "$(checks_pending <<<"$N")"
+  expect "conclusion:null not a failure" 0 "$(checks_not_green <<<"$N")"
   echo
   echo "— review threads —"
   expect "no threads: total"             0 "$(threads_total <<<"$GT")"
@@ -150,10 +189,17 @@ if $SELF_TEST; then
   expect "open thread: names it" "reviewer:src/core/history.rs" "$(threads_open_list <<<"$GO")"
   expect "resolved thread: total"        1 "$(threads_total <<<"$GR")"
   expect "resolved thread: open"         0 "$(threads_open <<<"$GR")"
+  if threads_data_ok <<<"$GT"; then r=true; else r=false; fi
+  expect "valid payload accepted"      "$r" true
+  if threads_data_ok <<<"$GN"; then r=true; else r=false; fi
+  expect "null pullRequest REJECTED"   "$r" false
   echo
   echo "— reviews —"
   expect "no reviews"                    0 "$(changes_requested <<<"$G")"
-  expect "changes requested blocks"      1 "$(changes_requested <<<"$C")"
+  expect "historical CHANGES_REQUESTED"  1 "$(changes_requested <<<"$C")"
+  expect "roll-up: none set"             "" "$(review_decision <<<"$C")"
+  expect "roll-up: APPROVED wins"   "APPROVED" "$(review_decision <<<"$CA")"
+  expect "roll-up: CHANGES_REQUESTED" "CHANGES_REQUESTED" "$(review_decision <<<"$CR")"
   echo
 
   if [[ "$FAILED_FIXTURES" -gt 0 ]]; then
@@ -176,7 +222,11 @@ if ! command -v jq >/dev/null 2>&1; then
   exit 1
 fi
 
-REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner)"
+if ! REPO="$(gh repo view --json nameWithOwner --jq .nameWithOwner 2>/dev/null)"; then
+  echo "ERROR: could not determine the repository (gh repo view failed)." >&2
+  echo "  FIX: check network/auth, or run from inside a git checkout of the repo." >&2
+  exit 1
+fi
 OWNER="${REPO%%/*}"
 REPO_NAME="${REPO##*/}"
 
@@ -234,14 +284,20 @@ else
 fi
 
 # --- 2. Mergeable (no conflicts) --------------------------------------------
+# Fail closed. `mergeable` is UNKNOWN while GitHub is still computing (routine
+# right after a push), and it is also UNKNOWN if the query was truncated. An
+# unverified conflict state must never read as "mergeable" — see AGENTS.md:
+# do not treat "could not verify" as "verified".
 if [[ "$MERGEABLE" == "MERGEABLE" ]]; then
   ok "Mergeable (no conflicts with base)"
 elif [[ "$MERGEABLE" == "CONFLICTING" ]]; then
   fail "PR #$PR has merge conflicts"
   echo "  FIX: rebase onto the base branch: git rebase origin/main && git push --force-with-lease"
 else
-  # UNKNOWN means GitHub is still computing — not a verdict, so do not block.
-  warn "Mergeability is UNKNOWN (GitHub still computing) — re-run in a few seconds"
+  fail "Mergeability is $MERGEABLE (GitHub has not computed it yet)"
+  echo "  FIX: wait ~10s and re-run: ./scripts/pr-merge-gate.sh $PR"
+  echo "       UNKNOWN is not a pass. The auto-merge path will re-check anyway,"
+  echo "       but the local gate refuses to guess about conflicts."
 fi
 
 
@@ -272,29 +328,49 @@ else
 fi
 
 # --- 4. Every review thread resolved (harness L-008) ------------------------
-THREADS_TOTAL="$(threads_total <<<"$GRAPHQL")"
-THREADS_OPEN="$(threads_open <<<"$GRAPHQL")"
-THREADS_OPEN_LIST="$(threads_open_list <<<"$GRAPHQL" 2>/dev/null || true)"
-
-if [[ "$THREADS_TOTAL" -eq 0 ]]; then
-  ok "No review threads to resolve"
-elif [[ "$THREADS_OPEN" -gt 0 ]]; then
-  fail "$THREADS_OPEN of $THREADS_TOTAL review threads unresolved:"
-  while IFS= read -r t; do [[ -n "$t" ]] && echo "    - $t"; done <<<"$THREADS_OPEN_LIST"
-  echo "  FIX: address each thread (reply, fix the code, then 'Resolve thread')."
-  echo "       Unresolved threads mean reviewer feedback was dropped on the floor."
+THREADS_PAGE_SIZE=100
+if ! threads_data_ok <<<"$GRAPHQL"; then
+  fail "Could not read review threads for PR #$PR (GraphQL returned no pullRequest)"
+  echo "  FIX: the PR may not exist, or the token lacks 'read: pull requests'."
+  echo "       Treating an unanswerable query as 'no threads' would let a red PR through."
 else
-  ok "All $THREADS_TOTAL review threads resolved"
+  THREADS_TOTAL="$(threads_total <<<"$GRAPHQL")"
+  THREADS_OPEN="$(threads_open <<<"$GRAPHQL")"
+  THREADS_OPEN_LIST="$(threads_open_list <<<"$GRAPHQL" 2>/dev/null || true)"
+
+  if [[ "$THREADS_TOTAL" -eq 0 ]]; then
+    ok "No review threads to resolve"
+  elif [[ "$THREADS_OPEN" -gt 0 ]]; then
+    fail "$THREADS_OPEN of $THREADS_TOTAL review threads unresolved:"
+    while IFS= read -r t; do [[ -n "$t" ]] && echo "    - $t"; done <<<"$THREADS_OPEN_LIST"
+    echo "  FIX: address each thread (reply, fix the code, then 'Resolve thread')."
+    echo "       Unresolved threads mean reviewer feedback was dropped on the floor."
+  else
+    ok "All $THREADS_TOTAL review threads resolved"
+  fi
+
+  # A full page means the result set may be truncated; unreturned threads would
+  # be invisible to this sensor (the ruleset still enforces them server-side).
+  if [[ "$THREADS_TOTAL" -ge "$THREADS_PAGE_SIZE" ]]; then
+    warn "PR #$PR has >= $THREADS_PAGE_SIZE review threads — this query is capped at $THREADS_PAGE_SIZE."
+    echo "  Note: additional threads may exist beyond the first page. The ruleset"
+    echo "        still enforces thread resolution, so this cannot bypass the merge gate."
+  fi
 fi
 
-# --- 5. No outstanding CHANGES_REQUESTED -------------------------------------
+# --- 5. Review decision ------------------------------------------------------
+# Use GitHub's roll-up, not a raw count: a dismissed or stale CHANGES_REQUESTED
+# no longer counts against the PR, and blocking on one would deadlock the merge.
+REVIEW_DECISION="$(review_decision <<<"$PR_JSON")"
 CHANGES_REQ="$(changes_requested <<<"$PR_JSON")"
-if [[ "$CHANGES_REQ" -gt 0 ]]; then
-  fail "$CHANGES_REQ CHANGES_REQUESTED review(s) on record"
-  echo "  FIX: resolve the requested changes and request re-review. A new APPROVED review"
-  echo "       does not erase an old CHANGES_REQUESTED — push a fix commit instead."
+if [[ "$REVIEW_DECISION" == "CHANGES_REQUESTED" || "$REVIEW_DECISION" == "REVIEW_REQUIRED" ]]; then
+  fail "Review decision is '$REVIEW_DECISION' (changes are still requested)"
+  echo "  FIX: push a commit that addresses the review, then request re-review."
+  echo "       Only the latest state counts — a dismissed review no longer blocks."
+elif [[ "$CHANGES_REQ" -gt 0 ]]; then
+  ok "Review decision: ${REVIEW_DECISION:-none required} ($CHANGES_REQ historical CHANGES_REQUESTED, none current)"
 else
-  ok "No outstanding CHANGES_REQUESTED"
+  ok "Review decision: ${REVIEW_DECISION:-none required}, no CHANGES_REQUESTED"
 fi
 
 # --- Verdict ----------------------------------------------------------------
@@ -303,11 +379,16 @@ if [[ "$JSON_OUT" == "true" ]]; then
         --argjson blocked "$BLOCKED" \
         --argjson draft "$IS_DRAFT" --arg mergeable "$MERGEABLE" \
         --argjson checks "$CHECK_TOTAL" --argjson checksBad "$CHECK_BAD" \
-        --argjson threadsTotal "$THREADS_TOTAL" --argjson threadsOpen "$THREADS_OPEN" \
+        --argjson checksPending "$CHECK_PENDING" \
+        --argjson threadsTotal "${THREADS_TOTAL:-null}" \
+        --argjson threadsOpen "${THREADS_OPEN:-null}" \
+        --arg reviewDecision "$REVIEW_DECISION" \
         --argjson changesRequested "$CHANGES_REQ" \
         '{pr:$pr,url:$url,title:$title,mergeable:($blocked==0),
-          details:{draft:$draft,mergeability:$mergeable,checks:$checks,checksNotGreen:$checksBad,
-          reviewThreads:$threadsTotal,unresolvedThreads:$threadsOpen,changesRequested:$changesRequested}}'
+          details:{draft:$draft,mergeability:$mergeable,
+          checks:$checks,checksNotGreen:$checksBad,checksPending:$checksPending,
+          reviewThreads:$threadsTotal,unresolvedThreads:$threadsOpen,
+          reviewDecision:$reviewDecision,changesRequested:$changesRequested}}'
   [[ "$BLOCKED" -eq 0 ]] || exit 1
   exit 0
 fi
