@@ -4,6 +4,7 @@ mod bindings;
 mod clipboard;
 mod event_handlers;
 mod helpers;
+mod layer_api;
 mod render_api;
 mod render_bridge;
 mod selection;

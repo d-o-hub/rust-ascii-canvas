@@ -2,7 +2,6 @@
 
 use crate::core::ascii_export::{export_grid, export_region_with_options, ExportOptions};
 use crate::core::commands::{Command, DrawCommand};
-use crate::core::history::{History, DEFAULT_MAX_DEPTH};
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, SelectTool, ToolContext, ToolId};
 use crate::wasm::render_bridge::{
@@ -59,7 +58,7 @@ impl AsciiEditor {
 
         let mut cmd = DrawCommand::new(ops.to_vec());
         cmd.apply(&mut self.state.grid);
-        self.history.push(Box::new(cmd));
+        self.layer_stack.push_grid(Box::new(cmd));
 
         for op in ops {
             self.dirty_tracker.mark_dirty(op.x, op.y);
@@ -280,7 +279,7 @@ impl AsciiEditor {
             if !ops.is_empty() {
                 let mut cmd = DrawCommand::new(ops);
                 cmd.apply(&mut self.state.grid);
-                self.history.push(Box::new(cmd));
+                self.layer_stack.push_grid(Box::new(cmd));
                 self.dirty_tracker.request_full_redraw();
             }
 
@@ -354,7 +353,7 @@ impl AsciiEditor {
         if !ops.is_empty() {
             let mut cmd = DrawCommand::new(ops);
             cmd.apply(&mut self.state.grid);
-            self.history.push(Box::new(cmd));
+            self.layer_stack.push_grid(Box::new(cmd));
             self.dirty_tracker.request_full_redraw();
             return true;
         }
@@ -382,7 +381,7 @@ impl AsciiEditor {
             if !ops.is_empty() {
                 let mut cmd = DrawCommand::new(ops);
                 cmd.apply(&mut self.state.grid);
-                self.history.push(Box::new(cmd));
+                self.layer_stack.push_grid(Box::new(cmd));
                 self.dirty_tracker.request_full_redraw();
             }
 
@@ -392,197 +391,21 @@ impl AsciiEditor {
         false
     }
 
-    /// Persist active drawing surface into the layer store.
-    pub(crate) fn sync_active_layer(&mut self) {
-        if let Some(layer) = self.layers.get_mut(self.active_layer) {
-            layer.grid = self.state.grid.clone();
-        }
-    }
-
-    pub(crate) fn set_active_layer_impl(&mut self, index: usize) -> bool {
-        if index >= self.layers.len() || index == self.active_layer {
-            return index < self.layers.len();
-        }
-        self.sync_active_layer();
-
-        let old_active = self.active_layer;
-        self.active_layer = index;
-
-        // Swap history!
-        let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(&mut temp_history, &mut self.layers[old_active].history);
-        self.history = std::mem::take(&mut self.layers[index].history);
-
-        if let Some(layer) = self.layers.get(index) {
-            self.state.grid = layer.grid.clone();
-        }
-        self.current_selection = None;
-        self.preview_ops.clear();
-        self.dirty_tracker.request_full_redraw();
-        true
-    }
-
-    pub(crate) fn add_layer_impl(&mut self) -> usize {
-        self.sync_active_layer();
-        let w = self.state.grid.width();
-        let h = self.state.grid.height();
-        let name = format!("Layer {}", self.layers.len() + 1);
-
-        // Swap active history into old active layer's history
-        let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(
-            &mut temp_history,
-            &mut self.layers[self.active_layer].history,
-        );
-
-        self.layers.push(super::bindings::LayerData {
-            name,
-            visible: true,
-            locked: false,
-            grid: crate::core::Grid::new(w, h),
-            history: History::new(DEFAULT_MAX_DEPTH),
-        });
-        let index = self.layers.len() - 1;
-        self.active_layer = index;
-        self.state.grid = crate::core::Grid::new(w, h);
-        self.history = History::new(DEFAULT_MAX_DEPTH); // fresh history for the new layer
-        self.current_selection = None;
-        self.preview_ops.clear();
-        self.dirty_tracker.request_full_redraw();
-        index
-    }
-
-    pub(crate) fn move_layer_impl(&mut self, from_index: usize, to_index: usize) {
-        if from_index >= self.layers.len()
-            || to_index >= self.layers.len()
-            || from_index == to_index
-        {
-            return;
-        }
-        self.sync_active_layer();
-
-        // Temporarily swap active history back to active layer for moving
-        let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(
-            &mut temp_history,
-            &mut self.layers[self.active_layer].history,
-        );
-
-        let layer = self.layers.remove(from_index);
-        self.layers.insert(to_index, layer);
-
-        if self.active_layer == from_index {
-            self.active_layer = to_index;
-        } else if from_index < to_index
-            && self.active_layer > from_index
-            && self.active_layer <= to_index
-        {
-            self.active_layer -= 1;
-        } else if from_index > to_index
-            && self.active_layer >= to_index
-            && self.active_layer < from_index
-        {
-            self.active_layer += 1;
-        }
-
-        // Swap history back from the new active layer
-        let mut temp_history = std::mem::take(&mut self.layers[self.active_layer].history);
-        std::mem::swap(&mut temp_history, &mut self.history);
-
-        self.state.grid = self.layers[self.active_layer].grid.clone();
-        self.dirty_tracker.request_full_redraw();
-    }
-
-    pub(crate) fn delete_layer_impl(&mut self, index: usize) -> bool {
-        if self.layers.len() <= 1 || index >= self.layers.len() {
-            return false;
-        }
-        self.sync_active_layer();
-
-        // Temporarily swap active history back to active layer before structural changes
-        let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(
-            &mut temp_history,
-            &mut self.layers[self.active_layer].history,
-        );
-
-        self.layers.remove(index);
-
-        if self.active_layer == index {
-            if self.active_layer >= self.layers.len() {
-                self.active_layer = self.layers.len() - 1;
-            }
-        } else if self.active_layer > index {
-            self.active_layer -= 1;
-        }
-
-        // Restore active grid and history
-        self.state.grid = self.layers[self.active_layer].grid.clone();
-        self.history = std::mem::take(&mut self.layers[self.active_layer].history);
-
-        self.current_selection = None;
-        self.preview_ops.clear();
-        self.dirty_tracker.request_full_redraw();
-        true
-    }
-
-    pub(crate) fn merge_down_impl(&mut self, index: usize) -> bool {
-        if index == 0 || index >= self.layers.len() {
-            return false;
-        }
-        self.sync_active_layer();
-
-        // Temporarily swap active history back to active layer before structural changes
-        let mut temp_history = std::mem::take(&mut self.history);
-        std::mem::swap(
-            &mut temp_history,
-            &mut self.layers[self.active_layer].history,
-        );
-
-        // Clone upper layer's grid
-        let upper_grid = self.layers[index].grid.clone();
-
-        // Merge into lower layer
-        {
-            let lower_layer = &mut self.layers[index - 1];
-            for (x, y, cell) in upper_grid.iter_with_coords() {
-                if cell.is_visible() {
-                    lower_layer.grid.set(x, y, *cell);
-                }
-            }
-        }
-
-        self.layers.remove(index);
-
-        if self.active_layer == index {
-            self.active_layer = index - 1;
-        } else if self.active_layer > index {
-            self.active_layer -= 1;
-        }
-
-        self.state.grid = self.layers[self.active_layer].grid.clone();
-        self.history = std::mem::take(&mut self.layers[self.active_layer].history);
-
-        self.current_selection = None;
-        self.preview_ops.clear();
-        self.dirty_tracker.request_full_redraw();
-        true
-    }
-
     /// Composite all visible layers (bottom → top) into a single grid.
     pub(crate) fn composite_visible_grid(&self) -> crate::core::Grid {
         let w = self.state.grid.width();
         let h = self.state.grid.height();
         let mut out = crate::core::Grid::new(w, h);
 
-        for (i, layer) in self.layers.iter().enumerate() {
-            if !layer.visible {
+        let active = self.layer_stack.active_index();
+        for (i, layer) in self.layer_stack.layers().iter().enumerate() {
+            if !layer.is_visible() {
                 continue;
             }
-            let src = if i == self.active_layer {
+            let src = if i == active {
                 &self.state.grid
             } else {
-                &layer.grid
+                layer.grid()
             };
             for (x, y, cell) in src.iter_with_coords() {
                 if cell.is_visible() {
@@ -622,12 +445,13 @@ impl AsciiEditor {
             height: usize,
         }
 
-        let mut layers = Vec::with_capacity(self.layers.len());
-        for (i, layer) in self.layers.iter().enumerate() {
-            let src = if i == self.active_layer {
+        let active = self.layer_stack.active_index();
+        let mut layers = Vec::with_capacity(self.layer_stack.len());
+        for (i, layer) in self.layer_stack.layers().iter().enumerate() {
+            let src = if i == active {
                 &self.state.grid
             } else {
-                &layer.grid
+                layer.grid()
             };
             let mut cells = Vec::new();
             for (x, y, cell) in src.iter_with_coords() {
@@ -640,9 +464,9 @@ impl AsciiEditor {
                 }
             }
             layers.push(DocLayer {
-                name: layer.name.clone(),
-                visible: layer.visible,
-                locked: layer.locked,
+                name: layer.name().to_string(),
+                visible: layer.is_visible(),
+                locked: layer.is_locked(),
                 cells,
             });
         }
@@ -654,7 +478,7 @@ impl AsciiEditor {
                 width: self.state.grid.width(),
                 height: self.state.grid.height(),
             },
-            active_layer: self.active_layer,
+            active_layer: self.layer_stack.active_index(),
             layers,
         };
 
@@ -733,20 +557,15 @@ impl AsciiEditor {
                     let _ = grid.set_char(cell.x, cell.y, ch);
                 }
             }
-            layers.push(super::bindings::LayerData {
-                name: layer.name,
-                visible: layer.visible,
-                locked: layer.locked,
-                grid,
-                history: History::new(DEFAULT_MAX_DEPTH),
-            });
+            // Restore the per-layer flags too: they are part of the v1 format.
+            let mut loaded = crate::core::layer::Layer::with_grid(layer.name, grid);
+            loaded.set_visible(layer.visible);
+            loaded.set_locked(layer.locked);
+            layers.push(loaded);
         }
 
-        let active = doc.active_layer.min(layers.len() - 1);
-        self.layers = layers;
-        self.active_layer = active;
-        self.state.grid = self.layers[active].grid.clone();
-        self.history.clear();
+        self.layer_stack = crate::core::layer::LayerStack::from_layers(layers, doc.active_layer);
+        self.state.grid = self.layer_stack.active().grid().clone();
         self.clipboard.clear();
         self.current_selection = None;
         self.preview_ops.clear();
@@ -847,7 +666,7 @@ mod clipboard_tests {
         let mut canvas = AsciiEditor::new(8, 8);
         let idx = canvas.add_layer_impl();
         assert_eq!(idx, 1);
-        assert_eq!(canvas.layers.len(), 2);
+        assert_eq!(canvas.layer_stack.len(), 2);
     }
 
     #[test]
@@ -965,31 +784,31 @@ mod clipboard_tests {
         let _idx2 = canvas.add_layer_impl();
         canvas.state.grid.set_char(2, 2, 'C');
 
-        assert_eq!(canvas.layers.len(), 3);
-        assert_eq!(canvas.active_layer, 2);
+        assert_eq!(canvas.layer_stack.len(), 3);
+        assert_eq!(canvas.layer_stack.active_index(), 2);
 
         // Move active layer (2) down to index 1
         canvas.move_layer(2, 1);
-        assert_eq!(canvas.active_layer, 1);
-        assert_eq!(canvas.layers[1].name, "Layer 3"); // C should now be at index 1
-        assert_eq!(canvas.layers[2].name, "Layer 2"); // B should now be at index 2
+        assert_eq!(canvas.layer_stack.active_index(), 1);
+        assert_eq!(canvas.layer_stack.layers()[1].name(), "Layer 3"); // C should now be at index 1
+        assert_eq!(canvas.layer_stack.layers()[2].name(), "Layer 2"); // B should now be at index 2
     }
 
     #[test]
     fn test_delete_layer_prevents_deleting_last_layer() {
         let mut canvas = AsciiEditor::new(10, 10);
-        assert_eq!(canvas.layers.len(), 1);
+        assert_eq!(canvas.layer_stack.len(), 1);
 
         // Try deleting layer 0 (the only layer)
         assert!(!canvas.delete_layer(0));
-        assert_eq!(canvas.layers.len(), 1);
+        assert_eq!(canvas.layer_stack.len(), 1);
 
         // Add a layer and delete it
         canvas.add_layer_impl();
-        assert_eq!(canvas.layers.len(), 2);
+        assert_eq!(canvas.layer_stack.len(), 2);
         assert!(canvas.delete_layer(1));
-        assert_eq!(canvas.layers.len(), 1);
-        assert_eq!(canvas.active_layer, 0);
+        assert_eq!(canvas.layer_stack.len(), 1);
+        assert_eq!(canvas.layer_stack.active_index(), 0);
     }
 
     #[test]
@@ -1002,8 +821,8 @@ mod clipboard_tests {
 
         // Merge layer 1 down to layer 0
         assert!(canvas.merge_layer_down(1));
-        assert_eq!(canvas.layers.len(), 1);
-        assert_eq!(canvas.active_layer, 0);
+        assert_eq!(canvas.layer_stack.len(), 1);
+        assert_eq!(canvas.layer_stack.active_index(), 0);
 
         // Cell 'A' from bottom and 'B' from top should now both be in the bottom grid
         assert_eq!(canvas.state.grid.get(0, 0).unwrap().ch, 'A');

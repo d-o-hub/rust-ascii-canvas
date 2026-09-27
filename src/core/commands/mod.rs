@@ -2,9 +2,14 @@
 
 mod composite;
 mod draw;
+mod layer;
 
 pub use composite::CompositeCommand;
 pub use draw::DrawCommand;
+pub use layer::{
+    AddLayerCommand, DeleteLayerCommand, LayerCommand, MergeLayerDownCommand, MoveLayerCommand,
+    SetLayerLockedCommand, SetLayerNameCommand, SetLayerVisibleCommand,
+};
 
 use crate::core::cell::Cell;
 use crate::core::grid::Grid;
