@@ -19,8 +19,13 @@ pub enum HistoryOutcome {
     None,
     /// A grid command ran; the caller's grid holds the result.
     Grid,
-    /// A structural layer command ran; the caller's layer stack holds the result.
-    Layer,
+    /// A layer command ran that only changed metadata (name, visibility, lock,
+    /// order). The live drawing surface is untouched, so the caller must not
+    /// reload it from the layer copy: that copy predates any drawing done since.
+    LayerMeta,
+    /// A layer command ran that can change layer content (add, delete, merge).
+    /// The layer stack is authoritative and the caller should reload from it.
+    LayerContent,
 }
 
 /// One entry on a per-layer timeline.
@@ -32,11 +37,17 @@ pub enum HistoryEntry {
 }
 
 impl HistoryEntry {
-    /// Whether this is a grid or a layer entry.
+    /// Whether this entry changes the grid, only layer metadata, or layer content.
     pub fn kind(&self) -> HistoryOutcome {
         match self {
             HistoryEntry::Grid(_) => HistoryOutcome::Grid,
-            HistoryEntry::Layer(_) => HistoryOutcome::Layer,
+            HistoryEntry::Layer(cmd) => {
+                if cmd.changes_content() {
+                    HistoryOutcome::LayerContent
+                } else {
+                    HistoryOutcome::LayerMeta
+                }
+            }
         }
     }
 
@@ -342,11 +353,17 @@ mod tests {
         assert_eq!(layers.active().name(), "Renamed");
         assert_eq!(history.undo_description(), Some("Rename layer"));
 
-        assert_eq!(history.undo(&mut grid, &mut layers), HistoryOutcome::Layer);
+        assert_eq!(
+            history.undo(&mut grid, &mut layers),
+            HistoryOutcome::LayerMeta
+        );
         assert_eq!(layers.active().name(), "Layer 1");
         assert_eq!(history.redo_description(), Some("Rename layer"));
 
-        assert_eq!(history.redo(&mut grid, &mut layers), HistoryOutcome::Layer);
+        assert_eq!(
+            history.redo(&mut grid, &mut layers),
+            HistoryOutcome::LayerMeta
+        );
         assert_eq!(layers.active().name(), "Renamed");
     }
 
@@ -368,7 +385,10 @@ mod tests {
         // The structural entry is on top, so it undoes first even though the
         // active layer is locked: a lock must not trap the user.
         layers.set_locked(0, true);
-        assert_eq!(history.undo(&mut grid, &mut layers), HistoryOutcome::Layer);
+        assert_eq!(
+            history.undo(&mut grid, &mut layers),
+            HistoryOutcome::LayerMeta
+        );
         assert_eq!(layers.active().name(), "Layer 1");
 
         // Now a grid entry is on top and the lock blocks it. The entry stays on

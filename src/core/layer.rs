@@ -78,6 +78,11 @@ impl Layer {
         self.id
     }
 
+    /// Set the identity in place (see [`Layer::with_id`]).
+    pub(crate) fn set_id(&mut self, id: u64) {
+        self.id = id;
+    }
+
     /// Layer name.
     pub fn name(&self) -> &str {
         &self.name

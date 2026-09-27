@@ -38,6 +38,11 @@ fn names(stack: &LayerStack) -> Vec<String> {
         .collect()
 }
 
+/// Id of a layer by index, for commands that address layers by id.
+fn id_of(stack: &LayerStack, index: usize) -> u64 {
+    stack.layer_id_at(index).expect("layer exists")
+}
+
 fn char_at(stack: &LayerStack, layer: usize, x: i32, y: i32) -> Option<char> {
     stack
         .get(layer)?
@@ -225,10 +230,12 @@ fn active_index_mappings() {
 fn add_command_scaffolding_is_public() {
     // The add command derives its layer from the stack, so callers cannot
     // record an add that differs from what `add_layer` would do.
-    let stack = three_layers();
-    let cmd = AddLayerCommand::adding_next(&stack);
+    let mut stack = three_layers();
+    let cmd = AddLayerCommand::adding_next(&mut stack);
     assert_eq!(cmd.index(), 3);
     assert_eq!(cmd.description(), "Add layer");
+    // The command claims an id up front so it can find its own layer again.
+    assert_ne!(cmd.layer_id(), 0);
 }
 
 // ------------------------------------------------- structural command matrix
@@ -278,45 +285,41 @@ fn stack_active_at(index: usize) -> LayerStack {
 fn rename_undoes_and_redoes() {
     let mut stack = stack_active_at(0);
     let old = stack.layers()[0].name().to_string();
-    let cmd = SetLayerNameCommand::new(0, old, "Renamed".to_string());
+    let cmd = SetLayerNameCommand::new(id_of(&stack, 0), old, "Renamed".to_string());
     record(&mut stack, Box::new(cmd));
     assert_eq!(stack.layers()[0].name(), "Renamed");
     assert_eq!(stack.undo_description(), Some("Rename layer"));
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerMeta);
     assert_eq!(stack.layers()[0].name(), "Layer 1");
-    assert_eq!(redo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(redo(&mut stack), HistoryOutcome::LayerMeta);
     assert_eq!(stack.layers()[0].name(), "Renamed");
 }
 
 #[test]
 fn visibility_undoes_and_redoes() {
     let mut stack = stack_active_at(1);
-    record(
-        &mut stack,
-        Box::new(SetLayerVisibleCommand::new(1, true, false)),
-    );
+    let cmd = SetLayerVisibleCommand::new(id_of(&stack, 1), true, false);
+    record(&mut stack, Box::new(cmd));
     assert!(!stack.layers()[1].is_visible());
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerMeta);
     assert!(stack.layers()[1].is_visible());
-    assert_eq!(redo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(redo(&mut stack), HistoryOutcome::LayerMeta);
     assert!(!stack.layers()[1].is_visible());
 }
 
 #[test]
 fn lock_undo_works_while_the_layer_stays_locked() {
     let mut stack = stack_active_at(0);
-    record(
-        &mut stack,
-        Box::new(SetLayerLockedCommand::new(0, false, true)),
-    );
+    let cmd = SetLayerLockedCommand::new(id_of(&stack, 0), false, true);
+    record(&mut stack, Box::new(cmd));
     assert!(stack.is_active_locked());
 
     // The layer is locked, but undoing the lock must not be blocked: otherwise a
     // user can lock a layer and be unable to undo anything on it again.
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerMeta);
     assert!(!stack.is_active_locked());
-    assert_eq!(redo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(redo(&mut stack), HistoryOutcome::LayerMeta);
     assert!(stack.is_active_locked());
 }
 
@@ -325,14 +328,15 @@ fn move_undoes_and_redoes_with_the_active_index() {
     let mut stack = three_layers();
     // Active is 2 ("Layer 3"). Moving layer 0 up to index 2 reorders the stack
     // to [2, 3, 1] and must leave the active layer on "Layer 3" at index 1.
-    record(&mut stack, Box::new(MoveLayerCommand::new(0, 2)));
+    let id = id_of(&stack, 0);
+    record(&mut stack, Box::new(MoveLayerCommand::new(0, 2, id)));
     assert_eq!(names(&stack), vec!["Layer 2", "Layer 3", "Layer 1"]);
     assert_eq!(stack.active_index(), 1);
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerMeta);
     assert_eq!(names(&stack), vec!["Layer 1", "Layer 2", "Layer 3"]);
     assert_eq!(stack.active_index(), 2, "the active layer must follow back");
-    assert_eq!(redo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(redo(&mut stack), HistoryOutcome::LayerMeta);
     assert_eq!(names(&stack), vec!["Layer 2", "Layer 3", "Layer 1"]);
     assert_eq!(stack.active_index(), 1);
 }
@@ -340,12 +344,12 @@ fn move_undoes_and_redoes_with_the_active_index() {
 #[test]
 fn add_undoes_once_and_does_not_toggle() {
     let mut stack = three_layers();
-    let add = AddLayerCommand::adding_next(&stack);
+    let add = AddLayerCommand::adding_next(&mut stack);
     record(&mut stack, Box::new(add));
     assert_eq!(stack.len(), 4);
     assert_eq!(stack.active_index(), 3);
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(stack.len(), 3);
     assert_eq!(stack.active_index(), 2);
 
@@ -368,7 +372,7 @@ fn delete_of_active_layer_undoes_and_redoes() {
     assert_eq!(names(&stack), vec!["Layer 1", "Layer 3"]);
     assert_eq!(stack.active_index(), 1);
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(names(&stack), vec!["Layer 1", "Layer 2", "Layer 3"]);
     // Back on the restored layer, which keeps the index it was deleted from.
     assert_eq!(stack.active_index(), 1);
@@ -380,7 +384,7 @@ fn delete_of_active_layer_undoes_and_redoes() {
     // only reachable from the other layer. Known limit of per-layer history.
     assert_eq!(redo(&mut stack), HistoryOutcome::None);
     stack.set_active(2); // "Layer 3" is the layer that recorded the delete
-    assert_eq!(redo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(redo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(names(&stack), vec!["Layer 1", "Layer 3"]);
     assert_eq!(stack.active_index(), 1);
 }
@@ -393,7 +397,7 @@ fn delete_keeps_the_removed_layers_own_history() {
     record(&mut stack, Box::new(cmd));
     assert_eq!(stack.len(), 2);
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(stack.len(), 3);
     // The layer came back with the undo history it had, not an empty one.
     assert!(stack.layers()[0].history().can_undo());
@@ -429,7 +433,7 @@ fn merge_undo_restores_both_layers_and_the_overlap() {
     assert_eq!(char_at(&stack, 0, 1, 0), Some('B'), "untouched cell stays");
     assert_eq!(char_at(&stack, 0, 2, 0), Some('D'));
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(stack.len(), 2);
     assert_eq!(char_at(&stack, 0, 0, 0), Some('A'), "overlap is restored");
     assert_eq!(char_at(&stack, 0, 1, 0), Some('B'));
@@ -442,7 +446,7 @@ fn merge_undo_restores_both_layers_and_the_overlap() {
     // history, not a lost entry.
     assert_eq!(redo(&mut stack), HistoryOutcome::None);
     stack.set_active(0);
-    assert_eq!(redo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(redo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(stack.len(), 1);
     assert_eq!(char_at(&stack, 0, 0, 0), Some('C'));
 }
@@ -462,7 +466,7 @@ fn merge_undo_clears_cells_the_merge_created() {
     record(&mut stack, Box::new(cmd));
     assert_eq!(char_at(&stack, 0, 2, 0), Some('D'));
 
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerContent);
     assert_eq!(
         char_at(&stack, 0, 2, 0),
         None,
@@ -488,17 +492,23 @@ fn structural_and_draw_entries_interleave_in_order() {
     draw.apply(&mut surface);
     stack.push_grid(Box::new(draw));
     let old = stack.layers()[0].name().to_string();
-    let cmd = SetLayerNameCommand::new(0, old, "Renamed".to_string());
+    let cmd = SetLayerNameCommand::new(id_of(&stack, 0), old, "Renamed".to_string());
     record(&mut stack, Box::new(cmd));
     assert_eq!(stack.layers()[0].name(), "Renamed");
 
-    assert_eq!(undo_with(&mut stack, &mut surface), HistoryOutcome::Layer);
+    assert_eq!(
+        undo_with(&mut stack, &mut surface),
+        HistoryOutcome::LayerMeta
+    );
     assert_eq!(stack.layers()[0].name(), "Layer 1");
     assert_eq!(undo_with(&mut stack, &mut surface), HistoryOutcome::Grid);
     assert!(surface.get(0, 0).expect("cell").is_empty());
     assert_eq!(redo_with(&mut stack, &mut surface), HistoryOutcome::Grid);
     assert_eq!(surface.get(0, 0).expect("cell").ch, 'Z');
-    assert_eq!(redo_with(&mut stack, &mut surface), HistoryOutcome::Layer);
+    assert_eq!(
+        redo_with(&mut stack, &mut surface),
+        HistoryOutcome::LayerMeta
+    );
     assert_eq!(stack.layers()[0].name(), "Renamed");
 }
 
@@ -515,7 +525,7 @@ fn a_locked_layer_blocks_draw_undo() {
 
     // ...then lock layer 0 from layer 1, so the lock lands on layer 1's history.
     stack.set_active(1);
-    let lock = SetLayerLockedCommand::new(0, false, true);
+    let lock = SetLayerLockedCommand::new(id_of(&stack, 0), false, true);
     record(&mut stack, Box::new(lock));
     assert!(stack.layers()[0].is_locked());
 
@@ -536,7 +546,7 @@ fn a_locked_layer_blocks_draw_undo() {
 #[test]
 fn undo_does_not_cross_layers() {
     let mut stack = stack_active_at(0);
-    let lock = SetLayerLockedCommand::new(0, false, true);
+    let lock = SetLayerLockedCommand::new(id_of(&stack, 0), false, true);
     record(&mut stack, Box::new(lock));
     assert!(stack.layers()[0].is_locked());
 
@@ -547,7 +557,7 @@ fn undo_does_not_cross_layers() {
     assert!(stack.layers()[0].is_locked());
 
     stack.set_active(0);
-    assert_eq!(undo(&mut stack), HistoryOutcome::Layer);
+    assert_eq!(undo(&mut stack), HistoryOutcome::LayerMeta);
     assert!(!stack.layers()[0].is_locked());
 }
 
@@ -555,7 +565,7 @@ fn undo_does_not_cross_layers() {
 fn history_reports_descriptions_for_both_kinds_of_entry() {
     let mut stack = stack_active_at(0);
     let old = stack.layers()[0].name().to_string();
-    let cmd = SetLayerNameCommand::new(0, old, "Renamed".to_string());
+    let cmd = SetLayerNameCommand::new(id_of(&stack, 0), old, "Renamed".to_string());
     record(&mut stack, Box::new(cmd));
     assert_eq!(stack.undo_description(), Some("Rename layer"));
     assert_eq!(stack.redo_description(), None);

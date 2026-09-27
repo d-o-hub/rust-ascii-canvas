@@ -577,6 +577,7 @@ impl AsciiEditor {
 
 #[cfg(test)]
 mod clipboard_tests {
+    use crate::core::tools::DrawOp;
     use crate::wasm::bindings::AsciiEditor;
 
     fn make_canvas_with_box() -> AsciiEditor {
@@ -831,30 +832,38 @@ mod clipboard_tests {
 
     #[test]
     fn test_layer_history_preservation_across_switches() {
+        // Two layers, loaded rather than added, so neither history is seeded with
+        // a structural entry and the undo order stays purely about drawing.
+        let json = r#"{"format":"ascii-canvas","version":1,"canvas":{"width":10,"height":10},
+"active_layer":0,"layers":[{"name":"Base","visible":true,"locked":false,
+"cells":[{"x":0,"y":0,"ch":"A"}]},
+{"name":"Sketch","visible":true,"locked":false,
+"cells":[{"x":1,"y":1,"ch":"B"}]}]}"#;
         let mut canvas = AsciiEditor::new(10, 10);
+        assert!(canvas.load_document_impl(json));
 
-        // Draw 'A' on Layer 0 (creates an undo step on Layer 0)
-        use crate::core::tools::DrawOp;
-        canvas.commit_ops(&[DrawOp::new(0, 0, 'A')]);
-        assert_eq!(canvas.state.grid.get(0, 0).unwrap().ch, 'A');
-        assert!(canvas.can_undo());
-
-        // Add Layer 1 and draw 'B'
-        canvas.add_layer_impl();
-        canvas.commit_ops(&[DrawOp::new(1, 1, 'B')]);
+        // Layer 0 draws 'C'; layer 1 already holds 'B' and gets 'D'.
+        canvas.commit_ops(&[DrawOp::new(2, 2, 'C')]);
+        assert_eq!(canvas.state.grid.get(2, 2).unwrap().ch, 'C');
+        assert!(canvas.set_active_layer(1));
         assert_eq!(canvas.state.grid.get(1, 1).unwrap().ch, 'B');
-        assert!(canvas.can_undo());
+        canvas.commit_ops(&[DrawOp::new(3, 3, 'D')]);
+        assert_eq!(canvas.state.grid.get(3, 3).unwrap().ch, 'D');
 
-        // Switch to Layer 0
-        canvas.set_active_layer(0);
-        assert_eq!(canvas.state.grid.get(0, 0).unwrap().ch, 'A');
-        // Undo on Layer 0 should undo 'A' but keep 'B' on Layer 1 intact
+        // Undo on layer 1 touches only layer 1: 'D' goes, the loaded 'B' stays
+        // (it came from the document, not from a draw, so it has no history entry).
         assert!(canvas.undo());
-        assert_eq!(canvas.state.grid.get(0, 0).unwrap().ch, ' ');
-
-        // Switch back to Layer 1 and verify 'B' is still there
-        canvas.set_active_layer(1);
+        assert!(canvas.state.grid.get(3, 3).unwrap().is_empty());
         assert_eq!(canvas.state.grid.get(1, 1).unwrap().ch, 'B');
+        assert!(!canvas.undo(), "layer 1 has nothing left");
+
+        // Layer 0's own history is untouched: 'A' and 'C' are still there.
+        assert!(canvas.set_active_layer(0));
+        assert_eq!(canvas.state.grid.get(0, 0).unwrap().ch, 'A');
+        assert_eq!(canvas.state.grid.get(2, 2).unwrap().ch, 'C');
+        assert!(canvas.undo());
+        assert!(canvas.state.grid.get(2, 2).unwrap().is_empty());
+        assert_eq!(canvas.state.grid.get(0, 0).unwrap().ch, 'A');
     }
 
     #[test]
