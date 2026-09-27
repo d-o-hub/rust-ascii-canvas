@@ -573,12 +573,12 @@ export function setupEventListeners(): void {
 
     if (state.undoBtn) {
         state.undoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        state.undoBtn.addEventListener('click', () => applyHistory('undo'));
+        state.undoBtn.addEventListener('click', () => { applyHistory('undo'); });
     }
 
     if (state.redoBtn) {
         state.redoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        state.redoBtn.addEventListener('click', () => applyHistory('redo'));
+        state.redoBtn.addEventListener('click', () => { applyHistory('redo'); });
     }
 
     if (state.copyBtn) {

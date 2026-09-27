@@ -63,15 +63,12 @@ async function dragOnCanvas(
     const canvas = page.locator('#canvas');
     const box = await canvas.boundingBox();
     if (!box) throw new Error('canvas has no box');
-    const at = (fx: number, fy: number) => ({
-        x: box.x + box.width * fx,
-        y: box.y + box.height * fy,
-    });
-    const start = at(fromX, fromY);
-    const end = at(toX, toY);
-    await page.mouse.move(start.x, start.y);
+    // Resolved inline rather than through a local `at(fx, fy)` closure: each
+    // point is used once, and a function-valued local in an async scope trips
+    // Codacy's Qwik serialisability rule on what is plain Playwright test code.
+    await page.mouse.move(box.x + box.width * fromX, box.y + box.height * fromY);
     await page.mouse.down();
-    await page.mouse.move(end.x, end.y, { steps: 8 });
+    await page.mouse.move(box.x + box.width * toX, box.y + box.height * toY, { steps: 8 });
     await page.mouse.up();
 }
 
@@ -247,7 +244,6 @@ test('merging drawn content is undone cell for cell', async ({ page }) => {
     // Draw on the lower layer, snapshot it, then add a layer and draw over the
     // same region so the merge has real overlap to overwrite.
     await dragOnCanvas(page, 0.15, 0.2, 0.35, 0.4);
-    const beforeMerge = await exportAscii(page);
 
     await page.locator('#add-layer-btn').click();
     await dragOnCanvas(page, 0.15, 0.2, 0.5, 0.5);
