@@ -81,6 +81,9 @@ A PR may be merged when **all** of these hold — nothing else:
 | 4 | No outstanding `CHANGES_REQUESTED` | `npm run gate:pr` | — |
 | 5 | Adversarial pass clean | `pr-roast` | — |
 
+`Codacy Static Code Analysis` is required by the ruleset, so it is part of
+condition 2 — see the **Codacy** section and the `codacy` skill.
+
 ```bash
 npm run gate:fast          # while iterating
 npm run gate:full          # before the PR is mergeable
@@ -126,6 +129,7 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Run sensors / self-correct | `verify` |
 | Semantic review | `code-review` |
 | Adversarial review ("roast") | `pr-roast` |
+| **Codacy findings / blocked PR** | **`codacy`** (policy) + `codacy-cloud-cli`, `codacy-code-review`, `configure-codacy*` (tooling, upstream) |
 | Decide + perform the merge | `merge-gate` |
 | Ship safely (shadow → canary → promote) | `production-loop` |
 | Rust implementation | `rust-engineer`, `rust-best-practices`, `rust-wasm` |
@@ -133,6 +137,20 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Tool QA | `tool-validation` |
 | Exploratory UX | `dogfood` |
 | Maintain this doc | `agents-md` |
+
+## Codacy
+
+**Any Codacy warning, issue, or failing/stuck check on a GitHub PR — use the
+`codacy` skill.** Read it before touching code or deciding the PR can merge.
+
+`Codacy Static Code Analysis` is a **required** status check, so a non-`SUCCESS`
+Codacy state blocks the merge and `npm run gate:pr` reports `MERGE BLOCKED`.
+Codacy is a third-party GitHub App: there is no Actions run to re-dispatch. Its
+findings **are** readable from the CLI — `codacy -o json pull-request <PR>` gives
+file, line, pattern id and severity, so read them and fix them rather than
+asking a human to fetch a dashboard. Never force the merge with `--admin` or by
+dropping the required check; if a fix needs a decision above your level,
+escalate with the findings quoted.
 
 ## Reference docs
 
@@ -159,6 +177,12 @@ roast, comment tracking, shadow E2E, and clicking merge.
 
 ## PR / handoff
 
+- **Branch from the base branch, never from another feature branch.** Before
+  opening a PR, `git log origin/main..HEAD` must list only commits you authored
+  this session. If it lists more, the branch is wrong — rebase it. A per-commit
+  "no product code staged" check cannot catch a foreign commit that was never
+  staged; that is exactly how the F-13 feature merged under a `chore:` title
+  (harness **L-011**). `npm run gate:pr` now prints the commit list.
 - Fast gates green on every push-worthy change; full gates green before review.
 - PR template checkboxes must reflect reality.
 - Call out harness changes (new sensors, allowlist, CI) explicitly in the PR body.

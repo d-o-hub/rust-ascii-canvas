@@ -149,6 +149,30 @@ impl LayerStack {
         }
     }
 
+    /// Rename the layer with this id. Returns false when it is not present.
+    pub fn set_name_by_id(&mut self, id: u64, name: String) -> bool {
+        match self.index_of_id(id) {
+            Some(index) => self.set_name(index, name),
+            None => false,
+        }
+    }
+
+    /// Set visibility by layer id. Returns false when it is not present.
+    pub fn set_visible_by_id(&mut self, id: u64, visible: bool) -> bool {
+        match self.index_of_id(id) {
+            Some(index) => self.set_visible(index, visible),
+            None => false,
+        }
+    }
+
+    /// Set the lock state by layer id. Returns false when it is not present.
+    pub fn set_locked_by_id(&mut self, id: u64, locked: bool) -> bool {
+        match self.index_of_id(id) {
+            Some(index) => self.set_locked(index, locked),
+            None => false,
+        }
+    }
+
     /// Set layer visibility. Returns false when the index is out of range.
     pub fn set_visible(&mut self, index: usize, visible: bool) -> bool {
         match self.layers.get_mut(index) {
@@ -194,6 +218,27 @@ impl LayerStack {
             self.next_id += 1;
         }
         self.layers.insert(index, layer);
+    }
+
+    /// Id of the layer at this index, if any.
+    pub fn layer_id_at(&self, index: usize) -> Option<u64> {
+        self.layers.get(index).map(Layer::id)
+    }
+
+    /// Reserve the id the next inserted layer will get.
+    ///
+    /// A command that inserts a layer takes its id up front, so its apply and
+    /// undo both address that exact layer instead of a positional guess.
+    pub fn reserve_layer_id(&mut self) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        id
+    }
+
+    /// Remove the layer with this id, keeping the active index on the same layer.
+    pub fn remove_layer_by_id(&mut self, id: u64) -> Option<Layer> {
+        self.index_of_id(id)
+            .and_then(|index| self.remove_layer_tracking(index))
     }
 
     /// Remove a layer, keeping the active index on the same layer.
@@ -311,6 +356,26 @@ impl LayerStack {
     /// Record a structural layer command on the active layer's history.
     pub fn push_layer_command(&mut self, command: Box<dyn LayerCommand>) {
         self.active_mut().history.push_layer(command);
+    }
+
+    /// Record a structural layer command on the layer with this id, falling back
+    /// to the active layer when that layer is gone.
+    ///
+    /// The id is captured *before* the change, because indices move: a reorder
+    /// would otherwise file the entry under whichever layer took that index.
+    pub fn push_layer_command_on_id(&mut self, id: u64, command: Box<dyn LayerCommand>) {
+        let index = self.index_of_id(id).unwrap_or(self.active);
+        self.layers[index].history.push_layer(command);
+    }
+
+    /// Number of undo steps on the active layer.
+    pub fn undo_count(&self) -> usize {
+        self.active().history.undo_count()
+    }
+
+    /// Number of redo steps on the active layer.
+    pub fn redo_count(&self) -> usize {
+        self.active().history.redo_count()
     }
 
     /// Whether the active layer can undo.

@@ -1,6 +1,36 @@
 {
   "version": 1,
   "skills": {
+    "codacy-analysis-cli": {
+      "source": "github/codacy/codacy-skills",
+      "sourceType": "github",
+      "computedHash": "d7cc9122416838a205c8bc4b37a66b65ec5ef883d7f116ef021a3234061e359c"
+    },
+    "codacy-cloud-cli": {
+      "source": "github/codacy/codacy-skills",
+      "sourceType": "github",
+      "computedHash": "9bf9440394b8375f4a5330a075d71193915853791f147d31f58c73731556c7d1"
+    },
+    "codacy-code-review": {
+      "source": "github/codacy/codacy-skills",
+      "sourceType": "github",
+      "computedHash": "3c35c6a0df7443f57e2849924a153c92027dac9cba587a1bf1ed0d5809c917b1"
+    },
+    "configure-codacy": {
+      "source": "github/codacy/codacy-skills",
+      "sourceType": "github",
+      "computedHash": "a8aadb16082fe66e730e4a80a8a6fee951bd977873c5ab4a398b499037f8efec"
+    },
+    "configure-codacy-cloud": {
+      "source": "github/codacy/codacy-skills",
+      "sourceType": "github",
+      "computedHash": "46f558ffa4bb6412df66fe819032c5475eceefaa1d84f482b979c684f4347e41"
+    },
+    "setup-coverage": {
+      "source": "github/codacy/codacy-skills",
+      "sourceType": "github",
+      "computedHash": "90046e9c7784f17416b21450d95cacc03eefd00a3528b3ed169abdd52ea7ec37"
+    },
     "rust-wasm": {
       "source": "pluginagentmarketplace/custom-plugin-rust",
       "sourceType": "github",

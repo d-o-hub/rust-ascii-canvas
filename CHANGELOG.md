@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **F-13 layer history: undo could rename the wrong layer.** The layer-history
+  commands landed in #213 recorded a **positional index** and replayed it on
+  undo, so any reorder or delete between record and replay made the undo target
+  a different layer — e.g. rename `B`, move `B` down, then Undo renames whatever
+  now sits at that index. `Layer` now carries a stable `id` and mutations resolve
+  by id (`set_name_by_id`, `set_visible_by_id`, `set_locked_by_id`,
+  `remove_layer_by_id`); the WASM API still takes a positional index from JS and
+  translates at the boundary. ADR-043 had flagged this hazard, but every test
+  exercised one mutation in isolation. 18 new tests, including two that pin the
+  bug, plus 4 E2E specs.
+
+### Notes
+
+- **F-13 layer history (ADR-043) landed under a `chore(harness):` commit.** The
+  implementation was authored in #212 but reached `main` inside #213
+  (`chore(harness): make CI green a merge precondition`), because that branch
+  was created from `feat/f13-layer-undo` rather than from `main` and therefore
+  carried the unmerged feature commit. Attribution: **F-13 = #213 in history**,
+  designed under #212. #212 is closed as already-landed. Harness L-011;
+  ADR-043 updated.
+- Layer-history test bodies were extracted out of `src/wasm/layer_api.rs` into
+  two sibling test modules to hold the 500-line budget (467 → 306).
+- The F-13 change still has **no `pr-roast` adversarial pass** — it merged
+  under a `chore:` title, which is precisely the case the roast pass exists to
+  catch. The positional-index bug above is a plausible instance of what that
+  pass would have found.
+
 ## [0.1.4] - 2026-09-24
 
 ### Changes

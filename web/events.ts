@@ -398,6 +398,25 @@ export function wireOptionalButton(id: string, onClick: () => void): void {
     el.addEventListener('click', onClick);
 }
 
+/**
+ * Undo/redo report whether they did anything. When there *is* something to undo
+ * but the active layer is locked, the editor refuses it and keeps the entry, so
+ * say why instead of appearing to do nothing (ADR-043 decision 3).
+ */
+function applyHistory(action: 'undo' | 'redo'): void {
+    if (!state.editor) return;
+    const done = action === 'undo' ? state.editor.undo() : state.editor.redo();
+    if (!done) {
+        const pending = action === 'undo' ? state.editor.can_undo : state.editor.can_redo;
+        if (pending) {
+            showToast(`Cannot ${action} on a locked layer - unlock it first`, true);
+        }
+    }
+    requestRender();
+    updateUI();
+    if (state.canvas) state.canvas.focus();
+}
+
 export function setupEventListeners(): void {
     if (!state.canvas) return;
 
@@ -554,24 +573,12 @@ export function setupEventListeners(): void {
 
     if (state.undoBtn) {
         state.undoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        state.undoBtn.addEventListener('click', () => {
-            if (!state.editor) return;
-            state.editor.undo();
-            requestRender();
-            updateUI();
-            if (state.canvas) state.canvas.focus();
-        });
+        state.undoBtn.addEventListener('click', () => { applyHistory('undo'); });
     }
 
     if (state.redoBtn) {
         state.redoBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        state.redoBtn.addEventListener('click', () => {
-            if (!state.editor) return;
-            state.editor.redo();
-            requestRender();
-            updateUI();
-            if (state.canvas) state.canvas.focus();
-        });
+        state.redoBtn.addEventListener('click', () => { applyHistory('redo'); });
     }
 
     if (state.copyBtn) {
@@ -761,23 +768,13 @@ export function setupEventListeners(): void {
 
     // Mobile Actions Wiring
     wireOptionalButton('mobile-undo-btn', () => {
-        if (state.editor) {
-            state.editor.undo();
-            requestRender();
-            updateUI();
-        }
+        applyHistory('undo');
         closeDrawer();
-        if (state.canvas) state.canvas.focus();
     });
 
     wireOptionalButton('mobile-redo-btn', () => {
-        if (state.editor) {
-            state.editor.redo();
-            requestRender();
-            updateUI();
-        }
+        applyHistory('redo');
         closeDrawer();
-        if (state.canvas) state.canvas.focus();
     });
 
     wireOptionalButton('mobile-copy-btn', () => {

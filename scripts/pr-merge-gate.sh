@@ -373,6 +373,28 @@ else
   ok "Review decision: ${REVIEW_DECISION:-none required}, no CHANGES_REQUESTED"
 fi
 
+# --- 6. Scope: which commits would this PR actually merge? ------------------
+# Harness L-011: a PR was opened from a branch that already contained an
+# unmerged feature commit, so the feature merged under an unrelated title.
+# Per-commit "no product code staged" checks cannot see that — the foreign
+# commit was never staged by this session. Surfacing the commit list here makes
+# it visible at the point of decision, where a human or agent can catch it.
+BASE_BRANCH="${PR_BASE:-main}"
+COMMITS="$(git log --oneline "origin/$BASE_BRANCH..HEAD" 2>/dev/null || true)"
+COMMIT_COUNT=0
+[[ -n "$COMMITS" ]] && COMMIT_COUNT="$(grep -c . <<<"$COMMITS")"
+if ! command -v git >/dev/null 2>&1; then
+  warn "git not available — cannot verify this PR's commit scope"
+elif [[ "$COMMIT_COUNT" -eq 0 ]]; then
+  ok "Commit scope: 0 commits ahead of origin/$BASE_BRANCH (local branch not pushed?)"
+else
+  ok "Commit scope: $COMMIT_COUNT commit(s) would merge into $BASE_BRANCH"
+  while IFS= read -r c; do [[ -n "$c" ]] && echo "    $c"; done <<<"$COMMITS"
+  echo "  NOTE: every commit above ships with this PR. If any is not part of"
+  echo "        the change you intend to make, your branch is wrong — rebase it"
+  echo "        onto origin/$BASE_BRANCH. (harness L-011)"
+fi
+
 # --- Verdict ----------------------------------------------------------------
 if [[ "$JSON_OUT" == "true" ]]; then
   jq -n --argjson pr "$PR" --arg url "$URL" --arg title "$TITLE" \
