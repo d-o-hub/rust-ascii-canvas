@@ -1,0 +1,22 @@
+{
+  "allowedMergeMethods": [
+    "merge",
+    "rebase",
+    "squash"
+  ],
+  "allowsDeletion": false,
+  "allowsForcePush": false,
+  "enforcement": "active",
+  "refs": [
+    "~DEFAULT_BRANCH"
+  ],
+  "requiredApprovingReviewCount": 0,
+  "requiredReviewThreadResolution": true,
+  "requiredStatusChecks": [
+    "CI Success",
+    "Codacy Static Code Analysis",
+    "PR Readiness (merge gate)"
+  ],
+  "requiresLinearHistory": true,
+  "strictRequiredStatusChecks": true
+}

@@ -40,6 +40,7 @@
     "gate:fix": "bash scripts/quality-gates.sh --fix",
     "gate:pr": "bash scripts/pr-merge-gate.sh",
     "gate:pr:test": "bash scripts/pr-merge-gate.sh --self-test",
+    "gate:ruleset": "bash scripts/ruleset-check.sh",
     "precommit": "bash scripts/pre-commit-fast.sh"
   },
   "devDependencies": {

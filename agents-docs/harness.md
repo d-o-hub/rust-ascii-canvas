@@ -41,6 +41,7 @@ This document is the inventory of **our outer harness** — everything outside t
 | Layer import check | FB | Computational | `scripts/check-architecture.sh` |
 | WASM size ≤ 1.5MB | FB | Computational | `npm run check-size`, CI |
 | Performance notes | FF | Inferential | ADRs / TECHNICAL_ANALYSIS |
+| **Merge contract (ruleset)** | FB | Computational | `main` ruleset, `scripts/ruleset-check.sh`, `.github/ruleset-main.json` |
 
 ### Behaviour
 
@@ -107,6 +108,32 @@ Two consequences worth remembering:
 `required_approving_review_count` is **0**: CI and thread resolution are the
 gates, not a human click (ADR-044). A human is required only for scope, ADRs,
 disputed `pr-roast` Blockers, and production rollback.
+
+### The ruleset is repository state, not a file
+
+Everything above about the merge contract lives in GitHub, not in git. That has
+three consequences the harness must own:
+
+1. **`git revert` does not undo a ruleset change.** A revert looks clean while
+   the gate stays weakened.
+2. **A code review never sees it.** The diff of a PR is blind to the one
+   setting that decides whether the PR can merge.
+3. **Nothing else notices.** CI does not read the ruleset, so drift is silent.
+
+`scripts/ruleset-check.sh` closes all three: `.github/ruleset-main.json` is the
+committed canonical projection of the contract, and the `PR Readiness` job
+compares it against live GitHub state as a **required** check.
+
+```bash
+npm run gate:ruleset              # fail on drift
+./scripts/ruleset-check.sh --diff # what changed, snapshot vs live
+./scripts/ruleset-check.sh --restore  # put the committed contract back
+```
+
+Intentional changes need an ADR *and* an updated snapshot in the same change.
+It exits **2** (not 1) when it cannot verify — "unverified" must never read as
+"intact". A **missing** ruleset is reported as a Blocker: with no ruleset,
+nothing blocks a merge at all.
 
 ## Steering loop
 
@@ -233,6 +260,17 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Prevention** | (1) `scripts/pr-merge-gate.sh` — read-only merge contract, `npm run gate:pr`, with `--self-test` fixtures so the blocking branches are proven offline (no historical PR here ever had threads to test against). (2) Ruleset `main` now requires `CI Success` + `PR Readiness (merge gate)` and sets `required_review_thread_resolution: true`. (3) `CI Success` now treats **cancelled** as failure — it is a required check, so a cancelled job must never read as green. (4) New `PR Readiness` job runs the self-test on every PR so the guard-rail cannot silently rot into a rubber stamp. |
 | **Agent rule** | Before merging anything, run `npm run gate:pr`. Never use `gh pr merge --admin` to force past a red check. When a sensor or the ruleset is changed, capture the ruleset JSON first — it is repository state, not a file, so `git revert` does not undo it. |
 | **Resolution** | 2026-09-27: ADR-044. Required checks: `Codacy Static Code Analysis`, `CI Success`, `PR Readiness (merge gate)`. Thread resolution required. Approvals remain 0 (gates, not a human click). |
+
+### L-010 — The merge gate was itself untracked repository state (2026-09-27)
+
+| | |
+|--|--|
+| **Symptom** | ADR-044 hardened the `main` ruleset and then admitted in its own Consequences that "the ruleset is repository state, not a file — `git revert` does not undo it". The fix therefore shipped with **no rollback path**: the pre-mutation JSON existed only in a session temp file, and nothing in the repo recorded what the contract was supposed to be. |
+| **Root cause** | Every other control in this harness is a committed file that a sensor can read. The ruleset was the single exception, so it had none of the properties the harness depends on: no diff, no review, no drift detection, no restore. |
+| **Why harness failed** | The ADR treated the ruleset as a one-time configuration step rather than as a control needing the same treatment as `quality-gates.sh` or `check-architecture.sh`. A change made through the API is indistinguishable from one made by hand — and nothing detected either. |
+| **Prevention** | (1) `.github/ruleset-main.json` — the committed canonical projection of the merge contract, so a change to the real ruleset shows up in a PR diff. (2) `scripts/ruleset-check.sh` (`npm run gate:ruleset`) — drift check with `--diff`, `--update`, `--restore`; wired into the **required** `PR Readiness` job. (3) It exits **2** when it cannot verify, so "unverified" never reads as "intact", and treats a **missing** ruleset as a Blocker rather than a no-op. |
+| **Agent rule** | Never mutate the ruleset without (a) capturing current state, (b) writing an ADR, and (c) running `--update` in the same change. If you change a merge guard-rail, `git revert` is not your rollback — `--restore` is. |
+| **Verification** | Six drift cases proven by tampering the snapshot: thread-resolution off, required checks gutted, approvals raised, enforcement disabled, linear history off — each detected; clean state and restore both byte-identical to the committed snapshot. |
 
 ### L-009 — `agents-md` mandated a length its own repo violated (2026-09-27)
 

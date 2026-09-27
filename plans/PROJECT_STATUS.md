@@ -12,6 +12,8 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 **Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
 **Next** (cycle planned 2026-09-25 by agent swarm): F-13 layer history (issue #207, ADR-043), then R-05 dependency refresh. R-03 is **re-scoped** — the esbuild advisory is unreachable here (unused optional peer) and the pin-by-override plan was disproved; #199 (do-harness adoption) deferred until the upstream fixes ship pinned.
 
+**Harness (2026-09-27, ADR-044 / #213)**: green CI is now a real merge precondition. The `main` ruleset previously required only `Codacy Static Code Analysis` — every product sensor was advisory and a PR could merge with red E2E. It now requires `CI Success` + `PR Readiness (merge gate)` and requires review-thread resolution, with `required_approving_review_count: 0` (gates decide, not a human click). Backed by `scripts/pr-merge-gate.sh` (local mirror, read-only), `scripts/ruleset-check.sh` (the ruleset is repo state, so its drift is now a required check against a committed snapshot), and a documented delivery loop in `agents-docs/delivery.md`. See harness L-008/L-009.
+
 ---
 
 ### Build Status

@@ -56,19 +56,28 @@ features:
   mobile_drawer_escape: true       # #195
 
 documentation:
-  adr_count: 42
-  plans_refreshed: 2026-09-23
-  release_runbook: true            # plans/RELEASING.md
-  open_issues: 2                  # #207 (next), #199 (deferred)
-  open_prs: 0
-  release: v0.1.4 (2026-09-24)    # R-01/R-02/R-04 done
+  adr_count: 44                     # 46 files, but 005 and 040 are each duplicated
+  plans_refreshed: 2026-09-27
+  release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
+  open_issues: 2                    # #207 (next), #199 (deferred)
+  open_prs: 1                       # #212 (F-13, green, awaiting merge)
+  release: v0.1.4 (2026-09-24)      # R-01/R-02/R-04 done
+
+harness:                           # ADR-044
+  merge_contract_enforced: true     # ruleset: required checks + thread resolution
+  required_status_checks: 3         # Codacy, CI Success, PR Readiness (merge gate)
+  required_approvals: 0             # gates decide, not a human click
+  merge_gate_sensor: scripts/pr-merge-gate.sh
+  ruleset_drift_sensor: scripts/ruleset-check.sh   # the only guard on repo state
+  delivery_loop: documented         # agents-docs/delivery.md
+  adversarial_review: pr-roast      # every finding cited to official docs
 ```
 
 ### Target State (next horizon — post-roadmap)
 
 ```yaml
 features:
-  layer_history: true              # F-13 residual — needs issue
+  layer_history: true              # F-13 — PR #212 is green, awaiting merge
   collaborative_prototype: decided # F-30 spike -> ADR
 
 process:
@@ -78,7 +87,21 @@ process:
 
 harness:
   loc_sensor_covers_web: true      # candidate — see FOLLOW_UPS
+  merge_contract: done             # ADR-044 (#213): ruleset + pr-merge-gate.sh
+  ruleset_drift_sensor: done       # scripts/ruleset-check.sh + .github/ruleset-main.json
 ```
+
+### Definition of Done — Tier 5: Harness merge contract (ADR-044, #213)
+
+- [x] Ruleset requires `CI Success` + `PR Readiness (merge gate)`, not just Codacy
+- [x] Review-thread resolution required; `required_approving_review_count: 0`
+- [x] `scripts/pr-merge-gate.sh` mirrors the contract locally (read-only, never merges)
+- [x] `CI Success` fails on `cancelled` and depends on `changes`
+- [x] `quality-gates.sh` §2d fails if `ci-success.needs` drifts
+- [x] Ruleset made reviewable + restorable (`ruleset-check.sh`, snapshot in git)
+- [x] Delivery loop documented with a machine-checkable exit criterion per stage
+- [x] Adversarial review (`pr-roast`) found 3 blockers + 4 majors in the first
+      commit; all fixed — green gates caught none of them
 
 ---
 

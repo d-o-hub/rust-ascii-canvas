@@ -196,6 +196,40 @@ if [[ -f "$CI_YML" ]]; then
     fail "scripts/pr-merge-gate.sh is missing"
     echo "  FIX: restore it; 'npm run gate:pr' is the local mirror of the merge contract."
   fi
+
+  # Offline half of the ruleset guard. The ruleset is repository state, so its
+  # drift is only detectable against a committed snapshot. This checks the
+  # snapshot exists, parses, and still names the required checks — no network
+  # needed. The live comparison lives in scripts/ruleset-check.sh (CI only),
+  # because it needs the network and would false-fail offline.
+  RULESET_SNAP="$REPO_ROOT/.github/ruleset-main.json"
+  if [[ ! -f "$RULESET_SNAP" ]]; then
+    fail ".github/ruleset-main.json is missing"
+    echo "  FIX: ./scripts/ruleset-check.sh --update, then commit the result."
+    echo "       Without it, merge-contract changes are invisible to code review."
+  elif ! command -v jq >/dev/null 2>&1; then
+    warn "jq missing — skipped ruleset snapshot validation"
+  else
+    SNAP_OK=true
+    for ctx in "CI Success" "PR Readiness (merge gate)"; do
+      if ! jq -e --arg c "$ctx" '.requiredStatusChecks | index($c) != null' \
+           "$RULESET_SNAP" >/dev/null 2>&1; then
+        SNAP_OK=false
+        echo "  ruleset snapshot does not require '$ctx'"
+      fi
+    done
+    if ! jq -e '.requiredReviewThreadResolution == true' "$RULESET_SNAP" >/dev/null 2>&1; then
+      SNAP_OK=false
+      echo "  ruleset snapshot does not require review-thread resolution"
+    fi
+    if $SNAP_OK; then
+      pass "Ruleset snapshot requires CI Success + PR Readiness + thread resolution"
+    else
+      fail "Ruleset snapshot no longer encodes the merge contract"
+      echo "  FIX: if intentional, update the snapshot in the SAME change as the"
+      echo "       ruleset (ADR required). Otherwise: ./scripts/ruleset-check.sh --restore"
+    fi
+  fi
 else
   warn "ci.yml not found — skipped merge-gate coherence check"
 fi
