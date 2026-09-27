@@ -242,3 +242,91 @@ fn loading_a_document_clears_history() {
     assert!(canvas.load_document(v1_document()));
     assert!(!canvas.can_undo());
 }
+
+fn names(canvas: &AsciiEditor) -> Vec<String> {
+    (0..canvas.layer_count())
+        .map(|i| canvas.layer_name(i))
+        .collect()
+}
+
+/// Regression (harness L-011 follow-up): a delete undo must put the layer back
+/// *where it was*, not at the position the stack happened to hold when the
+/// command was recorded. The id is stable; the index is not.
+///
+/// The delete is recorded on whichever layer was active at the time (A), so the
+/// interleaved work is deliberately done on B — otherwise it would push onto A's
+/// own history and invalidate the very entry under test.
+#[test]
+fn undoing_a_delete_restores_the_layer_to_its_original_position() {
+    let mut canvas = editor();
+    canvas.rename_layer(0, "A".to_string());
+    canvas.add_layer();
+    canvas.rename_layer(1, "B".to_string());
+    canvas.add_layer();
+    canvas.rename_layer(2, "C".to_string());
+    assert_eq!(names(&canvas), ["A", "B", "C"]);
+
+    // Delete the top layer while A is active -> recorded on A.
+    assert!(canvas.set_active_layer(0));
+    assert!(canvas.delete_layer(2));
+    assert_eq!(names(&canvas), ["A", "B"]);
+
+    // Shift the stack, doing the work on B so A's history is untouched.
+    assert!(canvas.set_active_layer(1));
+    canvas.add_layer();
+    canvas.rename_layer(2, "D".to_string());
+    canvas.move_layer(2, 0);
+    assert_eq!(names(&canvas), ["D", "A", "B"]);
+
+    // A is now at index 1. Undo its delete: C must come back below B.
+    assert!(canvas.set_active_layer(1));
+    assert_eq!(canvas.undo_label(), "Delete layer");
+    assert!(canvas.undo());
+    assert_eq!(
+        names(&canvas),
+        ["D", "A", "B", "C"],
+        "C must be restored below B, not at the stale recorded index"
+    );
+}
+
+/// Regression: redoing an add must re-insert at the recorded *place* and leave
+/// the new layer active, whatever the stack looks like in between.
+///
+/// Again the interleaved work runs on a different layer, so the redo entry
+/// pending on layer 0 survives.
+#[test]
+fn redoing_an_add_reinserts_at_the_right_place_and_activates_it() {
+    let mut canvas = editor();
+    canvas.add_layer(); // "Layer 2" at index 1, recorded on layer 0
+    assert!(canvas.set_active_layer(1));
+    canvas.add_layer(); // "Layer 3" at index 2, recorded on layer 1
+    assert_eq!(names(&canvas), ["Layer 1", "Layer 2", "Layer 3"]);
+
+    // Undo layer 0's add: "Layer 2" is gone, redo entry pending.
+    assert!(canvas.set_active_layer(0));
+    assert_eq!(canvas.undo_label(), "Add layer");
+    assert!(canvas.undo());
+    assert_eq!(names(&canvas), ["Layer 1", "Layer 3"]);
+
+    // Shift the stack from "Layer 3", leaving layer 0's redo alone.
+    assert!(canvas.set_active_layer(1));
+    canvas.add_layer();
+    canvas.rename_layer(2, "E".to_string());
+    canvas.move_layer(2, 0);
+    assert_eq!(names(&canvas), ["E", "Layer 1", "Layer 3"]);
+
+    // Redo: "Layer 2" belongs between "Layer 1" and "Layer 3".
+    assert!(canvas.set_active_layer(1));
+    assert_eq!(canvas.redo_label(), "Add layer");
+    assert!(canvas.redo());
+    assert_eq!(
+        names(&canvas),
+        ["E", "Layer 1", "Layer 2", "Layer 3"],
+        "the redone layer belongs after Layer 1, not at the stale index"
+    );
+    assert_eq!(
+        canvas.active_layer_index(),
+        2,
+        "the redone layer must be the active one"
+    );
+}

@@ -91,35 +91,79 @@ fn merge_redo_after_a_reorder_touches_the_right_layers() {
     canvas.add_layer();
     canvas.set_active_layer(0);
 
-    // Merge layer 1 into layer 0 and record it.
+    // Merge layer 1 into layer 0, recorded on layer 0.
     assert!(canvas.merge_layer_down(1));
     assert_eq!(canvas.layer_count(), 2);
     assert!(canvas.undo());
     assert_eq!(canvas.layer_count(), 3);
 
-    // Reorder so the old indices point at different layers, on a layer whose
-    // history this merge was never recorded on.
-    canvas.set_active_layer(0);
-    canvas.move_layer(0, 2);
-    canvas.set_active_layer(0);
+    // Reorder from a DIFFERENT layer, so the merge's redo entry on layer 0 is
+    // not cleared. Reordering on layer 0 itself wipes the very entry this test
+    // is about, which is what made the earlier version vacuous: its real
+    // assertions sat behind a branch that never ran.
+    //
+    // "Layer 3" is the layer to move: the merged pair (Layer 1, Layer 2) stays
+    // adjacent and in order, but the recorded index no longer points at it.
+    assert!(canvas.set_active_layer(2));
+    canvas.move_layer(2, 0);
+    assert_eq!(canvas.layer_name(0), "Layer 3");
+    assert_eq!(canvas.layer_count(), 3);
+
+    // "Layer 1" is now at index 1; the merge was recorded with upper index 1.
+    assert!(canvas.set_active_layer(1));
+    assert_eq!(
+        canvas.redo_label(),
+        "Merge layer down",
+        "reordering on another layer must not clear this layer's redo"
+    );
+    assert!(canvas.redo());
+    assert_eq!(
+        canvas.layer_count(),
+        2,
+        "the merge must fold exactly one layer"
+    );
+    assert!(
+        (0..canvas.layer_count()).any(|i| canvas.layer_name(i) == "Layer 1"),
+        "the lower layer of the pair must survive"
+    );
+    assert!(
+        (0..canvas.layer_count()).any(|i| canvas.layer_name(i) == "Layer 3"),
+        "the reordered layer must not be folded in by mistake"
+    );
+}
+
+/// A merge whose pair is no longer adjacent in the right order must be refused
+/// outright, leaving the stack untouched. Swapping the pair puts the lower layer
+/// above the upper one, which is no longer a merge; silently folding the wrong
+/// two layers would be data loss.
+#[test]
+fn merge_redo_is_refused_when_the_pair_is_no_longer_ordered() {
+    let mut canvas = editor();
+    canvas.add_layer();
+    canvas.add_layer();
+    assert!(canvas.set_active_layer(0));
+    assert!(canvas.merge_layer_down(1));
+    assert!(canvas.undo());
+    assert_eq!(canvas.layer_count(), 3);
+
+    // Move "Layer 2" (the recorded upper layer) above "Layer 1" (the lower one).
+    assert!(canvas.set_active_layer(1));
+    canvas.move_layer(1, 0);
     assert_eq!(canvas.layer_name(0), "Layer 2");
 
-    // The merge's redo lives on the layer that recorded it.
-    canvas.set_active_layer(0);
-    let label = canvas.redo_label();
-    if label == "Merge layer down" {
-        assert!(canvas.redo());
-        // "Layer 1" must still exist: the merge is idempotent about which
-        // pair it folded, and it must not delete an unrelated layer.
-        assert!(
-            (0..canvas.layer_count()).any(|i| canvas.layer_name(i) == "Layer 1"),
-            "merge redo removed the wrong layer"
-        );
-    } else {
-        // A reorder cleared that layer's redo stack, which is the documented
-        // behaviour; then nothing can be replayed wrongly.
-        assert!(!canvas.can_redo());
-    }
+    // The redo must not fold anything: the pair's relative order is inverted.
+    assert!(canvas.set_active_layer(1));
+    let before: Vec<String> = (0..canvas.layer_count())
+        .map(|i| canvas.layer_name(i))
+        .collect();
+    let _ = canvas.redo();
+    let after: Vec<String> = (0..canvas.layer_count())
+        .map(|i| canvas.layer_name(i))
+        .collect();
+    assert_eq!(
+        after, before,
+        "a broken pair must leave the stack untouched"
+    );
 }
 
 /// A locked layer blocks drawing history but must say so through the public

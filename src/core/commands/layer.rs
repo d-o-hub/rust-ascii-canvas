@@ -225,6 +225,11 @@ impl MoveLayerCommand {
 /// Command to add a layer and make it active.
 pub struct AddLayerCommand {
     index: usize,
+    /// Id of the layer that sat directly below the new one when it was first
+    /// applied. Indices shift when layers are reordered or removed, so a redo
+    /// re-derives the insert position from this anchor instead of trusting the
+    /// recorded index. `None` means the new layer went to the bottom.
+    below_id: Option<u64>,
     layer: Layer,
     active_before: u64,
     applied: bool,
@@ -241,8 +246,14 @@ impl AddLayerCommand {
         );
         // Take the id now so apply and undo can find this exact layer later.
         layer.set_id(stack.reserve_layer_id());
+        let below_id = if index == 0 {
+            None
+        } else {
+            stack.layer_id_at(index - 1)
+        };
         Self {
             index,
+            below_id,
             layer,
             active_before: stack.active_id(),
             applied: false,
@@ -263,10 +274,17 @@ impl AddLayerCommand {
 impl LayerCommand for AddLayerCommand {
     fn apply(&mut self, stack: &mut LayerStack) {
         if !self.applied {
-            stack.insert_layer_tracking(self.index, self.layer.clone());
+            // Re-derive the position from the anchor: the recorded index is only
+            // a fallback for when the neighbour is gone.
+            let target = match self.below_id.and_then(|id| stack.index_of_id(id)) {
+                Some(below) => below + 1,
+                None => self.index.min(stack.len()),
+            };
+            stack.insert_layer_tracking(target, self.layer.clone());
             self.applied = true;
         }
-        stack.set_active(self.index);
+        // Focus the layer by id, not by the index it happened to land on.
+        stack.set_active_id(self.layer.id());
     }
 
     fn undo(&mut self, stack: &mut LayerStack) {
@@ -299,6 +317,10 @@ impl LayerCommand for AddLayerCommand {
 pub struct DeleteLayerCommand {
     index: usize,
     id: u64,
+    /// Id of the layer that sat directly below the deleted one. The undo re-inserts
+    /// after this anchor so the layer returns to the right *place*, not merely to
+    /// the index it was removed from. `None` means it was the bottom layer.
+    below_id: Option<u64>,
     layer: Option<Layer>,
     active_before: u64,
     applied: bool,
@@ -308,15 +330,21 @@ impl DeleteLayerCommand {
     /// Build a command for deleting `index`. Returns None for an invalid index
     /// or when it would remove the last remaining layer.
     pub fn deleting(stack: &LayerStack, index: usize) -> Option<Self> {
-        let id = stack.layer_id_at(index)?;
         if stack.len() <= 1 || index >= stack.len() {
             return None;
         }
+        let id = stack.layer_id_at(index)?;
+        let below_id = if index == 0 {
+            None
+        } else {
+            stack.layer_id_at(index - 1)
+        };
         Some(Self {
             index,
             // The id is captured up front so apply finds that layer even if the
             // stack was renumbered between recording and running.
             id,
+            below_id,
             layer: None,
             active_before: stack.active_id(),
             applied: false,
@@ -337,7 +365,14 @@ impl LayerCommand for DeleteLayerCommand {
     fn undo(&mut self, stack: &mut LayerStack) {
         if self.applied {
             if let Some(layer) = self.layer.take() {
-                stack.insert_layer_tracking(self.index, layer);
+                // Put the layer back where it belonged: after the layer that was
+                // below it. The recorded index is only a fallback for when that
+                // neighbour has since been removed.
+                let target = match self.below_id.and_then(|id| stack.index_of_id(id)) {
+                    Some(below) => below + 1,
+                    None => self.index.min(stack.len()),
+                };
+                stack.insert_layer_tracking(target, layer);
             }
             // Focus goes back to whatever was active before the delete, which is
             // not necessarily the layer that ended up at this index.
