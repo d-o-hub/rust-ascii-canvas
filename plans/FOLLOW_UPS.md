@@ -82,7 +82,8 @@ Open implementation issues: **#207** (F-13, next) and **#199** (do-harness adopt
 | Candidate | Why | First step |
 |-----------|-----|------------|
 | Layer-operation undo/history (**F-13**) | Layer ops bypass history (verified 2026-09-23); issue #111 closed without it | **Next**: core `LayerStack` + `LayerCommand` per [ADR-043](ADRs/043-layer-command-history.md), issue #207 |
-| `web/events.ts` 853 LOC (> 500 guideline) + LOC sensor gap | Sensor scans only `src/**/*.rs`; `web/` growth is unchecked | Either extract modules or extend the LOC sensor (ADR), then keep gate honest |
+| `web/events.ts` 850 LOC + `web/ui.ts` 540 LOC (> 500 guideline) + LOC sensor gap | Sensor scans only `src/**/*.rs`; `web/` growth is unchecked | Either extract modules or extend the LOC sensor (ADR), then keep gate honest |
+| **Skill length budget** — `skill-creator` (357), `typescript-expert` (432), `rust-wasm` (416) exceed the 300-line `SKILL.md` budget in `agents-md` | `agents-md` sets ≤300; these predate it | **Do NOT locally edit the two upstream-synced ones** — `typescript-expert` and `rust-wasm` are in `skills-lock.json`, so a sync silently overwrites the change. Either exempt upstream skills from the budget or split them at next sync. `skill-creator` is local and can be split any time (low value). |
 | Dogfood pass over "closed" features (layers, SVG fidelity, light theme) | Fastest way to catch regressions behind closed-issue claims | `dogfood` skill run; file findings |
 | F-30 prototype decision (collaborative editing) | Spike complete, no product decision | Open issue + ADR |
 | Render performance follow-ups (ADR-028 residual) | Dirty-rect shipped; measure and set budgets | Open perf issue with metric |
@@ -108,6 +109,6 @@ Open implementation issues: **#207** (F-13, next) and **#199** (do-harness adopt
 - [RELEASING.md](RELEASING.md)
 - [goal-state.md](goal-state.md)
 - Implementation issues: #198 (version single-source — closed 2026-09-24), #207 (F-13 layer history — open, next), #199 (do-harness adoption — open, deferred)
-- [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007)
-- [ADR-042](ADRs/042-wasm-bindgen-pin-parity.md), [ADR-041](ADRs/041-clipboard-export-modes.md), [ADR-036](ADRs/036-clipboard-fidelity-and-product-features.md)
+- [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007, **L-008/L-009/L-010**)
+- ADR-044 (merge automation + delivery loop), ADR-042 (wasm-bindgen pin parity), ADR-041 (clipboard export modes), ADR-036 (clipboard fidelity + product features)
 - Issues: [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108)–[#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) (all closed)

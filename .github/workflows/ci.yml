@@ -395,6 +395,16 @@ jobs:
       - name: Verify merge-gate logic (offline fixtures)
         run: bash scripts/pr-merge-gate.sh --self-test
 
+      # The merge contract lives in repository state, not in git, so it needs its
+      # own guard: a ruleset weakened in the GitHub UI (or by a script) is
+      # invisible to every other sensor and to code review. The committed
+      # snapshot makes that change show up here as a required check.
+      - name: Merge contract has not drifted
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/ruleset-check.sh
+
       # Informational only. Enforcement of thread resolution lives in the
       # repository ruleset (required_review_thread_resolution: true), which
       # GitHub evaluates at merge time. A status check cannot do this job:
