@@ -48,6 +48,28 @@ gh pr view <PR> --json autoMergeRequest
 `--auto --squash` is deliberate: the repo requires **linear history**, and
 squash keeps one commit per PR. A merge commit is rejected by the ruleset.
 
+## The ruleset is state, not a file
+
+Conditions 1–4 above are enforced by the **`main` ruleset**, which lives in
+GitHub rather than in git. Three consequences you must respect:
+
+- `git revert` does **not** undo a ruleset change. Rollback is
+  `./scripts/ruleset-check.sh --restore`.
+- A PR diff never shows a ruleset change, so it cannot be reviewed as one.
+- Nothing else detects drift, so it is snapshotted in
+  `.github/ruleset-main.json` and checked by `npm run gate:ruleset` — a
+  **required** status check.
+
+```bash
+npm run gate:ruleset                  # fail on drift
+./scripts/ruleset-check.sh --diff     # snapshot vs live
+./scripts/ruleset-check.sh --restore  # roll the contract back
+```
+
+Never change the merge contract without an ADR (`goap-adr-planner`) **and** an
+updated snapshot in the same change. Relaxing a guard-rail here is the L-008
+failure mode.
+
 ## Arming vs. merging directly
 
 | Situation | Command |
@@ -95,3 +117,4 @@ lines to **stderr**, so `npm run gate:pr -- --json | jq .` is safe to pipe.
   changes* is a reason to fix, not to merge
 - **Related** `pr-roast`, `production-loop`, `agents-docs/delivery.md`
 - **Sensor:** `scripts/pr-merge-gate.sh` (self-test: `--self-test`)
+- **Server-side state:** `scripts/ruleset-check.sh` + `.github/ruleset-main.json`
