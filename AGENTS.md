@@ -20,6 +20,7 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
 | **fast** | After every meaningful edit | `npm run gate:fast` |
 | **full** | Before commit/PR that touches product code | `npm run gate:full` |
 | **pr** | Before merging anything | `npm run gate:pr` |
+| **ruleset** | When the merge contract is questioned | `npm run gate:ruleset` |
 | **focused** | While iterating on one area | relevant `cargo test …` / `cd web && pnpm test` / single Playwright file |
 
 ### What the tiers cover
@@ -90,6 +91,12 @@ gh pr merge <PR> --auto --squash   # CI performs the merge when it goes green
 **Do not** use `--admin` to force past a red check, and do not treat
 "could not verify" as "verified" — `pr-merge-gate.sh` errors rather than
 assumes. Squash is required: the repo enforces linear history.
+
+Conditions 1–4 live in the **`main` ruleset**, which is repository state, not a
+file: `git revert` does not undo it and no code review sees it. So it is
+snapshotted in `.github/ruleset-main.json` and drift-checked by
+`npm run gate:ruleset` (a required check). Changing it needs an ADR **and** an
+updated snapshot in the same change.
 
 ### The delivery loop
 
