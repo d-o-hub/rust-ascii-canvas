@@ -129,7 +129,7 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Run sensors / self-correct | `verify` |
 | Semantic review | `code-review` |
 | Adversarial review ("roast") | `pr-roast` |
-| **Codacy findings / blocked PR** | **`codacy`** |
+| **Codacy findings / blocked PR** | **`codacy`** (policy) + `codacy-cloud-cli`, `codacy-code-review`, `configure-codacy*` (tooling, upstream) |
 | Decide + perform the merge | `merge-gate` |
 | Ship safely (shadow → canary → promote) | `production-loop` |
 | Rust implementation | `rust-engineer`, `rust-best-practices`, `rust-wasm` |
@@ -145,10 +145,12 @@ roast, comment tracking, shadow E2E, and clicking merge.
 
 `Codacy Static Code Analysis` is a **required** status check, so a non-`SUCCESS`
 Codacy state blocks the merge and `npm run gate:pr` reports `MERGE BLOCKED`.
-Codacy is a third-party GitHub App: there is no Actions run to re-dispatch and
-no CLI path to clear it. When it sits in `ACTION_REQUIRED` the commit was never
-evaluated — **escalate to a human**, and never force the merge with
-`--admin` or by dropping the required check.
+Codacy is a third-party GitHub App: there is no Actions run to re-dispatch. Its
+findings **are** readable from the CLI — `codacy -o json pull-request <PR>` gives
+file, line, pattern id and severity, so read them and fix them rather than
+asking a human to fetch a dashboard. Never force the merge with `--admin` or by
+dropping the required check; if a fix needs a decision above your level,
+escalate with the findings quoted.
 
 ## Reference docs
 

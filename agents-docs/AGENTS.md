@@ -21,8 +21,9 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 
 ### codacy
 - **Location**: `.agents/skills/codacy/SKILL.md`
-- **Role**: Triage Codacy findings and status on a PR. Third-party app; a required check that cannot be cleared from the CLI
+- **Role**: Triage Codacy findings and status on a PR. The **policy** layer: what may and may not be done to a required check, and how to classify a finding
 - **Use when**: Any Codacy warning, issue, or failing/stuck `Codacy Static Code Analysis` check on a PR — and before deciding a Codacy-blocked PR may merge
+- **Tooling (upstream, MIT)**: `codacy-cloud-cli`, `codacy-code-review`, `configure-codacy`, `configure-codacy-cloud`, `codacy-analysis-cli`, `setup-coverage` — requires the `codacy` CLI plus `CODACY_API_TOKEN` or `codacy login`
 
 ### merge-gate
 - **Location**: `.agents/skills/merge-gate/SKILL.md`
@@ -103,3 +104,13 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 
 Their `skills-lock.json` entries were removed as well — a lockfile sync would
 otherwise resurrect them.
+
+## Vendored upstream skills
+
+| Skill | Source |
+|-------|--------|
+| `codacy-analysis-cli`, `codacy-cloud-cli`, `codacy-code-review`, `configure-codacy`, `configure-codacy-cloud`, `setup-coverage` | [codacy/codacy-skills](https://github.com/codacy/codacy-skills) (MIT — see `LICENSE-codacy-skills.txt`) |
+
+Tracked in `skills-lock.json` with a content hash. **Do not edit these locally**:
+a re-sync would overwrite the change, and the hash would no longer match. Repo-
+specific Codacy policy lives in the local `codacy` skill instead.
