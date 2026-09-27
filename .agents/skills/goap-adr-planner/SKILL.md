@@ -32,6 +32,20 @@ Provides structured planning using Goal-Oriented Action Planning combined with A
 - Quick questions without planning context
 - Reading existing code without modification
 
+### When to Write an ADR
+
+Required when the change:
+
+- Adds or relaxes a **merge guard-rail** (required status checks, required
+  reviews, review-thread resolution, auto-merge) — ADR-044 set this precedent
+- Changes the document format (`.asc`), clipboard semantics, or the history model
+- Adds a cross-layer dependency, or splits a crate
+- Adds or relaxes a CI quality gate
+- Reverses or supersedes a previous decision (keep the old ADR, mark it
+  `Superseded by ADR-NNN` — do not delete it)
+
+Ad-hoc tuning, bug fixes, and ordinary feature work do **not** need one.
+
 ## Folder Structure
 
 ```

@@ -374,6 +374,44 @@ jobs:
         env:
           CI: true
 
+  pr-readiness:
+    name: PR Readiness (merge gate)
+    runs-on: ubuntu-latest
+    # Deliberately NOT path-filtered: the merge contract is about PR metadata,
+    # not file types, so this must report a verdict on every pull request.
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # The self-test is the load-bearing part: it proves the merge contract's
+      # predicates still block what they are supposed to block. Without it, a
+      # refactor could silently turn the guard-rail into a rubber stamp.
+      - name: Verify merge-gate logic (offline fixtures)
+        run: bash scripts/pr-merge-gate.sh --self-test
+
+      # Informational only. Enforcement of thread resolution lives in the
+      # repository ruleset (required_review_thread_resolution: true), which
+      # GitHub evaluates at merge time. A status check cannot do this job:
+      # resolving a thread does not produce a new commit, so the check would
+      # never re-run and would block merges on stale data.
+      - name: Report PR readiness (advisory)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set +e
+          bash scripts/pr-merge-gate.sh "$PR_NUMBER" --json > /tmp/gate.json 2>/tmp/gate.log
+          jq . /tmp/gate.json > "$GITHUB_STEP_SUMMARY" 2>/dev/null || cat /tmp/gate.log >> "$GITHUB_STEP_SUMMARY"
+          # Never fails the build: this step is a report, not a gate.
+          exit 0
+
   ci-success:
     name: CI Success
     needs: [fmt, clippy, architecture, rust, security, deny, web, wasm, e2e]
@@ -381,22 +419,44 @@ jobs:
     if: always()
     steps:
       - name: Check all jobs passed
+        env:
+          FMT: ${{ needs.fmt.result }}
+          CLIPPY: ${{ needs.clippy.result }}
+          ARCHITECTURE: ${{ needs.architecture.result }}
+          RUST: ${{ needs.rust.result }}
+          SECURITY: ${{ needs.security.result }}
+          DENY: ${{ needs.deny.result }}
+          WEB: ${{ needs.web.result }}
+          WASM: ${{ needs.wasm.result }}
+          E2E: ${{ needs.e2e.result }}
         run: |
-          results=(
-            "${{ needs.fmt.result }}"
-            "${{ needs.clippy.result }}"
-            "${{ needs.architecture.result }}"
-            "${{ needs.rust.result }}"
-            "${{ needs.security.result }}"
-            "${{ needs.deny.result }}"
-            "${{ needs.web.result }}"
-            "${{ needs.wasm.result }}"
-            "${{ needs.e2e.result }}"
+          set -uo pipefail
+          declare -A results=(
+            [fmt]="$FMT" [clippy]="$CLIPPY" [architecture]="$ARCHITECTURE"
+            [rust]="$RUST" [security]="$SECURITY" [deny]="$DENY"
+            [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E"
           )
-          for res in "${results[@]}"; do
-            if [[ "$res" == "failure" ]]; then
-              echo "One or more critical CI jobs failed"
-              exit 1
-            fi
+          blocked=0
+          for job in "${!results[@]}"; do
+            res="${results[$job]}"
+            case "$res" in
+              # 'skipped' is legitimate: path filters skip jobs for docs-only changes.
+              success|skipped)
+                echo "  $job: $res" ;;
+              # 'cancelled' means unverified code. Concurrency cancellation always
+              # triggers a fresh run on the new head, so failing here is safe — and
+              # this job is a REQUIRED status check (harness L-008), so a cancelled
+              # job must never read as "green". (ADR-044)
+              failure|cancelled|"")
+                echo "  $job: $res  <-- blocks merge"
+                blocked=1 ;;
+              *)
+                echo "  $job: $res  <-- unknown result, blocks merge"
+                blocked=1 ;;
+            esac
           done
-          echo "All CI jobs passed, were skipped, or were cancelled (concurrency)!"
+          if [[ "$blocked" -ne 0 ]]; then
+            echo "::error::CI Success blocked: at least one required job did not pass."
+            exit 1
+          fi
+          echo "All required CI jobs passed or were legitimately skipped."

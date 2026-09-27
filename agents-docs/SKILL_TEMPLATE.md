@@ -5,9 +5,13 @@ This document provides templates and guidelines for creating new agent skills.
 ## Skill File Structure
 
 Each skill should have:
-- `SKILL.md` - Main skill definition
-- `REFERENCES/` - Additional reference docs
-- `TEMPLATES/` - Reusable templates
+- `SKILL.md` - Main skill definition (required)
+- `references/` - Additional reference docs (lowercase — this is what the repo uses)
+- `templates/` - Reusable templates (lowercase)
+- `scripts/` - Executable helpers for deterministic steps
+
+Budget: **≤300 lines** for `SKILL.md`. Anything longer goes in `references/`.
+Do not create `README.md`, `CHANGELOG.md`, or other auxiliary files inside a skill.
 
 ## SKILL.md Template
 
@@ -65,9 +69,11 @@ description: <brief description of what the skill does>
 
 1. Create folder: `.agents/skills/<skill-name>/`
 2. Add `SKILL.md` with template above
-3. Add any reference docs in `REFERENCES/` subfolder
-4. Add templates in `TEMPLATES/` subfolder if needed
-5. Update this file to document the new skill
+3. Add any reference docs in the `references/` subfolder
+4. Add templates in the `templates/` subfolder if needed
+5. Update `agents-docs/AGENTS.md` and the skills table in root `AGENTS.md`
+6. If the skill is synced from an upstream source, update `skills-lock.json` —
+   otherwise a later sync silently resurrects a skill you deleted
 
 ## Skill Invocation Patterns
 

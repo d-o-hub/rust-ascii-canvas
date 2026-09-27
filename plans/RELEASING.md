@@ -83,6 +83,34 @@
 - `CHANGELOG.md` on `main` is coherent again: `[0.1.4]` (generated, synced back from the tag) -> `[0.1.3]` / `[0.1.2]` (curated) -> `[0.1.1]`.
 - **R-04 resolved**: the `Publish WASM` job now attaches `ascii-canvas-<version>.wasm` to the release (`--clobber`, copy-then-upload). v0.1.4 has no asset because it shipped before the change.
 
+## Rollback
+
+Every release ships a **versioned** WASM asset (`ascii-canvas-X.Y.Z.wasm`), and
+`main` is auto-deployed by Netlify on merge. Both facts make rollback cheap.
+
+| Situation | Action |
+|---|---|
+| Bad behaviour on `main` | Revert the merge commit → Netlify redeploys the prior state |
+| Bad behaviour in a release | Publish a new patch release (0.1.X → 0.1.X+1) — do not re-tag an existing version |
+| Consumer pinned to a bad RC | Point them at the last good release asset on the Releases page |
+| `.asc` / format incompatibility | **Escalate to a human.** Reverting code does not un-corrupt saved user files. |
+
+```bash
+# 1. Identify the bad merge
+gh pr list --state merged --limit 5
+
+# 2. Revert it (squash merges are single commits: no -m 1 needed)
+git checkout main && git pull --ff-only
+git revert <merge-sha>
+git push origin main          # Netlify redeploys automatically
+
+# 3. Confirm the redeploy landed
+gh run list --limit 5         # CI re-runs full sensors on main
+```
+
+**Rollback must be cheaper than debugging.** If a change cannot be reverted
+cheaply, that is a reason to canary it longer, not to skip the rollback plan.
+
 ## Failure playbook
 
 | Symptom | Fix |
@@ -91,3 +119,5 @@
 | `WASM Build` fails with `schema version` mismatch | Align `wasm-bindgen` dep + CLI pins (`Cargo.toml`, `mise.toml`, CI, `netlify:build`) — L-005. |
 | Guard Rails green but no release appears | Check `gh release list` — git tags alone are not GitHub Releases (L-004). |
 | Changelog range re-lists old commits | Fixed in 0.1.4: notes anchor to the latest GitHub Release tag (R-02). On older releases, sanity-check with `git log <latest-release-tag>..HEAD`. |
+| A PR will not merge despite green CI | Run `npm run gate:pr` — see the merge contract in `agents-docs/harness.md` (L-008). Unresolved threads block server-side. |
+| `CI Success` red with "cancelled" | A concurrent push superseded the run; wait for the fresh run. It is deliberately **not** treated as green. |

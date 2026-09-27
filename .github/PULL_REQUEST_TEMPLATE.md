@@ -12,6 +12,18 @@
 - [ ] Full gates (if product behaviour): `npm run gate:full` (WASM, size, E2E)
 - [ ] Or equivalent CI jobs green
 
+## Merge contract
+
+A PR may merge only when all of these hold. Verify with `npm run gate:pr`.
+
+- [ ] `npm run gate:pr` reports **MERGEABLE** (not draft, no conflicts, all checks `SUCCESS`)
+- [ ] Every review thread resolved (`pr-roast` / review feedback addressed, not dropped)
+- [ ] No outstanding `CHANGES_REQUESTED`
+- [ ] Adversarial pass done: `pr-roast` (or an equivalent attack) with no Blocker/Major
+
+Auto-merge is armed with `gh pr merge <PR> --auto --squash`; the ruleset requires
+`CI Success` + `PR Readiness (merge gate)` and review-thread resolution.
+
 ## Checklist
 
 - [ ] I have read [CONTRIBUTING.md](../CONTRIBUTING.md) and [AGENTS.md](../AGENTS.md)
