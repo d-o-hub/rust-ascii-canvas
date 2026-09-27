@@ -1,17 +1,20 @@
 # ADR-043: Undoable Layer Operations
 
 ## Status
-Implemented — landed on `main` 2026-09-27 as part of **#213**. Not yet adversarially reviewed.
+Implemented — landed on `main` 2026-09-27 as part of **#213**; correctness fix landed in the follow-up PR. Adversarial pass (`pr-roast`) still outstanding.
 
 > **Attribution note (2026-09-27, harness L-011).** This ADR was tracked by #212
 > (`feat(f13-layer-undo)`, commit `8edf869`). The implementation reached `main`
 > **inside #213** — `chore(harness): make CI green a merge precondition` — because
 > that branch was created from `feat/f13-layer-undo` rather than from `main` and
 > so carried this unmerged feature commit. **F-13 = #213 in history**; #212 is
-> closed as already-landed. The code is CI-verified (#213 passed 20 checks,
-> including E2E on chromium/firefox/webkit), but it merged **without a
-> `pr-roast` adversarial pass** and under a non-feature title. Treat the
-> adversarial pass as outstanding.
+> closed as already-landed. #213's CI passed all 20 checks, but it merged
+> **without a `pr-roast` adversarial pass** — and it shipped defective: the
+> layer-history commands recorded a **positional index** and replayed it on
+> undo, so a reorder or delete between record and replay made the undo target a
+> different layer. Corrected in the follow-up that gave `Layer` a stable `id`
+> (`set_name_by_id`, `set_visible_by_id`, `remove_layer_by_id`, …). The hazard
+> was named in this ADR's Context and not implemented against.
 
 ## Context
 
