@@ -246,11 +246,7 @@ impl AddLayerCommand {
         );
         // Take the id now so apply and undo can find this exact layer later.
         layer.set_id(stack.reserve_layer_id());
-        let below_id = if index == 0 {
-            None
-        } else {
-            stack.layer_id_at(index - 1)
-        };
+        let below_id = below_id_at(stack, index);
         Self {
             index,
             below_id,
@@ -271,15 +267,30 @@ impl AddLayerCommand {
     }
 }
 
+/// Id of the layer directly below `index`, or `None` at the bottom of the stack.
+/// This is the anchor a command records so a replayed layer lands in the right
+/// *place* rather than at an index that has since shifted.
+fn below_id_at(stack: &LayerStack, index: usize) -> Option<u64> {
+    if index == 0 {
+        None
+    } else {
+        stack.layer_id_at(index - 1)
+    }
+}
+
+/// Where a layer should be (re-)inserted, re-derived from the `below_id` anchor.
+/// The recorded index is only a fallback for when that neighbour is gone.
+fn insert_position(stack: &LayerStack, below_id: Option<u64>, recorded: usize) -> usize {
+    match below_id.and_then(|id| stack.index_of_id(id)) {
+        Some(below) => below + 1,
+        None => recorded.min(stack.len()),
+    }
+}
+
 impl LayerCommand for AddLayerCommand {
     fn apply(&mut self, stack: &mut LayerStack) {
         if !self.applied {
-            // Re-derive the position from the anchor: the recorded index is only
-            // a fallback for when the neighbour is gone.
-            let target = match self.below_id.and_then(|id| stack.index_of_id(id)) {
-                Some(below) => below + 1,
-                None => self.index.min(stack.len()),
-            };
+            let target = insert_position(stack, self.below_id, self.index);
             stack.insert_layer_tracking(target, self.layer.clone());
             self.applied = true;
         }
@@ -334,11 +345,7 @@ impl DeleteLayerCommand {
             return None;
         }
         let id = stack.layer_id_at(index)?;
-        let below_id = if index == 0 {
-            None
-        } else {
-            stack.layer_id_at(index - 1)
-        };
+        let below_id = below_id_at(stack, index);
         Some(Self {
             index,
             // The id is captured up front so apply finds that layer even if the
@@ -365,13 +372,8 @@ impl LayerCommand for DeleteLayerCommand {
     fn undo(&mut self, stack: &mut LayerStack) {
         if self.applied {
             if let Some(layer) = self.layer.take() {
-                // Put the layer back where it belonged: after the layer that was
-                // below it. The recorded index is only a fallback for when that
-                // neighbour has since been removed.
-                let target = match self.below_id.and_then(|id| stack.index_of_id(id)) {
-                    Some(below) => below + 1,
-                    None => self.index.min(stack.len()),
-                };
+                // Back where it belonged, not merely at the index it came from.
+                let target = insert_position(stack, self.below_id, self.index);
                 stack.insert_layer_tracking(target, layer);
             }
             // Focus goes back to whatever was active before the delete, which is
