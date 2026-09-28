@@ -194,10 +194,16 @@ async function initialize() {
         // Focus canvas
         state.canvas.focus();
 
-        // Rasterize and upload font atlas
-        document.fonts.ready.then(() => {
-            uploadFontAtlas();
-        });
+        // Rasterize and upload font atlas. `uploadFontAtlas` is synchronous, but
+        // the `.then()` is a promise, so mark it handled (Codacy
+        // no-floating-promises) rather than leaving a rejection path silent.
+        void document.fonts.ready
+            .then(() => {
+                uploadFontAtlas();
+            })
+            .catch((error: unknown) => {
+                logger.error('Font atlas upload failed:', error);
+            });
 
         // Set initial active tool button
         updateToolButtons('rectangle');
@@ -217,11 +223,20 @@ async function initialize() {
 // Initialize when DOM is ready
 if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initialize);
+        // `initialize` is async, so passing it bare lets a rejection escape as an
+        // unhandled rejection (Codacy no-misused-promises). `initialize` already
+        // reports its own failures, but the listener gets an explicit sink.
+        document.addEventListener('DOMContentLoaded', () => {
+            void initialize();
+        });
     } else {
         // Only initialize if we're not in a test environment or if explicitly called
         if (typeof window !== 'undefined' && !((window as unknown as { process?: { env?: { VITEST?: boolean } } }).process?.env?.VITEST)) {
-            initialize();
+            // Nothing awaits this call site, so attach a sink rather than
+            // letting a rejection go unhandled.
+            void initialize().catch((error: unknown) => {
+                logger.error('ASCII Canvas failed to initialize:', error);
+            });
         }
     }
 }
