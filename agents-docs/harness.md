@@ -238,7 +238,7 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Why harness failed** | `quality-gates.sh` web section runs `pnpm run lint`, which inherits the gate. CI may hit the same failure on clean install. |
 | **Prevention** | (1) Never rely on manifest-level `pnpm` settings — pnpm 11 ignores them, so a `pnpm.overrides` / approval written there is a silent no-op; (2) single-source the pnpm major (`packageManager` + CI), because CI installs pnpm 10 while the agent shell ran 11.7.0 and the two disagree on where settings live; (3) the durable fix is to stop installing esbuild at all (optional-peer prune, `FOLLOW_UPS.md` R-05), which removes the gate's trigger. |
 | **Agent rule** | When `pnpm run` fails with `ERR_PNPM_IGNORED_BUILDS`, first check which pnpm major is running and whether the package is actually needed (`pnpm why <pkg>`). Do **not** approve interactively and do not assume an approval persists in the store (it does not, for this project). Prefer removing the unused dependency; verify behaviour with a direct `./node_modules/.bin/<tool>` run in parallel. |
-| **Resolution** | 2026-09-25 (corrected): a verification swarm proved the earlier entry wrong on two points — the trigger is esbuild's auto-installed optional peer, not the approval workflow, and the "approval persists in the store" claim was false. Superseded by R-03 (re-scoped) and R-05 (prune). |
+| **Resolution** | 2026-09-25 (corrected): a verification swarm proved the earlier entry wrong on two points — the trigger is esbuild's auto-installed optional peer, not the approval workflow, and the "approval persists in the store" claim was false. Superseded by R-03 (re-scoped) and R-05 (prune). **2026-09-28: trigger removed** — R-05 pruned the optional peers (esbuild and jsdom are no longer installed on either pnpm major), so `pnpm run lint` no longer trips the gate. See L-012 for the lockfile trap hit while doing it. |
 
 ### L-007 — Release dispatched without a version bump (2026-08-08, 2026-09-22)
 
@@ -291,3 +291,24 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Root cause** | The skill was written generically and never reconciled against the repo it maintains — a guide that no agent can satisfy teaches agents to ignore guides. |
 | **Prevention** | `agents-md` now states both budgets explicitly and separates them (AGENTS.md ≈120 as an *index*; SKILL.md ≤300 with detail in `references/`), lowercases the directory names, and adds a coherence check: changing a threshold requires confirming `quality-gates.sh` and CI agree. |
 | **Agent rule** | When maintaining `AGENTS.md` or a skill, verify the claims against the files, not from memory. A guide that contradicts a sensor is a bug in the guide. |
+
+### L-012 — Deleting `pnpm-lock.yaml` does not force a fresh resolve (2026-09-28)
+
+| | |
+|--|--|
+| **Symptom** | Deleting `web/pnpm-lock.yaml` and re-running `pnpm install --lockfile-only` regenerated a lockfile that was **byte-identical** to the old one — old versions (vite 8.3.0), esbuild and jsdom still present. The prune that R-05 depended on appeared not to work. A control resolve of the same `package.json` in an empty scratch dir produced the expected result (vite 8.3.1, no esbuild), which proved the manifest was fine and the repo directory was not. |
+| **Root cause** | pnpm keeps a **second** copy of the lockfile at `node_modules/.pnpm/lock.yaml` (the "current" lockfile) and prefers already-installed resolutions from it. It was byte-identical to the committed lock, so pnpm re-resolved nothing. Two traps compounded it: `--lockfile-only` re-created the lockfile from that stale current copy, and a later `rm -rf node_modules` was **not** enough on its own because the `--lockfile-only` run had already re-written `pnpm-lock.yaml`. |
+| **Why it nearly misled** | The obvious conclusion — "the prune does not work on pnpm 10" — was wrong. The fix was to delete `node_modules/` **and** `pnpm-lock.yaml` together and then install, which pruned esbuild 91 → 2 references and jsdom 7 → 2 (the survivors are only vite/vitest `peerDependencies` *declarations*, not installed packages). |
+| **Prevention** | When a task is "re-resolve dependencies", treat the lockfile as **two** files. Use the scratch-dir control (empty dir + the same `package.json`) to separate "the manifest resolves differently" from "this directory is caching an old answer". Assert on the *installed* tree (`ls node_modules/.pnpm`), not on grep counts in the lockfile — peer declarations survive the prune and make a grep look like a failure. |
+| **Agent rule** | `rm pnpm-lock.yaml` is not a fresh resolve. Delete `node_modules/` and the lockfile together, then `pnpm install`. When a resolve "does not take", reproduce it in an empty directory before concluding the tool is at fault. |
+
+### L-013 — The "Security audit" sensor only audits Rust (2026-09-28)
+
+| | |
+|--|--|
+| **Symptom** Found by the R-05 roast | `quality-gates.sh` prints `[PASS] Audit: OK` — but §"Security audit" runs **`cargo audit` only** (`scripts/quality-gates.sh:387-395`). The PR touched ~250 npm dependency resolutions and the green "Audit: OK" said nothing about any of them. `grep -rn 'pnpm audit\|npm audit' .github/ scripts/` returns **nothing**: the repo has no npm-side advisory sensor at all. |
+| **Root cause** | The sensor was added for the Rust half of the tree (ADR-044 era) and its name is ecosystem-neutral, so a web-dependency PR reads as "audited" when only crates were checked. npm advisories were only ever caught reactively, by Dependabot opening an alert (e.g. #11) — a *reporting* channel, not a gate, and it never fails a build. |
+| **Why the gates missed it** | Dependabot is configured and working, so the gap is invisible: a new npm advisory produces an alert rather than a red check. The blast radius is exactly the class of change R-05 is — a lockfile refresh, where a new transitive version can carry a vulnerability and no sensor objects. |
+| **Prevention** | Add `pnpm audit --audit-level=high` (or `moderate`) for **both** the root and `web/` lockfiles to `quality-gates.sh`, wire it into the `ci-success` aggregator, and rename the existing step so "Audit" cannot be read as covering both ecosystems. Manual check at R-05 time: `pnpm audit` is **clean** on root and `web/`, so this closes a gap rather than fixing a live finding. |
+| **Agent rule** | Before trusting a green sensor, confirm which ecosystem it actually inspects. A lockfile PR for `web/` is **not** covered by `cargo audit` — say so in the PR body rather than implying the audit passed. |
+

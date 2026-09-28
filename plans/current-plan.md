@@ -34,7 +34,7 @@
 | clippy (`-D warnings`) | ✅ 0 errors |
 | rust_lib_tests | **117** passing |
 | rust_integration + doc | passing |
-| e2e_chromium | **79** tests (4 files) |
+| e2e_chromium | **91** tests (4 files) |
 | e2e_firefox / webkit | ✅ CI matrix (F-21) |
 | vitest_frontend | **29** passing |
 | waitForTimeout in e2e | **0** |
@@ -45,7 +45,7 @@
 | png_export | ✅ (ADR-013) |
 | svg_export | ✅ (F-10) |
 | grid_customization | ✅ UI + responsive (ADR-012) |
-| layers | ✅ editor (F-11); **history F-13 not implemented** |
+| layers | ✅ editor (F-11) + **undoable layer ops (F-13, ADR-043)** |
 | light_theme | ✅ (F-31) |
 | main.ts modules | ✅ split; `main.ts` 230 LOC (F-20) |
 | package_metadata | ✅ d-o-hub URLs |
@@ -83,8 +83,8 @@
 
 | Order | ID | Action | Owner hint |
 |-------|-----|--------|------------|
-| 1 | F-13 | Layer-command history: core model → wasm/UI → E2E (issue #207, ADR-043) | core/product |
-| 2 | R-05 | Dependency refresh: prune unused optional peers (esbuild, jsdom), review the 28 bumps → closes alert #11 | deps |
+| 1 | F-13 | ✅ Done — layer-command history shipped (issue #207, ADR-043; #212 + #216) | core/product |
+| 2 | R-05 | ✅ Done — dependency refresh pruned the unused optional peers (esbuild, jsdom) → alert #11 closed, L-006 trigger gone | deps |
 | 3 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) | frontend/security |
 | 4 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
 
