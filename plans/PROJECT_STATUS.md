@@ -10,7 +10,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
 **Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
-**Next** (cycle planned 2026-09-25 by agent swarm, updated 2026-09-28): F-13 layer history is **shipped** (issue #207, ADR-043; merged in #212 and hardened in #216), and R-05 **dependency refresh is done** — the unused optional peers (esbuild, jsdom) are pruned, closing Dependabot alert #11 and dissolving L-006's trigger. R-06 (dev-server host binding) is next; #199 (do-harness adoption) stays deferred until the upstream fixes ship pinned.
+**Next** (updated 2026-09-28): F-13 layer history is **shipped** (issue #207, ADR-043; #212 + hardened in #216), R-05 **dependency refresh is done** — the unused optional peers (esbuild, jsdom) are pruned, closing Dependabot alert #11 and dissolving L-006's trigger — and R-07 **Codacy backlog is done and gated in CI** (#219 sensors + #220 L-016 wiring). R-06 (dev-server host binding) is next; #199 (do-harness adoption) stays deferred until the upstream fixes ship pinned.
 
 **Harness (2026-09-27, ADR-044 / #213)**: green CI is now a real merge precondition. The `main` ruleset previously required only `Codacy Static Code Analysis` — every product sensor was advisory and a PR could merge with red E2E. It now requires `CI Success` + `PR Readiness (merge gate)` and requires review-thread resolution, with `required_approving_review_count: 0` (gates decide, not a human click). Backed by `scripts/pr-merge-gate.sh` (local mirror, read-only), `scripts/ruleset-check.sh` (the ruleset is repo state, so its drift is now a required check against a committed snapshot), and a documented delivery loop in `agents-docs/delivery.md`. See harness L-008/L-009.
 
@@ -52,7 +52,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 | PNG export | ✅ |
 | SVG export | ✅ `web/exportSvg.ts` (F-10) |
 | Grid size UI + responsive defaults | ✅ |
-| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) — layer ops are **not undoable** (F-13 residual, verified 2026-09-23) |
+| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) + undoable layer ops (F-13, ADR-043; #212 + #216) |
 | Light theme + switcher | ✅ (F-31) |
 | Preview rendering style | ✅ ADR-011 (F-15) |
 | Enhanced text tool (caret, multi-line) | ✅ ADR-010 (F-14) |
@@ -112,9 +112,10 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 1. **F-13 — layer-operation undo** ✅ **shipped** (issue #207, [ADR-043](ADRs/043-layer-command-history.md)): merged in #212, hardened in #216 to address layers by stable id rather than position. Layer ops are undoable and covered by `e2e/layers.spec.ts`.
 2. **R-05 — dependency refresh** ✅ **done**: re-resolved `web/pnpm-lock.yaml` (pnpm 10.34.5) and dropped `pnpm.ignoredBuiltDependencies`; the unused optional peers esbuild and jsdom are pruned from the installed tree, closing Dependabot alert #11 and dissolving the L-006 trigger. Verified on both pnpm majors with `gate:full` green and chromium E2E 91/91. See [FOLLOW_UPS.md](FOLLOW_UPS.md) for the reviewed bump list.
-3. **R-06 — dev-server host binding**: `web/vite.config.ts:16` sets `server.host: true` (LAN-visible `0.0.0.0`); decide the loopback default and document the device-testing opt-in.
-4. **#199 — do-harness adoption**: deferred until upstream #235/#236/#237 ship in a pinned release; sensor mapping and migration hazards already captured.
-5. **Harness** — ADR-037 contract stands; ADR-043 shipped with F-13, and this cycle adds steering entry **L-012** (a deleted `pnpm-lock.yaml` is not a fresh resolve — pnpm reuses `node_modules/.pnpm/lock.yaml`).
+3. **R-07 — Codacy backlog** ✅ **done and gated in CI**: #219 cleared the 41 repo-level findings (action SHA pins + L-015, `e2e/` lint/typecheck sensors + L-014, vendored-skill exclusion, `TOOL_INFO` closed record); #220 wired both `e2e/` sensors into the blocking `web` CI job (L-016 — the gate script alone gates nothing).
+4. **R-06 — dev-server host binding**: `web/vite.config.ts:16` sets `server.host: true` (LAN-visible `0.0.0.0`); decide the loopback default and document the device-testing opt-in.
+5. **#199 — do-harness adoption**: deferred until upstream #235/#236/#237 ship in a pinned release; sensor mapping and migration hazards already captured.
+6. **Harness** — ADR-037 contract stands; ADR-043 shipped with F-13, and this cycle adds steering entries **L-014** (`e2e/` unlinted), **L-015** (annotated-tag SHAs), **L-016** (gate script is not a gate).
 
 Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
 
@@ -176,4 +177,4 @@ Reviewed all 3 open PRs with an agent swarm (a11y deep-review + local Codacy rul
 - **Hardening**: `change` handler guards against no-op renames so Escape-cancel can't re-commit restored names.
 - Learnings documented in ADR-040 (Follow-up 3).
 
-*Last updated: 2026-09-23 — docs reconciled with code, issue states, and CI (Track B).*
+*Last updated: 2026-09-28 — R-07 done and gated in CI (#219 + #220/L-016); next is R-06.*

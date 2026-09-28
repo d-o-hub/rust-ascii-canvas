@@ -1,9 +1,9 @@
 # Current Plan: GOAP Codebase Improvement & Feature Roadmap 2026
 
-## Status: ACTIVE — next cycle planned 2026-09-25 (F-13/#207 → R-05; #199 deferred)
+## Status: ACTIVE — R-07 done and gated in CI (#220/L-016); next is R-06
 
 **Created**: 2026-03-03  
-**Last updated**: 2026-09-25 (GOAP cycle planned by agent swarm)  
+**Last updated**: 2026-09-28 (plans sync: R-07 closed in CI, L-016 recorded)  
 **Supersedes (partially)**: Production-readiness-only focus; March 2026 world-state snapshot  
 **Methodology**: Goal-Oriented Action Planning (GOAP) with ADRs  
 **Latest execution**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
@@ -49,9 +49,9 @@
 | light_theme | ✅ (F-31) |
 | main.ts modules | ✅ split; `main.ts` 230 LOC (F-20) |
 | package_metadata | ✅ d-o-hub URLs |
-| release | **v0.1.4** released 2026-09-24; R-01/R-02/R-04 done ([RELEASING.md](RELEASING.md)) |
-| open_issues / PRs | 2 (#207 next, #199 deferred) / 0 |
-| open_dependabot | R-03 (low, dev-only esbuild advisory) |
+| release | **v0.1.4** released 2026-09-24; R-01/R-02/R-04 done; R-07 Codacy backlog done and gated in CI (#219 + #220/L-016) ([RELEASING.md](RELEASING.md)) |
+| open_issues / PRs | 1 (#199 deferred) / 0 |
+| open_dependabot | 0 (alert #11 closed by R-05 prune) |
 
 ---
 
@@ -85,8 +85,9 @@
 |-------|-----|--------|------------|
 | 1 | F-13 | ✅ Done — layer-command history shipped (issue #207, ADR-043; #212 + #216) | core/product |
 | 2 | R-05 | ✅ Done — dependency refresh pruned the unused optional peers (esbuild, jsdom) → alert #11 closed, L-006 trigger gone | deps |
-| 3 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) | frontend/security |
-| 4 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
+| 3 | R-07 | ✅ Done — Codacy backlog cleared (#219) and gated in CI (#220/L-016: e2e sensors wired into `web` job) | harness/ci |
+| 4 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) | frontend/security |
+| 5 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
 
 ---
 

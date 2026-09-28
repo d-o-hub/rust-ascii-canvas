@@ -1,13 +1,13 @@
 # Goal State: Codebase Improvement & Feature Roadmap 2026
 
-## Status: ACHIEVED (2026-07 target met) — next horizon = release + new product work
-**Updated**: 2026-09-23
+## Status: ACHIEVED (2026-07 target met) — R-07 done and gated in CI (#220/L-016); next is R-06
+**Updated**: 2026-09-28
 
 ---
 
 ## GOAP World State Model
 
-### Current State (Verified 2026-09-23)
+### Current State (Verified 2026-09-28)
 
 ```yaml
 code_quality:
@@ -57,7 +57,7 @@ features:
 
 documentation:
   adr_count: 44                     # 46 files, but 005 and 040 are each duplicated
-  plans_refreshed: 2026-09-27
+  plans_refreshed: 2026-09-28       # R-07 closed in CI (#220/L-016)
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
   open_issues: 1                    # #199 (deferred)
   open_prs: 0
@@ -72,6 +72,7 @@ harness:                           # ADR-044
   ruleset_drift_sensor: scripts/ruleset-check.sh   # the only guard on repo state
   delivery_loop: documented         # agents-docs/delivery.md
   adversarial_review: pr-roast      # every finding cited to official docs
+  e2e_sensors_gated_in_ci: true     # L-016 — ESLint (root) + TypeScript (e2e) in web job (#220)
 ```
 
 ### Target State (next horizon — post-roadmap)
@@ -85,11 +86,13 @@ process:
   release_0_1_4: published         # R-01
   changelog_backfill: curated      # R-01
   esbuild_advisory: closed         # R-05 prune landed 2026-09-28 (alert #11)
+  codacy_backlog_gated: done       # R-07 — #219 sensors + #220 L-016 CI wiring
 
 harness:
   loc_sensor_covers_web: true      # candidate — see FOLLOW_UPS
   merge_contract: done             # ADR-044 (#213): ruleset + pr-merge-gate.sh
   ruleset_drift_sensor: done       # scripts/ruleset-check.sh + .github/ruleset-main.json
+  gate_script_is_not_a_gate: done  # L-016 (#220): e2e sensors wired into ci.yml web job
 ```
 
 ### Definition of Done — Tier 5: Harness merge contract (ADR-044, #213)
