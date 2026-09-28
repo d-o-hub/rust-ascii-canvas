@@ -346,6 +346,38 @@ if [[ -d "$REPO_ROOT/web" ]]; then
   printf "\n"
 fi
 
+# --- Root lint + e2e typecheck (fast + full) ---------------------------
+# The web lint above runs `cd web && eslint .`, which structurally cannot see
+# anything outside web/. Before this existed, e2e/ was unlinted locally and its
+# issues surfaced only in the required Codacy check (harness L-014). Root config
+# lives in eslint.config.mjs and deliberately ignores web/ so the two never
+# overlap.
+if [[ -d "$REPO_ROOT/node_modules" ]]; then
+  info "Root lint (e2e/, excludes web/)..."
+  if ! OUTPUT=$(cd "$REPO_ROOT" && ./node_modules/.bin/eslint . 2>&1); then
+    fail "ESLint (root)"
+    echo "  FIX: ./node_modules/.bin/eslint . — covers e2e/ (web/ has its own config)."
+    printf "%s\n" "$OUTPUT" >&2
+  else
+    pass "ESLint (root): OK"
+  fi
+else
+  warn "root node_modules missing; skipped root ESLint (run pnpm install)"
+fi
+
+if [[ -x "$REPO_ROOT/web/node_modules/.bin/tsc" ]]; then
+  if ! OUTPUT=$(cd "$REPO_ROOT/e2e" && ../web/node_modules/.bin/tsc --noEmit -p tsconfig.json 2>&1); then
+    fail "TypeScript (e2e)"
+    echo "  FIX: cd e2e && ../web/node_modules/.bin/tsc --noEmit -p tsconfig.json"
+    printf "%s\n" "$OUTPUT" >&2
+  else
+    pass "TypeScript (e2e): OK"
+  fi
+else
+  warn "tsc not available; skipped e2e typecheck"
+fi
+printf "\n"
+
 # ============================================================
 # 5. PRIVACY + SECRETS (fast + full)
 # ============================================================

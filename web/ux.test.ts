@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
+import type { ToolId } from './constants';
 import { state } from './state';
 import { setupEventListeners } from './events';
 import { refreshLayerList, toggleTheme, setZoom } from './ui';
@@ -94,7 +95,9 @@ describe('UX Improvements', () => {
     });
 
     it('should have instructions for all defined tools', () => {
-        const tools = ['select', 'rectangle', 'line', 'arrow', 'diamond', 'text', 'freehand', 'eraser'];
+        // Typed as ToolId[] so a typo is a compile error rather than an
+        // `undefined` lookup at runtime.
+        const tools: ToolId[] = ['select', 'rectangle', 'line', 'arrow', 'diamond', 'text', 'freehand', 'eraser'];
         tools.forEach(tool => {
             expect(TOOL_INFO[tool]).toBeDefined();
             expect(TOOL_INFO[tool].instruction).toBeTruthy();

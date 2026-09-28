@@ -3,7 +3,7 @@
  */
 
 import { state } from './state.js';
-import { BORDER_STYLES, TOOL_INFO } from './constants.js';
+import { BORDER_STYLES, TOOL_INFO, type ToolId } from './constants.js';
 import { capitalize } from './utils.js';
 import { logger } from './logger.js';
 
@@ -71,7 +71,7 @@ export function updateToolButtons(activeTool: string): void {
     });
 
     if (VALID_TOOLS.has(normalizedTool)) {
-        const info = TOOL_INFO[normalizedTool as keyof typeof TOOL_INFO];
+        const info = TOOL_INFO[normalizedTool as ToolId];
         const statusEl = document.querySelector('#status-message');
         if (statusEl instanceof HTMLElement) {
             statusEl.textContent = `[${info.shortcut}] ${info.instruction}`;

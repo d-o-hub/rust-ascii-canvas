@@ -1,0 +1,19 @@
+{
+  "//": "Dedicated tsconfig for the Playwright suite. web/tsconfig.json has rootDir './' and covers only web/, so e2e/ sat outside every TypeScript project — which is why type-aware ESLint rules could not run over it. Mirrors web/tsconfig.json (strict, DOM libs for page.evaluate callbacks). @types/node is required: helpers.ts and playwright.config.ts both read process.env, and the e2e suite is type-checked by its own tsconfig.",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "**/*.d.ts", "../playwright.config.ts"]
+}
