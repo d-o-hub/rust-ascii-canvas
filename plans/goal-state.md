@@ -23,7 +23,7 @@ tests:
   rust_unit: 117/117
   rust_integration: 45+
   rust_doc: 2+
-  e2e_chromium: 79
+  e2e_chromium: 91                 # grew with F-13 layer-history specs
   e2e_firefox: in_ci
   e2e_webkit: in_ci
   vitest_frontend: 29
@@ -44,7 +44,7 @@ features:
   clipboard_export: true           # ADR-041 fidelity modes
   external_paste: true             # F-17
   layers: editor                   # lock/reorder/delete/merge (F-11)
-  layer_history: false             # F-13 residual — ops bypass History
+  layer_history: true              # F-13 — ops recorded in History (ADR-043)
   file_persistence: true
   png_export: true
   svg_export: true                 # F-10
@@ -59,9 +59,10 @@ documentation:
   adr_count: 44                     # 46 files, but 005 and 040 are each duplicated
   plans_refreshed: 2026-09-27
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
-  open_issues: 2                    # #207 (next), #199 (deferred)
-  open_prs: 1                       # #212 (F-13, green, awaiting merge)
+  open_issues: 1                    # #199 (deferred)
+  open_prs: 0
   release: v0.1.4 (2026-09-24)      # R-01/R-02/R-04 done
+  dependabot_alerts: 0              # R-05 pruned esbuild; #11 was the last open alert
 
 harness:                           # ADR-044
   merge_contract_enforced: true     # ruleset: required checks + thread resolution
@@ -77,13 +78,13 @@ harness:                           # ADR-044
 
 ```yaml
 features:
-  layer_history: true              # F-13 — PR #212 is green, awaiting merge
+  layer_history: true              # F-13 — shipped in #212, hardened in #216
   collaborative_prototype: decided # F-30 spike -> ADR
 
 process:
   release_0_1_4: published         # R-01
   changelog_backfill: curated      # R-01
-  esbuild_advisory: open          # R-03 re-scoped, removal in R-05
+  esbuild_advisory: closed         # R-05 prune landed 2026-09-28 (alert #11)
 
 harness:
   loc_sensor_covers_web: true      # candidate — see FOLLOW_UPS
@@ -119,7 +120,7 @@ harness:
 - [x] Zero `waitForTimeout` flaky patterns
 - [x] Page Object Model present
 - [x] Vitest frontend tests (29)
-- [x] Chromium E2E green (79)
+- [x] Chromium E2E green (91)
 - [x] Firefox + WebKit in CI (F-21)
 
 ### Tier 3: Features
@@ -129,7 +130,7 @@ harness:
 - [x] PNG export
 - [x] Grid customization
 - [x] Layer editor (lock/reorder/delete/merge; F-11)
-- [ ] Layer operation history (F-13 residual — ops bypass History)
+- [x] Layer operation history (F-13 — ops recorded in History, ADR-043)
 - [x] SVG export (F-10)
 - [x] Preview rendering (F-15)
 - [x] Enhanced text tool (F-14)
