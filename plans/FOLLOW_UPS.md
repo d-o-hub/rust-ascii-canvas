@@ -1,16 +1,16 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-09-23
+**Updated**: 2026-09-28
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
-**Latest triage**: 2026-09-25 — **next cycle planned by a read-only agent swarm + critic**: v0.1.4 shipped and R-04 done. Cycle order: (1) F-13 layer-operation history under [ADR-043](ADRs/043-layer-command-history.md) and issue #207, (2) R-05 dependency refresh, (3) R-06 dev-server host binding, (4) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
+**Latest triage**: 2026-09-28 — R-07 is **done and closed in CI**: #219 added the `e2e/` lint + typecheck sensors locally, and the #220 follow-up (harness **L-016**) wired both into the blocking `web` CI job, so `e2e/` is now linted *and* gated. Cycle order now: (1) R-06 dev-server host binding, (2) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. F-13 layer-operation history already shipped (issue #207, ADR-043; #212 + #216). **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
 
 Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
 **GitHub issues** track open work (numbers below).
 
 ---
 
-## Next — release + new work (2026-09-23)
+## Next — release + new work (2026-09-28)
 
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
@@ -20,7 +20,7 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 | **R-04** | ✅ done | — | 2026-09-25: the `Publish WASM` job downloads the release build and attaches `ascii-canvas-<version>.wasm` with `--clobber` (idempotent re-runs). The artifact is **copied to a versioned name first** — `gh release upload`'s `file#label` syntax only sets a display label (verified against a scratch draft), so the download filename would otherwise remain `ascii_canvas_bg.wasm`. v0.1.4 has no asset; v0.1.5 is the first with one |
 | **R-05** | ✅ done | — | **Dependency refresh** (closed alert #11), 2026-09-28: re-resolved `web/pnpm-lock.yaml` with **pnpm 10.34.5** (CI's major) and dropped `pnpm.ignoredBuiltDependencies` in the same change, as the plan required. **Prune confirmed in the installed tree, not just the lockfile**: esbuild 91 → 2 references, jsdom 7 → 2, `@esbuild/*` platform packages 78 → 0, total packages 252 → 186; nothing esbuild/jsdom-shaped under `node_modules/.pnpm` on **either** major. Surviving references are vite/vitest `peerDependencies` *declarations*. Bumps reviewed and all **patch/minor within existing ranges**: vite 8.3.0 → 8.3.1, vitest 5.0.1 → 5.0.2, rolldown 1.2.8 → 1.2.11, `@types/node` 26.5.1 → 26.6.3, `brace-expansion` 5.0.12, `ignore` 7.0.10, `magic-string` 1.4.2, `tinybench` 6.2.0, `tinyexec` 1.3.1, `ws` 8.22.0, `why-is-node-running` 3.2.2, `@oxc-project/types` 0.151.0. **Correction to the plan's prediction**: the `whatwg-mimetype` "5.0.0 → 3.0.0 downgrade" is not a downgrade of a package we use — 5.0.0 was reachable only through jsdom's `data-urls`, so it is *pruned*; 3.0.0 (the copy `@types/whatwg-mimetype` wants) is what remains. Verified: `pnpm install --frozen-lockfile` green on **pnpm 10.34.5 and 11.7.0**, ESLint + `tsc --noEmit` clean, Vitest 29/29 on 5.0.2, `vite build` OK, Playwright chromium **91/91**, `gate:full` green (incl. cargo-audit, cargo-deny, WASM 220 kB). `ERR_PNPM_IGNORED_BUILDS` no longer appears, dissolving L-006's trigger. Trap hit while doing it: a deleted lockfile is not a fresh resolve (harness **L-012**) |
 | **R-06** | open | — | `web/vite.config.ts:16` sets `server.host: true`, binding the dev server to `0.0.0.0` (LAN-visible). Decide the default (loopback) and document the opt-in for device testing; independent of R-03 |
-| **R-07** | ✅ done | — | **Codacy repo-level backlog** (2026-09-28, 41 open issues → 0 actionable). Split by cause, not by count. (1) **10 × `third-party-action-not-pinned-to-commit-sha`** — all third-party actions SHA-pinned with `# vX.Y.Z` comments; `dtolnay/rust-toolchain` additionally got an explicit `toolchain: stable` input because it infers the toolchain **from the `@ref`** and a SHA pin would otherwise install nothing (`actions/*` are GitHub-owned and out of the rule's scope). Every SHA round-tripped through `commits/<sha>` first — 3 of 7 initial lookups were **tag objects, not commits** (harness **L-015**) and would have broken CI. (2) **17 × e2e/ ESLint** — root cause was that `e2e/` was *never linted locally* (`cd web && eslint .` cannot see outside `web/`, and there was no `e2e/tsconfig.json`), so `gate:fast` was green while Codacy reported 17 issues. Added `eslint.config.mjs` + `e2e/tsconfig.json` and wired both into `quality-gates.sh` (`ESLint (root)`, `TypeScript (e2e)`), then fixed the code for real: `querySelector<HTMLCanvasElement>` instead of a lying `as` cast, 7 `@ts-ignore` + 5 `as any` replaced by a typed `Window.editor` and a `requireAsciiContent` helper, 2 duplicated helpers deleted (harness **L-014**). (3) **11 × vendored Python** in `.agents/skills/**` — excluded via a new `.codacy.yml` `exclude_paths` (upstream-synced code; edits would be overwritten). (4) **3 × object-injection** on `TOOL_INFO[tool]` — fixed at the root by typing `TOOL_INFO` as a closed record, so a typo like `'rect'` is now a compile error rather than an `undefined` lookup. **No finding was closed by suppression.** |
+| **R-07** | ✅ done (incl. L-016 follow-up #220) | — | **Codacy repo-level backlog** (2026-09-28, 41 open issues → 0 actionable). Split by cause, not by count. (1) **10 × `third-party-action-not-pinned-to-commit-sha`** — all third-party actions SHA-pinned with `# vX.Y.Z` comments; `dtolnay/rust-toolchain` additionally got an explicit `toolchain: stable` input because it infers the toolchain **from the `@ref`** and a SHA pin would otherwise install nothing (`actions/*` are GitHub-owned and out of the rule's scope). Every SHA round-tripped through `commits/<sha>` first — 3 of 7 initial lookups were **tag objects, not commits** (harness **L-015**) and would have broken CI. (2) **17 × e2e/ ESLint** — root cause was that `e2e/` was *never linted locally* (`cd web && eslint .` cannot see outside `web/`, and there was no `e2e/tsconfig.json`), so `gate:fast` was green while Codacy reported 17 issues. #219 added `eslint.config.mjs` + `e2e/tsconfig.json` and wired both into `quality-gates.sh` (`ESLint (root)`, `TypeScript (e2e)`), then fixed the code for real: `querySelector<HTMLCanvasElement>` instead of a lying `as` cast, 7 `@ts-ignore` + 5 `as any` replaced by a typed `Window.editor` and a `requireAsciiContent` helper, 2 duplicated helpers deleted (harness **L-014**). **Post-merge roast found #219's sensors were local-only** — no CI job runs `quality-gates.sh` — so #220 wired both into the blocking `web` CI job (`Install root dependencies` + `ESLint (root — covers e2e/)` + `TypeScript (e2e)` via `web/node_modules/.bin/tsc`, since `typescript` is not a root dep and clean-install `pnpm exec tsc` exits 254) and recorded harness **L-016** ("the gate script is not a gate"). (3) **11 × vendored Python** in `.agents/skills/**` — excluded via a new `.codacy.yml` `exclude_paths` (upstream-synced code; edits would be overwritten). (4) **3 × object-injection** on `TOOL_INFO[tool]` — fixed at the root by typing `TOOL_INFO` as a closed record, so a typo like `'rect'` is now a compile error rather than an `undefined` lookup. **No finding was closed by suppression.** |
 
 ---
 
@@ -76,13 +76,14 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 ---
 
-## New work candidates (need issues)
+## New work candidates (all implementation issues closed except #199)
 
-Open implementation issues: **#207** (F-13, next) and **#199** (do-harness adoption, deferred). Candidates for the cycle:
+Open implementation issue: **#199** (do-harness adoption, deferred). Candidates for the cycle:
 
 | Candidate | Why | First step |
 |-----------|-----|------------|
-| Layer-operation undo/history (**F-13**) | Layer ops bypass history (verified 2026-09-23); issue #111 closed without it | **Next**: core `LayerStack` + `LayerCommand` per [ADR-043](ADRs/043-layer-command-history.md), issue #207 |
+| R-06 dev-server host binding (**next**) | `web/vite.config.ts:16` binds `0.0.0.0`; only open task besides deferred #199 | Decide loopback default + document device-testing opt-in |
+| Layer-operation undo/history (**F-13**) | ✅ shipped (issue #207, ADR-043; #212 + #216) | Done — do not re-plan |
 | `web/events.ts` 850 LOC + `web/ui.ts` 540 LOC (> 500 guideline) + LOC sensor gap | Sensor scans only `src/**/*.rs`; `web/` growth is unchecked | Either extract modules or extend the LOC sensor (ADR), then keep gate honest |
 | **Skill length budget** — `skill-creator` (357), `typescript-expert` (432), `rust-wasm` (416) exceed the 300-line `SKILL.md` budget in `agents-md` | `agents-md` sets ≤300; these predate it | **Do NOT locally edit the two upstream-synced ones** — `typescript-expert` and `rust-wasm` are in `skills-lock.json`, so a sync silently overwrites the change. Either exempt upstream skills from the budget or split them at next sync. `skill-creator` is local and can be split any time (low value). |
 | Dogfood pass over "closed" features (layers, SVG fidelity, light theme) | Fastest way to catch regressions behind closed-issue claims | `dogfood` skill run; file findings |
@@ -109,7 +110,7 @@ Open implementation issues: **#207** (F-13, next) and **#199** (do-harness adopt
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)
 - [RELEASING.md](RELEASING.md)
 - [goal-state.md](goal-state.md)
-- Implementation issues: #198 (version single-source — closed 2026-09-24), #207 (F-13 layer history — open, next), #199 (do-harness adoption — open, deferred)
-- [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007, **L-008/L-009/L-010**)
+- Implementation issues: #207 (F-13 layer history — **shipped** #212 + #216, closed 2026-09-28), #199 (do-harness adoption — open, deferred)
+- [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007, **L-008/L-009/L-010, L-014/L-015/L-016**)
 - ADR-044 (merge automation + delivery loop), ADR-042 (wasm-bindgen pin parity), ADR-041 (clipboard export modes), ADR-036 (clipboard fidelity + product features)
 - Issues: [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108)–[#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) (all closed)
