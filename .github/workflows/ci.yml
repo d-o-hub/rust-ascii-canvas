@@ -290,6 +290,13 @@ jobs:
         working-directory: web
         run: pnpm install --frozen-lockfile
 
+      # Root workspace deps (eslint, typescript-eslint, @playwright/test,
+      # @types/node). Needed by the root ESLint + e2e typecheck steps below,
+      # which cover e2e/ — that directory is outside web/ and was previously
+      # unlinted and untype-checked in CI (harness L-014).
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Download WASM pkg (required for tsc)
         uses: actions/download-artifact@v8
         with:
@@ -303,6 +310,20 @@ jobs:
       - name: TypeScript (strict)
         working-directory: web
         run: pnpm exec tsc --noEmit
+
+      # Root config ignores web/, so these do not duplicate the steps above.
+      - name: ESLint (root — covers e2e/)
+        run: pnpm exec eslint .
+
+      # Uses web's tsc deliberately: `typescript` is not a root dependency (it is
+      # aliased to the TypeScript 6 preview in `web/package.json`). `pnpm exec
+      # tsc` at the root only resolves when a hoisted copy happens to be linked
+      # — in a clean pnpm-10 install it fails with
+      # ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL (verified, exit 254). Reusing web's
+      # compiler keeps a single TypeScript version in the project instead of
+      # adding a second one at the root.
+      - name: TypeScript (e2e)
+        run: web/node_modules/.bin/tsc --noEmit -p e2e/tsconfig.json
 
       - name: Vitest
         working-directory: web

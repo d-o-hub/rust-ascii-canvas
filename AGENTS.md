@@ -26,10 +26,22 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
 ### What the tiers cover
 
 - **fast** — fmt, clippy `-D warnings`, build, `cargo test`, architecture, LOC,
-  web lint/tsc/Vitest, privacy + secret scan. Builds `web/pkg` if missing (it is
-  gitignored, and CI downloads the wasm artifact before `tsc` — L-001).
+  web lint/tsc/Vitest, **root lint + e2e tsc**, privacy + secret scan. Builds
+  `web/pkg` if missing (it is gitignored, and CI downloads the wasm artifact
+  before `tsc` — L-001).
 - **full** — adds cargo audit/deny, WASM build + size budget, Playwright E2E.
 - **pr** — the merge contract only; see *Merge & ship* below.
+
+### The gate script is not a gate (learned)
+
+`scripts/quality-gates.sh` is a **developer convenience**. Only what
+`.github/workflows/ci.yml` runs can block a merge — and today **no CI job runs
+`quality-gates.sh`**. A sensor added only to the script is therefore
+*local-only*: it fails on your machine and merges anyway (harness **L-016**).
+
+When you add a sensor, say **where it runs** — script, CI job, or both — and
+confirm it by grepping the workflow rather than by running the script. If it
+must block, wire it into the relevant `ci.yml` job.
 
 ### CI vs local (learned)
 
