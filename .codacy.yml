@@ -1,0 +1,19 @@
+# Codacy analysis specification.
+# Docs: https://docs.codacy.com/repositories-configure/codacy-configuration-file/
+#
+# Rationale for each exclusion — an exclusion should only ever cover code this
+# repository does not own, otherwise it silently hides real findings.
+exclude_paths:
+  # Vendored agent skills, synced from upstream (each ships its own LICENSE).
+  # Editing them here would be overwritten on the next re-sync, so findings in
+  # them are not actionable in this repo. The 11 Python issues Codacy reported
+  # (Prospector/PyLint/Bandit/Semgrep) all live here.
+  - '.agents/skills/**'
+
+  # Build output and dependencies. Codacy ignores node_modules by default, but
+  # `dist/` is produced by `pnpm run build` into the repo root and is not.
+  - 'dist/**'
+  - 'web/dist/**'
+  - 'target/**'
+  - 'test-results/**'
+  - 'playwright-report/**'

@@ -4,13 +4,17 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { openEditor } from './helpers';
+import { openEditor, getAsciiContent, requireAsciiContent } from './helpers';
 
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
-        return canvas && canvas.width > 0 && canvas.height > 0;
+        // Generic form: querySelector<HTMLCanvasElement> returns
+        // `HTMLCanvasElement | null`, so the null check below is a real guard
+        // rather than a redundant one. The old `as HTMLCanvasElement` cast
+        // asserted non-null on a nullable result, which silenced the check.
+        const canvas = document.querySelector<HTMLCanvasElement>('#canvas');
+        return canvas !== null && canvas.width > 0 && canvas.height > 0;
     }, { timeout: 5000 });
 }
 
@@ -31,9 +35,6 @@ test.describe('Tool Drawing Verification', () => {
         await page.mouse.up();
     }
 
-    async function getAsciiContent(page: import('@playwright/test').Page) {
-        return page.evaluate(() => (window as any).editor.exportAscii());
-    }
 
     test('Rectangle tool draws on canvas', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
@@ -256,9 +257,6 @@ test.describe('Select Tool Delete Functionality', () => {
         await page.mouse.up();
     }
 
-    async function getAsciiContent(page: import('@playwright/test').Page) {
-        return page.evaluate(() => (window as any).editor.exportAscii());
-    }
 
     test('Select + Delete should clear selected area', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');
@@ -337,7 +335,7 @@ test.describe('Edge Cases', () => {
         await page.mouse.move(box.x + 100, box.y + 50, { steps: 10 });
         await page.mouse.up();
         
-        const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
+        const ascii = await requireAsciiContent(page);
         expect(ascii).not.toMatch(/^(\s*\n)*$/);
         
         await page.screenshot({ path: 'test-results/edge-rectangle-origin.png' });
@@ -366,7 +364,7 @@ test.describe('Edge Cases', () => {
             await waitForRender(page);
         }
         
-        const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
+        const ascii = await requireAsciiContent(page);
         expect(ascii).toContain('ABC');
         expect(ascii).toContain('XYZ');
         
@@ -422,7 +420,7 @@ test.describe('Edge Cases', () => {
         await page.mouse.click(box.x + 100, box.y + 100);
         await waitForRender(page);
         
-        const ascii = await page.evaluate(() => (window as any).editor.exportAscii());
+        const ascii = await requireAsciiContent(page);
         expect(ascii).not.toMatch(/^[ \t\r]*(?:\n[ \t\r]*)*$/);
         
         await page.screenshot({ path: 'test-results/edge-single-point.png' });

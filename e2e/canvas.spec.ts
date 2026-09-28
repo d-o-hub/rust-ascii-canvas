@@ -4,13 +4,17 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { openEditor } from './helpers';
+import { openEditor, requireAsciiContent } from './helpers';
 
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
-        return canvas && canvas.width > 0 && canvas.height > 0;
+        // Generic form: querySelector<HTMLCanvasElement> returns
+        // `HTMLCanvasElement | null`, so the null check below is a real guard
+        // rather than a redundant one. The old `as HTMLCanvasElement` cast
+        // asserted non-null on a nullable result, which silenced the check.
+        const canvas = document.querySelector<HTMLCanvasElement>('#canvas');
+        return canvas !== null && canvas.width > 0 && canvas.height > 0;
     }, { timeout: 5000 });
 }
 
@@ -235,10 +239,7 @@ test.describe('Drawing Tools Interaction', () => {
         await waitForRender(page);
         
         // Verify text was inserted at the correct position
-        const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
-        });
+        const ascii = await requireAsciiContent(page);
         
         const lines = ascii.split('\n');
         if (lines[gridY]) {
@@ -270,10 +271,7 @@ test.describe('Drawing Tools Interaction', () => {
         await waitForRender(page);
         
         // Verify all characters are present
-        const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
-        });
+        const ascii = await requireAsciiContent(page);
         
         expect(ascii).toContain('ABCDE');
     });
@@ -306,10 +304,7 @@ test.describe('Drawing Tools Interaction', () => {
         await waitForRender(page);
         
         // Verify both characters exist at different positions
-        const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
-        });
+        const ascii = await requireAsciiContent(page);
         
         expect(ascii).toContain('X');
         expect(ascii).toContain('Y');
@@ -341,10 +336,7 @@ test.describe('Drawing Tools Interaction', () => {
         await waitForRender(page);
         
         // Should have "He" remaining
-        const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
-        });
+        const ascii = await requireAsciiContent(page);
         
         expect(ascii).toContain('He');
     });
@@ -373,10 +365,7 @@ test.describe('Drawing Tools Interaction', () => {
         await waitForRender(page);
         
         // Verify both are present
-        const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
-        });
+        const ascii = await requireAsciiContent(page);
         
         expect(ascii).toContain('AAA');
         expect(ascii).toContain('BBB');
@@ -404,10 +393,7 @@ test.describe('Drawing Tools Interaction', () => {
         await waitForRender(page);
         
         // Should have "He" remaining
-        const ascii = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor.exportAscii();
-        });
+        const ascii = await requireAsciiContent(page);
         
         expect(ascii).toContain('He');
         expect(ascii).not.toContain('Hello');
@@ -799,10 +785,7 @@ test.describe('Output Verification', () => {
     });
 
     test('should have editor available', async ({ page }) => {
-        const hasEditor = await page.evaluate(() => {
-            // @ts-ignore
-            return window.editor !== null && window.editor !== undefined;
-        });
+        const hasEditor = await page.evaluate(() => window.editor !== null);
         expect(hasEditor).toBe(true);
     });
 });

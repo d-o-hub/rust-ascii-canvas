@@ -3,8 +3,12 @@ import { clearAutosave, BASE_URL } from './helpers';
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
-        const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
-        return canvas && canvas.width > 0 && canvas.height > 0;
+        // Generic form: querySelector<HTMLCanvasElement> returns
+        // `HTMLCanvasElement | null`, so the null check below is a real guard
+        // rather than a redundant one. The old `as HTMLCanvasElement` cast
+        // asserted non-null on a nullable result, which silenced the check.
+        const canvas = document.querySelector<HTMLCanvasElement>('#canvas');
+        return canvas !== null && canvas.width > 0 && canvas.height > 0;
     }, { timeout: 5000 });
 }
 
