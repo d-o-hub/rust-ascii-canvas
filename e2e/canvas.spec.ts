@@ -238,19 +238,26 @@ test.describe('Drawing Tools Interaction', () => {
         const anchorX = 2;
         const anchorY = 2;
 
-        const clickCell = async (cellX: number, cellY: number): Promise<void> => {
-            await page.mouse.click(
-                box.x + (cellX * charWidth) + (charWidth / 2),
-                box.y + (cellY * lineHeight) + (lineHeight / 2)
-            );
-            await waitForRender(page);
-        };
-        
         await canvas.focus();
-        await clickCell(anchorX, anchorY);
+        // Anchor, then the cell under test. Two explicit clicks rather than a
+        // shared `clickCell` helper: the helper wrapped both in a closure over
+        // page/box/metrics, which is the shape Codacy's Biome
+        // `useQwikValidLexicalScope` rule flags. That rule is Qwik's
+        // serialisation check and this project has no Qwik — recorded as a
+        // Codacy tool misconfiguration rather than worked around with a
+        // suppression.
+        await page.mouse.click(
+            box.x + (anchorX * charWidth) + (charWidth / 2),
+            box.y + (anchorY * lineHeight) + (lineHeight / 2)
+        );
+        await waitForRender(page);
         await page.keyboard.type('A');
         
-        await clickCell(gridX, gridY);
+        await page.mouse.click(
+            box.x + (gridX * charWidth) + (charWidth / 2),
+            box.y + (gridY * lineHeight) + (lineHeight / 2)
+        );
+        await waitForRender(page);
         await page.keyboard.type('X');
         await waitForRender(page);
         
