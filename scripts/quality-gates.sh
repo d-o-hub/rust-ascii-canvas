@@ -152,7 +152,10 @@ printf "\n"
 info "Merge-gate coherence (L-008)..."
 CI_YML="$REPO_ROOT/.github/workflows/ci.yml"
 if [[ -f "$CI_YML" ]]; then
-  MERGE_JOBS=(fmt clippy architecture rust security deny web wasm e2e)
+  # The jobs whose results CI Success aggregates. Keep in sync with the workflow —
+  # the check below is bidirectional precisely so that forgetting to is a failure
+  # rather than a silent hole (see L-018).
+  MERGE_JOBS=(fmt clippy architecture rust security security-npm deny web wasm e2e)
   # Read the `needs:` line of the ci-success job. It is NOT at a fixed offset:
   # comment blocks above it (which explain *why* the list matters) push it
   # further down, so scan until the next top-level job key.
@@ -162,12 +165,45 @@ if [[ -f "$CI_YML" ]]; then
     injob && /needs:/ { print; exit }
   ' "$CI_YML")"
   COHERENCE_OK=true
+
+  # (a) every gate job must be aggregated by CI Success.
   for job in "${MERGE_JOBS[@]}"; do
     if ! grep -qw "$job" <<<"$NEEDS_LINE"; then
       COHERENCE_OK=false
       echo "  ci-success.needs is missing '$job'"
     fi
   done
+
+  # (b) every aggregated job must be one this harness knows about. A one-way
+  # subset check passes when a new sensor job is added to the workflow and wired
+  # into `needs` — and then that job has no guard: dropping it from `needs`
+  # later is invisible, and CI Success reports green without it. Bidirectional is
+  # the difference between "the list matches" and "the list happens to match".
+  # Parse only what is inside the brackets, so the `needs:` key itself is not
+  # mistaken for a job name.
+  NEEDS_JOBS="$(sed -e 's/.*\[//' -e 's/\].*//' <<<"$NEEDS_LINE" | tr ',' ' ')"
+  for job in $NEEDS_JOBS; do
+    job="$(xargs <<<"$job")"
+    [[ -z "$job" || "$job" == "changes" ]] && continue
+    known=false
+    for candidate in "${MERGE_JOBS[@]}"; do
+      [[ "$job" == "$candidate" ]] && known=true && break
+    done
+    if ! $known; then
+      COHERENCE_OK=false
+      echo "  ci-success aggregates '$job', which is not in MERGE_JOBS (quality-gates.sh)"
+    fi
+  done
+
+  # (c) every gate job must actually exist in the workflow, so a renamed job
+  # cannot satisfy (a) with a stale name while the real one runs unaggregated.
+  for job in "${MERGE_JOBS[@]}"; do
+    if ! grep -qE "^  ${job}:" "$CI_YML"; then
+      COHERENCE_OK=false
+      echo "  MERGE_JOBS lists '$job', which is not a job in ci.yml"
+    fi
+  done
+
   # `changes` must be present: if it fails, every dependant is skipped and
   # CI Success would see all-skipped and report green (L-002/L-003).
   if ! grep -qw "changes" <<<"$NEEDS_LINE"; then
@@ -175,10 +211,13 @@ if [[ -f "$CI_YML" ]]; then
     echo "  ci-success.needs is missing 'changes' (all-skipped would read as green)"
   fi
   if $COHERENCE_OK; then
-    pass "ci-success aggregates all ${#MERGE_JOBS[@]} sensors + changes"
+    pass "ci-success aggregates all ${#MERGE_JOBS[@]} sensors + changes (bidirectional, L-018)"
   else
     fail "ci-success.needs drifted from the required job set"
-    echo "  FIX: restore 'needs: [changes, ${MERGE_JOBS[*]}]' on the ci-success job."
+    local want
+    want="$(IFS=,; echo "${MERGE_JOBS[*]}")"
+    echo "  FIX: needs: [changes, ${want}] on the ci-success job, with MERGE_JOBS"
+    echo "       in this script listing exactly those jobs."
     echo "       It is a REQUIRED status check; dropping a job silently weakens the merge gate."
     echo "       See agents-docs/harness.md L-008."
   fi
@@ -417,23 +456,40 @@ printf "\n"
 # ============================================================
 if ! $FAST; then
   if command -v cargo-audit &>/dev/null; then
-    info "Security audit..."
+    info "Security audit (Rust / cargo-audit)..."
     AUDIT_OUTPUT=$(cargo audit 2>&1) && AUDIT_EXIT=$? || AUDIT_EXIT=$?
     if [ "$AUDIT_EXIT" -ne 0 ]; then
       if echo "$AUDIT_OUTPUT" | grep -q "unsupported CVSS version"; then
         warn "cargo-audit: skipped (advisory format issue)"
       else
-        fail "Security audit"
+        fail "Security audit (cargo-audit)"
         echo "  FIX: Review cargo audit output; update or yank vulnerable crates."
         printf "%s\n" "$AUDIT_OUTPUT" >&2
       fi
     else
-      pass "Audit: OK"
+      pass "Security audit (cargo-audit): OK — crates only, not npm"
     fi
     printf "\n"
   else
     warn "cargo-audit not installed (CI runs it)"
   fi
+
+  # npm advisories. L-013: the step above is crates-only, and its old label
+  # ("Audit: OK") is ecosystem-neutral, so a lockfile refresh read as "audited"
+  # when no package had been checked. Both lockfiles are audited here because
+  # root and web/ are installed and versioned separately.
+  #
+  # Runs HERE ONLY — the CI side is the `security-npm` job in ci.yml (L-016).
+  info "Security audit (npm / pnpm audit, root + web)..."
+  if OUTPUT=$(bash "$REPO_ROOT/scripts/npm-audit.sh" 2>&1); then
+    printf "%s\n" "$OUTPUT" | sed 's/^/  /'
+  else
+    printf "%s\n" "$OUTPUT" | sed 's/^/  /'
+    fail "Security audit (npm)"
+    echo "  FIX: Update or remove the flagged package. Do NOT silence with an audit"
+    echo "       ignore or a resolution override — say why in the PR if unavoidable."
+  fi
+  printf "\n"
 
   # Codacy repo-level intake. Runs HERE ONLY — no CI job runs
   # quality-gates.sh (L-016), so this is local visibility, not a gate. The thing

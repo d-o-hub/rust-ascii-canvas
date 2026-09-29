@@ -44,7 +44,8 @@
     "gate:ruleset": "bash scripts/ruleset-check.sh",
     "codacy:check": "bash scripts/codacy-check.sh",
     "codacy:pr": "bash scripts/codacy-check.sh --pr",
-    "precommit": "bash scripts/pre-commit-fast.sh"
+    "precommit": "bash scripts/pre-commit-fast.sh",
+    "audit:npm": "bash scripts/npm-audit.sh"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
