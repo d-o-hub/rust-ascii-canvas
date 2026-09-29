@@ -43,7 +43,11 @@ test.describe('Tool Drawing Verification', () => {
         await drawOnCanvas(page, 100, 100, 300, 200);
         
         const ascii = await getAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        // "Canvas is not blank" == the text is not entirely whitespace.
+        // Expressed with trim() rather than /^(\s*\n)*$/: the nested quantifier
+        // is the ReDoS shape Codacy's security/detect-unsafe-regex flags, and
+        // \s already includes \n, so the two forms assert the same thing.
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/rectangle-drawing.png' });
     });
