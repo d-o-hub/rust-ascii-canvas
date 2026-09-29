@@ -1,0 +1,51 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.0.0/schema.json",
+  "//": [
+    "Configuration for Codacy's Biome tool ONLY.",
+    "",
+    "This repository does not use Biome. ESLint is the local linter (web/eslint.config.js",
+    "for web/, eslint.config.mjs for everything else) and Biome appears here solely because",
+    "Codacy runs it as one of its analysers.",
+    "",
+    "WHY THE QWIK RULES ARE OFF:",
+    "  Codacy's Biome tool has four `useQwik*` patterns enabled by the Default coding",
+    "  standard, which cannot be disabled per pattern, and Codacy exposes no per-rule",
+    "  parameter for the tool (codacy tool --help: enable | disable | configuration-file).",
+    "  Those rules implement Qwik's $() serialisation boundary, and this project has no Qwik",
+    "  dependency at all — `grep -i qwik package.json web/package.json` is empty. So they fire",
+    "  on ordinary TypeScript: PR #222 was blocked by",
+    "  `Biome lint/correctness/useQwikValidLexicalScope` on a plain arrow function in a",
+    "  Playwright spec. A framework rule set pointed at a project that does not use that",
+    "  framework is an analyser misconfiguration, not a finding.",
+    "",
+    "WHAT ELSE IS OFF, AND WHY:",
+    "  noDoubleEquals, noGlobalIsNan, noSwitchDeclarations and useBlockStatements are",
+    "  stylistic and already governed locally by ESLint; Biome's opinion is not this repo's",
+    "  and it was not requested. The security rules are deliberately left ON — they agree with",
+    "  eslint-plugin-security, which the local configs now run (harness L-017), so a finding",
+    "  from either analyser is a real finding.",
+    "",
+    "IF YOU EDIT THIS: verify it the only way that works — push, then read",
+    "  codacy -o json pull-request gh d-o-hub rust-ascii-canvas <PR>",
+    "A Biome config change has no local oracle; Biome is not installed here and must not",
+    "become a project dependency for a tool the repo does not use."
+  ],
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "useQwikValidLexicalScope": "off",
+        "useQwikMethodUsage": "off",
+        "useQwikClasslist": "off",
+        "noQwikUseVisibleTask": "off",
+        "noDoubleEquals": "off",
+        "noGlobalIsNan": "off",
+        "noSwitchDeclarations": "off"
+      },
+      "style": {
+        "useBlockStatements": "off"
+      }
+    }
+  }
+}

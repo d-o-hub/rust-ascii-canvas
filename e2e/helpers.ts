@@ -56,4 +56,43 @@ export async function requireAsciiContent(page: Page): Promise<string> {
     return ascii;
 }
 
+/**
+ * Grid metrics the editor lays out with, in CSS pixels.
+ *
+ * The app measures these itself: `USE_PIXEL_BUFFER` is on, so
+ * `measureFont()` in `web/render.ts` assigns `GLYPH_WIDTH` / `GLYPH_HEIGHT` from
+ * `web/constants.ts` and publishes them as `window.charWidth` /
+ * `window.lineHeight`. Hard-coding them in a spec means a metrics change
+ * silently moves every click, which is exactly the kind of drift a test that
+ * skips its own assertion cannot notice — see the anchor cell in
+ * `canvas.spec.ts` "should insert text at exact clicked grid position".
+ */
+export const GLYPH_WIDTH = 8;
+export const GLYPH_HEIGHT = 20;
+
+/**
+ * Click the centre of a grid cell and wait for the render that follows.
+ *
+ * Returns the cell that was clicked so a caller can assert against it. Clicking
+ * the centre rather than the top-left corner keeps the maths unambiguous: the
+ * half-cell offset can never carry a click into the neighbouring cell when the
+ * metrics are fractional.
+ */
+export async function clickGridCell(
+    page: Page,
+    cellX: number,
+    cellY: number
+): Promise<{ x: number; y: number }> {
+    const canvas = page.locator('#canvas');
+    const box = await canvas.boundingBox();
+    if (!box) {
+        throw new Error('clickGridCell: #canvas has no bounding box');
+    }
+    await page.mouse.click(
+        box.x + (cellX * GLYPH_WIDTH) + (GLYPH_WIDTH / 2),
+        box.y + (cellY * GLYPH_HEIGHT) + (GLYPH_HEIGHT / 2)
+    );
+    return { x: cellX, y: cellY };
+}
+
 export { BASE_URL };
