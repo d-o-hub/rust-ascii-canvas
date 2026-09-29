@@ -42,7 +42,7 @@ test.describe('Tool Drawing Verification', () => {
         
         await drawOnCanvas(page, 100, 100, 300, 200);
         
-        const ascii = await getAsciiContent(page);
+        const ascii = await requireAsciiContent(page);
         // "Canvas is not blank" == the text is not entirely whitespace.
         // Expressed with trim() rather than /^(\s*\n)*$/: the nested quantifier
         // is the ReDoS shape Codacy's security/detect-unsafe-regex flags, and
@@ -81,7 +81,7 @@ test.describe('Tool Drawing Verification', () => {
         
         await drawOnCanvas(page, 100, 150, 300, 150);
         
-        const ascii = await getAsciiContent(page);
+        const ascii = await requireAsciiContent(page);
         expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/arrow-drawing.png' });
@@ -93,7 +93,7 @@ test.describe('Tool Drawing Verification', () => {
         
         await drawOnCanvas(page, 150, 100, 300, 200);
         
-        const ascii = await getAsciiContent(page);
+        const ascii = await requireAsciiContent(page);
         expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/diamond-drawing.png' });
@@ -232,7 +232,7 @@ test.describe('Tool Drawing Verification', () => {
         await drawOnCanvas(page, 100, 100, 300, 200);
         await waitForRender(page);
         
-        const asciiBefore = await getAsciiContent(page);
+        const asciiBefore = await requireAsciiContent(page);
         expect(asciiBefore.trim()).not.toBe('');
         
         await page.click('[data-tool="eraser"]');
@@ -267,7 +267,7 @@ test.describe('Select Tool Delete Functionality', () => {
         await drawOnCanvas(page, 100, 100, 300, 200);
         await waitForRender(page);
         
-        const asciiBefore = await getAsciiContent(page);
+        const asciiBefore = await requireAsciiContent(page);
         expect(asciiBefore.trim()).not.toBe('');
         
         await page.click('[data-tool="select"]');
@@ -285,7 +285,7 @@ test.describe('Select Tool Delete Functionality', () => {
         
         await page.screenshot({ path: 'test-results/select-after-delete.png' });
         
-        const asciiAfter = await getAsciiContent(page);
+        const asciiAfter = await requireAsciiContent(page);
         expect(asciiAfter.trim()).toBe('');
     });
 
@@ -306,7 +306,7 @@ test.describe('Select Tool Delete Functionality', () => {
         await page.keyboard.press('Backspace');
         await waitForRender(page);
         
-        const asciiAfter = await getAsciiContent(page);
+        const asciiAfter = await requireAsciiContent(page);
         expect(asciiAfter.trim()).toBe('');
     });
 });
