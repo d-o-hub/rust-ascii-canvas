@@ -82,7 +82,7 @@ test.describe('Tool Drawing Verification', () => {
         await drawOnCanvas(page, 100, 150, 300, 150);
         
         const ascii = await getAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/arrow-drawing.png' });
     });
@@ -94,7 +94,7 @@ test.describe('Tool Drawing Verification', () => {
         await drawOnCanvas(page, 150, 100, 300, 200);
         
         const ascii = await getAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/diamond-drawing.png' });
     });
@@ -233,7 +233,7 @@ test.describe('Tool Drawing Verification', () => {
         await waitForRender(page);
         
         const asciiBefore = await getAsciiContent(page);
-        expect(asciiBefore).not.toMatch(/^(\s*\n)*$/);
+        expect(asciiBefore.trim()).not.toBe('');
         
         await page.click('[data-tool="eraser"]');
         await expect(page.locator('[data-tool="eraser"]')).toHaveClass(/active/);
@@ -268,7 +268,7 @@ test.describe('Select Tool Delete Functionality', () => {
         await waitForRender(page);
         
         const asciiBefore = await getAsciiContent(page);
-        expect(asciiBefore).not.toMatch(/^(\s*\n)*$/);
+        expect(asciiBefore.trim()).not.toBe('');
         
         await page.click('[data-tool="select"]');
         await expect(page.locator('[data-tool="select"]')).toHaveClass(/active/);
@@ -286,7 +286,7 @@ test.describe('Select Tool Delete Functionality', () => {
         await page.screenshot({ path: 'test-results/select-after-delete.png' });
         
         const asciiAfter = await getAsciiContent(page);
-        expect(asciiAfter).toMatch(/^(\s*\n)*$/);
+        expect(asciiAfter.trim()).toBe('');
     });
 
     test('Select + Backspace should clear selected area', async ({ page }) => {
@@ -307,7 +307,7 @@ test.describe('Select Tool Delete Functionality', () => {
         await waitForRender(page);
         
         const asciiAfter = await getAsciiContent(page);
-        expect(asciiAfter).toMatch(/^(\s*\n)*$/);
+        expect(asciiAfter.trim()).toBe('');
     });
 });
 
@@ -340,7 +340,7 @@ test.describe('Edge Cases', () => {
         await page.mouse.up();
         
         const ascii = await requireAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/edge-rectangle-origin.png' });
     });
