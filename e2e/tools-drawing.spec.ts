@@ -399,8 +399,10 @@ test.describe('Edge Cases', () => {
     test('All border styles draw correctly', async ({ page }) => {
         const borderStyles = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
         
-        for (let i = 0; i < borderStyles.length; i++) {
-            const style = borderStyles[i];
+        // `.entries()` rather than an index counter: the loop reads the value
+        // it needs from the iterator instead of computing a member access,
+        // which is the sink Codacy's object-injection rule flags.
+        for (const [i, style] of borderStyles.entries()) {
             const offsetY = i * 60;
             
             await page.locator('#border-style').selectOption(style);
