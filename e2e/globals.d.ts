@@ -13,6 +13,18 @@ export {};
 declare global {
     interface Window {
         editor: {
+            /**
+             * Trimmed ASCII text of the composited visible layers.
+             *
+             * **The result has no grid origin.** Empty borders are trimmed
+             * (`ExportOptions::default().trim_borders` in
+             * `src/core/ascii_export.rs`), so a document whose content starts
+             * at grid (10, 10) exports as if it started at (0, 0). Tests that
+             * assert a cell position have to establish the origin themselves —
+             * draw an anchor first — rather than index the export as if it were
+             * the raw grid. Document save/load is unaffected: it goes through
+             * `serializeDocument()`, which stores explicit per-cell coordinates.
+             */
             exportAscii(): string;
             serializeDocument(): string;
             loadDocument(json: string): boolean;

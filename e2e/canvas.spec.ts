@@ -228,13 +228,29 @@ test.describe('Drawing Tools Interaction', () => {
         const lineHeight = 20;
         const gridX = 10;
         const gridY = 10;
-        const clickX = box.x + (gridX * charWidth) + (charWidth / 2);
-        const clickY = box.y + (gridY * lineHeight) + (lineHeight / 2);
+
+        // exportAscii() returns the content with its empty borders trimmed, so
+        // the export has no grid origin: a lone character at (10, 10) comes back
+        // as a single line, single column, and there is no row 10 to index. Drop
+        // an anchor at a known cell first, which pins the bounding box, and the
+        // assertion below then states the real claim — the character is offset
+        // from the anchor by exactly the difference between the two clicks.
+        const anchorX = 2;
+        const anchorY = 2;
+
+        const clickCell = async (cellX: number, cellY: number): Promise<void> => {
+            await page.mouse.click(
+                box.x + (cellX * charWidth) + (charWidth / 2),
+                box.y + (cellY * lineHeight) + (lineHeight / 2)
+            );
+            await waitForRender(page);
+        };
         
         await canvas.focus();
-        await page.mouse.click(clickX, clickY);
-        await waitForRender(page);
+        await clickCell(anchorX, anchorY);
+        await page.keyboard.type('A');
         
+        await clickCell(gridX, gridY);
         await page.keyboard.type('X');
         await waitForRender(page);
         
@@ -242,14 +258,15 @@ test.describe('Drawing Tools Interaction', () => {
         const ascii = await requireAsciiContent(page);
         
         const lines = ascii.split('\n');
-        // Assert unconditionally. The old `if (lines[gridY])` guard meant the
-        // expectation was skipped whenever the row was missing — so a click
-        // that inserted nothing, or one that landed on the wrong row, passed
-        // this test. `.at()` keeps the out-of-range case a failing assertion
-        // (`undefined !== 'X'`) and drops the computed member access that
-        // Codacy's object-injection rule flagged.
-        expect(lines.at(gridY)?.at(gridX)).toBe('X');
+        // Unconditional: the anchor assertion fixes the origin, so a missing
+        // row or column is a failure to report rather than a reason to skip.
+        // The previous version wrapped this in `if (lines[gridY])`, which meant
+        // the test asserted nothing whenever the content did not already start
+        // at row 10 — it could not fail.
+        expect(lines.at(0)?.at(0)).toBe('A');
+        expect(lines.at(gridY - anchorY)?.at(gridX - anchorX)).toBe('X');
     });
+
 
     test('should insert multiple characters sequentially', async ({ page }) => {
         await page.click('[data-tool="text"]');
