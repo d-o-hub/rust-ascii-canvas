@@ -242,9 +242,13 @@ test.describe('Drawing Tools Interaction', () => {
         const ascii = await requireAsciiContent(page);
         
         const lines = ascii.split('\n');
-        if (lines[gridY]) {
-            expect(lines[gridY][gridX]).toBe('X');
-        }
+        // Assert unconditionally. The old `if (lines[gridY])` guard meant the
+        // expectation was skipped whenever the row was missing — so a click
+        // that inserted nothing, or one that landed on the wrong row, passed
+        // this test. `.at()` keeps the out-of-range case a failing assertion
+        // (`undefined !== 'X'`) and drops the computed member access that
+        // Codacy's object-injection rule flagged.
+        expect(lines.at(gridY)?.at(gridX)).toBe('X');
     });
 
     test('should insert multiple characters sequentially', async ({ page }) => {
