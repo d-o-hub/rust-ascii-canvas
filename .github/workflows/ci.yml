@@ -184,7 +184,7 @@ jobs:
           WASM_BINDGEN_TEST_ONLY_NODE: 1
 
   security:
-    name: Security Audit
+    name: Security Audit (cargo)
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
@@ -204,6 +204,36 @@ jobs:
         run: cargo generate-lockfile
       - name: Run cargo audit
         run: cargo audit
+
+  # npm advisories for BOTH lockfiles (harness L-013).
+  #
+  # A separate job, not a step inside `security`: that job is gated on
+  # `needs.changes.outputs.rust == 'true'`, so on a web-only or lockfile-only PR
+  # — exactly the change class this sensor exists for — it would be skipped and
+  # the npm tree would go unchecked while CI stayed green. Gated on `web`
+  # instead, which covers `web/**`, `e2e/**`, `package.json` and both
+  # `pnpm-lock.yaml` files.
+  security-npm:
+    name: Security Audit (npm)
+    needs: [changes]
+    if: >
+      github.event_name != 'pull_request' ||
+      needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
+        with:
+          version: 10.34.5
+      # Audit the committed lockfiles. `--frozen-lockfile` proves the audit is
+      # about what is actually pinned, not about a fresh resolve; if it fails
+      # here the lockfile is out of sync with package.json, which is its own bug.
+      - name: Install dependencies (frozen)
+        run: |
+          pnpm install --frozen-lockfile
+          cd web && pnpm install --frozen-lockfile
+      - name: Run npm audit (root + web)
+        run: bash scripts/npm-audit.sh
 
   deny:
     name: Dependency Policy (cargo-deny)
@@ -453,7 +483,7 @@ jobs:
     # skips every dependant — and this job would then see nine `skipped`
     # results and report green. That is the L-002/L-003 trap reproduced inside
     # the very check that gates merges, so the upstream job is verified too.
-    needs: [changes, fmt, clippy, architecture, rust, security, deny, web, wasm, e2e]
+    needs: [changes, fmt, clippy, architecture, rust, security, security-npm, deny, web, wasm, e2e]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -465,6 +495,7 @@ jobs:
           ARCHITECTURE: ${{ needs.architecture.result }}
           RUST: ${{ needs.rust.result }}
           SECURITY: ${{ needs.security.result }}
+          SECURITY_NPM: ${{ needs.security-npm.result }}
           DENY: ${{ needs.deny.result }}
           WEB: ${{ needs.web.result }}
           WASM: ${{ needs.wasm.result }}
@@ -474,6 +505,7 @@ jobs:
           declare -A results=(
             [changes]="$CHANGES" [fmt]="$FMT" [clippy]="$CLIPPY"
             [architecture]="$ARCHITECTURE" [rust]="$RUST" [security]="$SECURITY"
+            [security-npm]="$SECURITY_NPM"
             [deny]="$DENY" [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E"
           )
           blocked=0
