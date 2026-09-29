@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --config vite.config.ts",
+    "dev:lan": "vite --config vite.config.ts --host",
     "build": "vite build --config vite.config.ts",
     "preview": "vite preview --config vite.config.ts",
     "wasm:dev": "cd .. && wasm-pack build --dev --target web",
