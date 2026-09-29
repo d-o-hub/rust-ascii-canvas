@@ -435,6 +435,24 @@ if ! $FAST; then
     warn "cargo-audit not installed (CI runs it)"
   fi
 
+  # Codacy repo-level intake. Runs HERE ONLY — no CI job runs
+  # quality-gates.sh (L-016), so this is local visibility, not a gate. The thing
+  # that blocks a merge is the required `Codacy Static Code Analysis` check;
+  # this exists because that check is *diff-scoped* and reported a green PR
+  # while 11 High findings sat on the repo-level backlog (L-017). The script
+  # exits 0 with a warning when the CLI is absent or unauthenticated, so an
+  # offline machine is not blocked — and it never prints a pass it did not earn.
+  info "Codacy repo-level intake (local only — not a CI gate)..."
+  if OUTPUT=$(bash "$REPO_ROOT/scripts/codacy-check.sh" 2>&1); then
+    printf "%s\n" "$OUTPUT" | sed 's/^/  /'
+  else
+    printf "%s\n" "$OUTPUT" | sed 's/^/  /'
+    fail "Codacy repo-level intake"
+    echo "  FIX: Read the findings above and fix them in code, or escalate with them quoted."
+    echo "        Do NOT remove Codacy from the ruleset to make this green (AGENTS.md)."
+  fi
+  printf "\n"
+
   if command -v cargo-deny &>/dev/null; then
     info "cargo-deny..."
     if ! OUTPUT=$(cargo deny check 2>&1); then

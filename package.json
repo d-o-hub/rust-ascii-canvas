@@ -41,6 +41,8 @@
     "gate:pr": "bash scripts/pr-merge-gate.sh",
     "gate:pr:test": "bash scripts/pr-merge-gate.sh --self-test",
     "gate:ruleset": "bash scripts/ruleset-check.sh",
+    "codacy:check": "bash scripts/codacy-check.sh",
+    "codacy:pr": "bash scripts/codacy-check.sh --pr",
     "precommit": "bash scripts/pre-commit-fast.sh"
   },
   "devDependencies": {
