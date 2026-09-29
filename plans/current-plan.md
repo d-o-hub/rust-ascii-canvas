@@ -1,9 +1,9 @@
 # Current Plan: GOAP Codebase Improvement & Feature Roadmap 2026
 
-## Status: ACTIVE — R-07 done and gated in CI (#220/L-016); next is R-06
+## Status: ACTIVE — Codacy parity landed (#222 + #223/L-017); next is R-06
 
 **Created**: 2026-03-03  
-**Last updated**: 2026-09-28 (plans sync: R-07 closed in CI, L-016 recorded)  
+**Last updated**: 2026-09-29 (plans sync: #222 fixed the 11 Codacy findings; #223 closes L-017)  
 **Supersedes (partially)**: Production-readiness-only focus; March 2026 world-state snapshot  
 **Methodology**: Goal-Oriented Action Planning (GOAP) with ADRs  
 **Latest execution**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
@@ -85,7 +85,7 @@
 |-------|-----|--------|------------|
 | 1 | F-13 | ✅ Done — layer-command history shipped (issue #207, ADR-043; #212 + #216) | core/product |
 | 2 | R-05 | ✅ Done — dependency refresh pruned the unused optional peers (esbuild, jsdom) → alert #11 closed, L-006 trigger gone | deps |
-| 3 | R-07 | 🟡 Partial — #219/#220 fixed the `e2e/` *scope* blind spot (L-014 → L-016), but "41 → 0 actionable" was wrong: Codacy's PR analysis is **diff-scoped** and neither local ESLint config enables `eslint-plugin-security`, so **11 High `security_detect-*` findings** survived on the repo-level backlog. Findings fixed 2026-09-29; the rule-family parity + repo-level intake gap is **L-017** (open) | harness/ci |
+| 3 | R-07 | ✅ Done — 11 residual `security_detect-*` findings fixed in **#222** (no suppressions; one of them exposed a vacuous assertion in `canvas.spec.ts`); rule-family parity, repo-level intake and the Biome/Qwik misconfiguration closed in **#223** under **L-017** / ADR-045 | harness/ci | — #219/#220 fixed the `e2e/` *scope* blind spot (L-014 → L-016), but "41 → 0 actionable" was wrong: Codacy's PR analysis is **diff-scoped** and neither local ESLint config enables `eslint-plugin-security`, so **11 High `security_detect-*` findings** survived on the repo-level backlog. Findings fixed 2026-09-29; the rule-family parity + repo-level intake gap is **L-017** (open) | harness/ci |
 | 4 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) — fix is written on `fix/r06-vite-host-loopback`, ships after the Codacy fixes | frontend/security |
 | 5 | R-08 | Close **L-013**: the `Security audit` sensor is `cargo audit` only — no npm advisory sensor exists for either lockfile, and the 2026 Vite dev-server advisories (GHSA-v2wj-q39q-566r, GHSA-p9ff-h696-f583, CVE-2026-53571) all list *"exposes the dev server to the network"* as their precondition, which is what R-06 removes | harness/security |
 | 6 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |

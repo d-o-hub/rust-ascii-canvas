@@ -1,7 +1,7 @@
 # Goal State: Codebase Improvement & Feature Roadmap 2026
 
-## Status: ACHIEVED (2026-07 target met) — R-07 done and gated in CI (#220/L-016); next is R-06
-**Updated**: 2026-09-28
+## Status: ACHIEVED (2026-07 target met) — Codacy parity done (#222 + #223/L-017); next is R-06
+**Updated**: 2026-09-29
 
 ---
 
@@ -73,6 +73,9 @@ harness:                           # ADR-044
   delivery_loop: documented         # agents-docs/delivery.md
   adversarial_review: pr-roast      # every finding cited to official docs
   e2e_sensors_gated_in_ci: true     # L-016 — ESLint (root) + TypeScript (e2e) in web job (#220)
+  codacy_backlog_readable: true      # L-017 — npm run codacy:check (agent procedure, not a gate)
+  local_rule_family_parity: true     # L-017 — eslint-plugin-security in both ESLint configs
+  codacy_backlog: 0                  # 11 High findings fixed in #222; verified repo-level
 ```
 
 ### Target State (next horizon — post-roadmap)
@@ -93,6 +96,9 @@ harness:
   merge_contract: done             # ADR-044 (#213): ruleset + pr-merge-gate.sh
   ruleset_drift_sensor: done       # scripts/ruleset-check.sh + .github/ruleset-main.json
   gate_script_is_not_a_gate: done  # L-016 (#220): e2e sensors wired into ci.yml web job
+  required_check_rule_family_parity: done  # L-017 (#223): security plugin runs locally
+  repo_level_intake: done           # L-017 (#223): codacy:check, agent procedure by design
+  codacy_coverage_upload: blocked   # needs a project-scoped CODACY_PROJECT_TOKEN secret
 ```
 
 ### Definition of Done — Tier 5: Harness merge contract (ADR-044, #213)

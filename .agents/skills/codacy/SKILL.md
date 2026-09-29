@@ -246,6 +246,10 @@ rather than pattern-match it.
 - **Tooling skills**: `codacy-cloud-cli`, `codacy-code-review`,
   `configure-codacy`, `configure-codacy-cloud`, `setup-coverage`
 - **Escalate to a human** when a fix would mean relaxing a gate or a check
+- **Upstream** — the auth-locality gap in the README of
+  `codacy/codacy-skills` is reported as
+  [codacy/codacy-skills#11](https://github.com/codacy/codacy-skills/issues/11);
+  do not re-file it. The fix is carried locally in the G1–G4 table above.
 - **Not upstream-editable** — this skill is local, but `codacy-cloud-cli`,
   `codacy-analysis-cli`, `codacy-code-review`, `configure-codacy`,
   `configure-codacy-cloud` and `setup-coverage` are in `skills-lock.json` and

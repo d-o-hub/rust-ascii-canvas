@@ -1,9 +1,11 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-09-28
+**Updated**: 2026-09-29
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
 **Latest triage**: 2026-09-28 — R-07 is **done and closed in CI**: #219 added the `e2e/` lint + typecheck sensors locally, and the #220 follow-up (harness **L-016**) wired both into the blocking `web` CI job, so `e2e/` is now linted *and* gated. Cycle order now: (1) R-06 dev-server host binding, (2) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. F-13 layer-operation history already shipped (issue #207, ADR-043; #212 + #216). **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
+
+**2026-09-29 — Codacy parity landed.** The "11 open High issues" correction below is now closed: **#222** fixed every finding for real (one commit per finding, no suppressions — both patterns are locked to Codacy's *Default coding standard*), and one of them turned out to hide a **vacuous assertion** in `e2e/canvas.spec.ts` that had never evaluated its expectation. **#223** closed the two gaps that let them sit there: `eslint-plugin-security` now runs in both ESLint configs (**rule-family parity**), and `npm run codacy:check` reads the **repository-level** list, because Codacy's PR analysis is diff-scoped and a green check cannot see a backlog. A third gap: Codacy's Biome was running four `useQwik*` rules against a repo with no Qwik dependency, which blocked #222 with a High finding on a plain arrow function; `biome.json` fixes it. All recorded as harness **L-017** + **ADR-045**. `codacy:check` is an **agent procedure, not a gate** — it is not in `ci.yml`, because `gh secret list` is empty and a runner cannot see the machine-local `codacy login` credential. Repo-level backlog is now **0**. Codacy's coverage goal remains `None` and is **blocked pending a project-scoped `CODACY_PROJECT_TOKEN`**.
 
 Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
 **GitHub issues** track open work (numbers below).
