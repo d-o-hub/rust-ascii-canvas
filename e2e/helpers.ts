@@ -1,7 +1,5 @@
 import type { Page } from '@playwright/test';
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3003';
-
 /** Clear autosave so tests start from a blank editor. */
 export async function clearAutosave(page: Page): Promise<void> {
     await page.addInitScript(() => {
@@ -20,7 +18,11 @@ export async function clearAutosave(page: Page): Promise<void> {
  */
 export async function openEditor(page: Page): Promise<void> {
     await clearAutosave(page);
-    await page.goto(BASE_URL);
+    // Relative: Playwright resolves it against `use.baseURL` in
+    // playwright.config.ts, which is the single source of truth for the host.
+    // A literal here would be a second copy to keep in sync — and the two had
+    // already drifted apart (localhost vs 127.0.0.1).
+    await page.goto('/');
     await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 30000 });
     await page.waitForSelector('#canvas', { timeout: 15000 });
     await page.waitForFunction(() => window.editor !== null, null, { timeout: 15000 });
@@ -94,5 +96,3 @@ export async function clickGridCell(
     );
     return { x: cellX, y: cellY };
 }
-
-export { BASE_URL };
