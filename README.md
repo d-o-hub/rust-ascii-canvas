@@ -43,7 +43,9 @@ npm run build
 npm run dev &
 ```
 
-The editor will be available at `http://localhost:3003`.
+The editor will be available at `http://localhost:3003` (loopback only). To test on
+a phone or another device on the LAN, use `npm run dev:lan` — see
+[CONTRIBUTING.md](CONTRIBUTING.md) for why the default is loopback.
 
 ### Quality gates (agent + human)
 

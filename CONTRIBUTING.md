@@ -27,8 +27,28 @@ cd web && pnpm install && cd ..
 pnpm run build:wasm
 
 # Dev server
-pnpm run dev
+pnpm run dev       # loopback-only, the default (http://127.0.0.1:3003)
+pnpm run dev:lan   # opt in to LAN visibility for device testing (binds 0.0.0.0)
 ```
+
+`pnpm run dev` binds `127.0.0.1` on purpose. Three 2026 Vite advisories —
+[GHSA-v2wj-q39q-566r](https://github.com/vitejs/vite/security/advisories/GHSA-v2wj-q39q-566r)
+(`server.fs.deny` bypass), GHSA-p9ff-h696-f583 (arbitrary file read through the
+HMR WebSocket) and
+[CVE-2026-53571](https://github.com/advisories/GHSA-FX2H-PF6J-XCFF) (Windows
+alternate-path bypass) — all list *"explicitly exposes the Vite dev server to the
+network"* as a precondition, so the default is loopback and `dev:lan` is the
+deliberate exception.
+
+Two things to know before reaching for `dev:lan`:
+
+- **WSL2 is different.** `dev:lan` is not by itself enough to reach the server
+  from a Windows host on WSL2 — see
+  [Microsoft's WSL networking notes](https://learn.microsoft.com/en-us/windows/wsl/networking#accessing-a-wsl-2-distribution-from-your-local-area-network-lan).
+- **Port 3003 is strict.** If it is taken, the dev server exits instead of moving
+  to 3004, because the e2e sensors poll `http://localhost:3003` and Playwright's
+  `baseURL` is pinned to it. A silent port change would run the suite against
+  whatever stale server still holds 3003.
 
 ## Quality harness (keep quality left)
 

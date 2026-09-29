@@ -26,6 +26,7 @@
     "build": "pnpm run build:wasm && pnpm run build:web",
     "netlify:build": "rustup target add wasm32-unknown-unknown && cargo install wasm-bindgen-cli --version 0.2.128 && pnpm install --frozen-lockfile && cd web && pnpm install --frozen-lockfile && cd .. && pnpm run build && pnpm run check-size",
     "dev": "cd web && pnpm run dev",
+    "dev:lan": "cd web && pnpm run dev:lan",
     "test": "cargo test && npx playwright test --project=chromium",
     "test:unit": "cargo test",
     "test:e2e": "npx playwright test",
