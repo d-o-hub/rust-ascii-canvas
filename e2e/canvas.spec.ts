@@ -228,13 +228,36 @@ test.describe('Drawing Tools Interaction', () => {
         const lineHeight = 20;
         const gridX = 10;
         const gridY = 10;
-        const clickX = box.x + (gridX * charWidth) + (charWidth / 2);
-        const clickY = box.y + (gridY * lineHeight) + (lineHeight / 2);
-        
+
+        // exportAscii() returns the content with its empty borders trimmed, so
+        // the export has no grid origin: a lone character at (10, 10) comes back
+        // as a single line, single column, and there is no row 10 to index. Drop
+        // an anchor at a known cell first, which pins the bounding box, and the
+        // assertion below then states the real claim — the character is offset
+        // from the anchor by exactly the difference between the two clicks.
+        const anchorX = 2;
+        const anchorY = 2;
+
         await canvas.focus();
-        await page.mouse.click(clickX, clickY);
+        // Anchor, then the cell under test. Two explicit clicks rather than a
+        // shared `clickCell` helper: the helper wrapped both in a closure over
+        // page/box/metrics, which is the shape Codacy's Biome
+        // `useQwikValidLexicalScope` rule flags. That rule is Qwik's
+        // serialisation check and this project has no Qwik — recorded as a
+        // Codacy tool misconfiguration rather than worked around with a
+        // suppression.
+        await page.mouse.click(
+            box.x + (anchorX * charWidth) + (charWidth / 2),
+            box.y + (anchorY * lineHeight) + (lineHeight / 2)
+        );
         await waitForRender(page);
+        await page.keyboard.type('A');
         
+        await page.mouse.click(
+            box.x + (gridX * charWidth) + (charWidth / 2),
+            box.y + (gridY * lineHeight) + (lineHeight / 2)
+        );
+        await waitForRender(page);
         await page.keyboard.type('X');
         await waitForRender(page);
         
@@ -242,10 +265,15 @@ test.describe('Drawing Tools Interaction', () => {
         const ascii = await requireAsciiContent(page);
         
         const lines = ascii.split('\n');
-        if (lines[gridY]) {
-            expect(lines[gridY][gridX]).toBe('X');
-        }
+        // Unconditional: the anchor assertion fixes the origin, so a missing
+        // row or column is a failure to report rather than a reason to skip.
+        // The previous version wrapped this in `if (lines[gridY])`, which meant
+        // the test asserted nothing whenever the content did not already start
+        // at row 10 — it could not fail.
+        expect(lines.at(0)?.at(0)).toBe('A');
+        expect(lines.at(gridY - anchorY)?.at(gridX - anchorX)).toBe('X');
     });
+
 
     test('should insert multiple characters sequentially', async ({ page }) => {
         await page.click('[data-tool="text"]');

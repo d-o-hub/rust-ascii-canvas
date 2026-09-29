@@ -85,9 +85,10 @@
 |-------|-----|--------|------------|
 | 1 | F-13 | ✅ Done — layer-command history shipped (issue #207, ADR-043; #212 + #216) | core/product |
 | 2 | R-05 | ✅ Done — dependency refresh pruned the unused optional peers (esbuild, jsdom) → alert #11 closed, L-006 trigger gone | deps |
-| 3 | R-07 | ✅ Done — Codacy backlog cleared (#219) and gated in CI (#220/L-016: e2e sensors wired into `web` job) | harness/ci |
-| 4 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) | frontend/security |
-| 5 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
+| 3 | R-07 | 🟡 Partial — #219/#220 fixed the `e2e/` *scope* blind spot (L-014 → L-016), but "41 → 0 actionable" was wrong: Codacy's PR analysis is **diff-scoped** and neither local ESLint config enables `eslint-plugin-security`, so **11 High `security_detect-*` findings** survived on the repo-level backlog. Findings fixed 2026-09-29; the rule-family parity + repo-level intake gap is **L-017** (open) | harness/ci |
+| 4 | R-06 | Decide the vite dev-server host default (currently 0.0.0.0) — fix is written on `fix/r06-vite-host-loopback`, ships after the Codacy fixes | frontend/security |
+| 5 | R-08 | Close **L-013**: the `Security audit` sensor is `cargo audit` only — no npm advisory sensor exists for either lockfile, and the 2026 Vite dev-server advisories (GHSA-v2wj-q39q-566r, GHSA-p9ff-h696-f583, CVE-2026-53571) all list *"exposes the dev server to the network"* as their precondition, which is what R-06 removes | harness/security |
+| 6 | #199 | do-harness adoption — deferred until upstream #235–#237 ship pinned | harness |
 
 ---
 

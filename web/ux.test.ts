@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TOOL_INFO, updateToolButtons, setTool } from './main';
-import type { ToolId } from './constants';
 import { state } from './state';
 import { setupEventListeners } from './events';
 import { refreshLayerList, toggleTheme, setZoom } from './ui';
@@ -95,14 +94,16 @@ describe('UX Improvements', () => {
     });
 
     it('should have instructions for all defined tools', () => {
-        // Typed as ToolId[] so a typo is a compile error rather than an
-        // `undefined` lookup at runtime.
-        const tools: ToolId[] = ['select', 'rectangle', 'line', 'arrow', 'diamond', 'text', 'freehand', 'eraser'];
-        tools.forEach(tool => {
-            expect(TOOL_INFO[tool]).toBeDefined();
-            expect(TOOL_INFO[tool].instruction).toBeTruthy();
-            expect(TOOL_INFO[tool].cursor).toBeTruthy();
-        });
+        // Iterate TOOL_INFO itself rather than a hand-written id list: the
+        // list could only ever check the ids someone remembered to type, so a
+        // tool dropped from the list (or added to TOOL_INFO) escaped the test.
+        // `ToolId` is derived from TOOL_INFO, so the compiler already proves
+        // every tool id has an entry — iterating the record is the full set.
+        for (const [id, info] of Object.entries(TOOL_INFO)) {
+            expect(info, `${id} should be defined`).toBeDefined();
+            expect(info.instruction, `${id} should have an instruction`).toBeTruthy();
+            expect(info.cursor, `${id} should have a cursor`).toBeTruthy();
+        }
     });
 
     it('should toggle visibility of eraser radius group on tool change', () => {

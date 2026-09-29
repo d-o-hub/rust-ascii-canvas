@@ -42,8 +42,12 @@ test.describe('Tool Drawing Verification', () => {
         
         await drawOnCanvas(page, 100, 100, 300, 200);
         
-        const ascii = await getAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        const ascii = await requireAsciiContent(page);
+        // "Canvas is not blank" == the text is not entirely whitespace.
+        // Expressed with trim() rather than /^(\s*\n)*$/: the nested quantifier
+        // is the ReDoS shape Codacy's security/detect-unsafe-regex flags, and
+        // \s already includes \n, so the two forms assert the same thing.
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/rectangle-drawing.png' });
     });
@@ -77,8 +81,8 @@ test.describe('Tool Drawing Verification', () => {
         
         await drawOnCanvas(page, 100, 150, 300, 150);
         
-        const ascii = await getAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        const ascii = await requireAsciiContent(page);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/arrow-drawing.png' });
     });
@@ -89,8 +93,8 @@ test.describe('Tool Drawing Verification', () => {
         
         await drawOnCanvas(page, 150, 100, 300, 200);
         
-        const ascii = await getAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        const ascii = await requireAsciiContent(page);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/diamond-drawing.png' });
     });
@@ -228,8 +232,8 @@ test.describe('Tool Drawing Verification', () => {
         await drawOnCanvas(page, 100, 100, 300, 200);
         await waitForRender(page);
         
-        const asciiBefore = await getAsciiContent(page);
-        expect(asciiBefore).not.toMatch(/^(\s*\n)*$/);
+        const asciiBefore = await requireAsciiContent(page);
+        expect(asciiBefore.trim()).not.toBe('');
         
         await page.click('[data-tool="eraser"]');
         await expect(page.locator('[data-tool="eraser"]')).toHaveClass(/active/);
@@ -263,8 +267,8 @@ test.describe('Select Tool Delete Functionality', () => {
         await drawOnCanvas(page, 100, 100, 300, 200);
         await waitForRender(page);
         
-        const asciiBefore = await getAsciiContent(page);
-        expect(asciiBefore).not.toMatch(/^(\s*\n)*$/);
+        const asciiBefore = await requireAsciiContent(page);
+        expect(asciiBefore.trim()).not.toBe('');
         
         await page.click('[data-tool="select"]');
         await expect(page.locator('[data-tool="select"]')).toHaveClass(/active/);
@@ -281,8 +285,8 @@ test.describe('Select Tool Delete Functionality', () => {
         
         await page.screenshot({ path: 'test-results/select-after-delete.png' });
         
-        const asciiAfter = await getAsciiContent(page);
-        expect(asciiAfter).toMatch(/^(\s*\n)*$/);
+        const asciiAfter = await requireAsciiContent(page);
+        expect(asciiAfter.trim()).toBe('');
     });
 
     test('Select + Backspace should clear selected area', async ({ page }) => {
@@ -302,8 +306,8 @@ test.describe('Select Tool Delete Functionality', () => {
         await page.keyboard.press('Backspace');
         await waitForRender(page);
         
-        const asciiAfter = await getAsciiContent(page);
-        expect(asciiAfter).toMatch(/^(\s*\n)*$/);
+        const asciiAfter = await requireAsciiContent(page);
+        expect(asciiAfter.trim()).toBe('');
     });
 });
 
@@ -336,7 +340,7 @@ test.describe('Edge Cases', () => {
         await page.mouse.up();
         
         const ascii = await requireAsciiContent(page);
-        expect(ascii).not.toMatch(/^(\s*\n)*$/);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/edge-rectangle-origin.png' });
     });
@@ -395,8 +399,10 @@ test.describe('Edge Cases', () => {
     test('All border styles draw correctly', async ({ page }) => {
         const borderStyles = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
         
-        for (let i = 0; i < borderStyles.length; i++) {
-            const style = borderStyles[i];
+        // `.entries()` rather than an index counter: the loop reads the value
+        // it needs from the iterator instead of computing a member access,
+        // which is the sink Codacy's object-injection rule flags.
+        for (const [i, style] of borderStyles.entries()) {
             const offsetY = i * 60;
             
             await page.locator('#border-style').selectOption(style);
@@ -421,7 +427,7 @@ test.describe('Edge Cases', () => {
         await waitForRender(page);
         
         const ascii = await requireAsciiContent(page);
-        expect(ascii).not.toMatch(/^[ \t\r]*(?:\n[ \t\r]*)*$/);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/edge-single-point.png' });
     });
