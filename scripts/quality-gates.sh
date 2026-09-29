@@ -147,7 +147,7 @@ if [[ -f "$CI_YML" ]]; then
   # The jobs whose results CI Success aggregates. Keep in sync with the workflow —
   # the check below is bidirectional precisely so that forgetting to is a failure
   # rather than a silent hole (see L-018).
-  MERGE_JOBS=(fmt clippy architecture rust security security-npm deny web wasm e2e)
+  MERGE_JOBS=(fmt clippy architecture rust security security-npm deny loc web wasm e2e)
   # Read the `needs:` line of the ci-success job. It is NOT at a fixed offset:
   # comment blocks above it (which explain *why* the list matters) push it
   # further down, so scan until the next top-level job key.

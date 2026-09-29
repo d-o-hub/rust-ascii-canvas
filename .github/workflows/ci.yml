@@ -125,25 +125,15 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install ripgrep
         run: sudo apt-get update && sudo apt-get install -y ripgrep
-      - name: Layer import rules + LOC
-        run: |
-          bash scripts/check-architecture.sh
-          # LOC: fail only on non-allowlisted oversized files
-          max=500
-          failed=0
-          while IFS= read -r file; do
-            lines=$(wc -l < "$file" | tr -d ' ')
-            rel="${file#./}"
-            if [ "$lines" -gt "$max" ]; then
-              if grep -qxF "$rel" .loc-allowlist 2>/dev/null; then
-                echo "WARN: $rel has $lines lines (allowlisted)"
-              else
-                echo "FAIL: $rel has $lines lines (max $max)"
-                failed=1
-              fi
-            fi
-          done < <(find ./src -name '*.rs' -type f | sort)
-          exit $failed
+      - name: Layer import rules
+        run: bash scripts/check-architecture.sh
+      # LOC used to be a second, inline implementation right here — a copy of the
+      # loop that lived in quality-gates.sh, with its own hardcoded 500 and its
+      # own allowlist lookup. It read `.loc-allowlist` with `grep -qxF "$rel"`,
+      # so the moment check-loc.sh changed the entry format to `path=lines` this
+      # copy stopped recognising the allowlist and failed on src/wasm/helpers.rs.
+      # The failure was correct; the duplication was the bug (L-016, L-019, L-020).
+      # One implementation now: scripts/check-loc.sh, run by the `web` job below.
       - name: Version pin parity
         run: bash scripts/propagate-version.sh --check
 
@@ -204,6 +194,33 @@ jobs:
         run: cargo generate-lockfile
       - name: Run cargo audit
         run: cargo audit
+
+  # LOC limits for src/**/*.rs AND web/*.ts.
+  #
+  # Its own job, because it is cross-cutting: putting it in `web` (gated on
+  # `web/**`) would skip it for a Rust-only PR, and putting it in `architecture`
+  # would skip it for a web-only PR. It needs no toolchain, so the job costs
+  # seconds.
+  #
+  # This check existed three times before: inline in scripts/quality-gates.sh,
+  # inline in the `architecture` job above, and nowhere in a web-aware form. The
+  # inline copy in `architecture` read the allowlist with `grep -qxF "$rel"`, so
+  # the moment scripts/check-loc.sh changed the entry format to `path=lines` it
+  # stopped recognising the allowlist and failed on src/wasm/helpers.rs. The
+  # failure was correct — the duplication was the bug. See L-016, L-019, L-020.
+  loc:
+    name: LOC Limits
+    needs: [changes]
+    if: >
+      github.event_name != 'pull_request' ||
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.harness == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: LOC limits (src + web)
+        run: bash scripts/check-loc.sh
 
   # npm advisories for BOTH lockfiles (harness L-013).
   #
@@ -345,14 +362,6 @@ jobs:
       - name: ESLint (root — covers e2e/)
         run: pnpm exec eslint .
 
-      # LOC limits for src/**/*.rs AND web/*.ts. This ran in
-      # scripts/quality-gates.sh only, so it was local-only (L-016) and the web
-      # side was not scanned at all — which is how web/events.ts reached 850 lines
-      # while the sensor reported "LOC: no new oversized files". One script, two
-      # runners, so the two cannot drift (L-019).
-      - name: LOC limits (src + web)
-        run: bash scripts/check-loc.sh
-
       # Uses web's tsc deliberately: `typescript` is not a root dependency (it is
       # aliased to the TypeScript 6 preview in `web/package.json`). `pnpm exec
       # tsc` at the root only resolves when a hoisted copy happens to be linked
@@ -493,7 +502,7 @@ jobs:
     # skips every dependant — and this job would then see nine `skipped`
     # results and report green. That is the L-002/L-003 trap reproduced inside
     # the very check that gates merges, so the upstream job is verified too.
-    needs: [changes, fmt, clippy, architecture, rust, security, security-npm, deny, web, wasm, e2e]
+    needs: [changes, fmt, clippy, architecture, rust, security, security-npm, deny, loc, web, wasm, e2e]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -507,6 +516,7 @@ jobs:
           SECURITY: ${{ needs.security.result }}
           SECURITY_NPM: ${{ needs.security-npm.result }}
           DENY: ${{ needs.deny.result }}
+          LOC: ${{ needs.loc.result }}
           WEB: ${{ needs.web.result }}
           WASM: ${{ needs.wasm.result }}
           E2E: ${{ needs.e2e.result }}
@@ -515,7 +525,7 @@ jobs:
           declare -A results=(
             [changes]="$CHANGES" [fmt]="$FMT" [clippy]="$CLIPPY"
             [architecture]="$ARCHITECTURE" [rust]="$RUST" [security]="$SECURITY"
-            [security-npm]="$SECURITY_NPM"
+            [security-npm]="$SECURITY_NPM" [loc]="$LOC"
             [deny]="$DENY" [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E"
           )
           blocked=0
