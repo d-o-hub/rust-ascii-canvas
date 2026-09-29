@@ -1,4 +1,15 @@
-# Files allowed to exceed the 500-line limit (known debt).
-# One repo-relative path per line. Do not grow these files — extract modules instead.
-# See agents-docs/architecture.md and ADR-037.
-src/wasm/helpers.rs
+# Oversized source files: acknowledged debt with a budget, not a waiver.
+#
+# Format: `path` to acknowledge, or `path=lines` to acknowledge AND freeze the
+# size — the file may shrink, never grow. The number is the current size, so
+# paying debt down and forgetting to update this file is a failure rather than a
+# silently renewed excuse.
+#
+# Do not add an entry without an ADR (agents-docs/architecture.md, ADR-037).
+# Remove an entry once the file is under the limit; scripts/check-loc.sh reports
+# stale entries precisely so this file cannot rot into a list of exemptions.
+#
+# Covers `src/**/*.rs` and `web/*.ts` (excluding `*.test.ts`).
+src/wasm/helpers.rs=948
+web/events.ts=850
+web/ui.ts=540

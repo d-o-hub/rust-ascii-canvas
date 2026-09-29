@@ -55,35 +55,27 @@ if $FAST; then TIER="fast"; fi
 
 printf "Quality gates (tier=%s)...\n\n" "$TIER"
 
-is_allowlisted() {
-  local file="$1"
-  local rel="${file#./}"
-  [[ -f "$LOC_ALLOWLIST_FILE" ]] || return 1
-  grep -qxF "$rel" "$LOC_ALLOWLIST_FILE" 2>/dev/null || \
-    grep -qxF "./$rel" "$LOC_ALLOWLIST_FILE" 2>/dev/null
-}
+# The LOC check itself lives in scripts/check-loc.sh so the gate script and the
+# `web` CI job run ONE implementation. It used to be inline here, which meant it
+# ran in the developer's shell and in CI nowhere (L-016) — the same trap this repo
+# hit for the audit sensor (L-013), the e2e lint scope (L-014) and the merge-gate
+# coherence list (L-018). See scripts/check-loc.sh and L-020.
+#
+# `is_allowlisted` and the inline loop are gone; check-loc.sh owns the whole
+# policy, including the ratchet (an allowlist entry pins a budget a file may
+# only shrink from) and stale-entry reporting.
 
 # ============================================================
 # 1. LOC LIMITS
 # ============================================================
-info "LOC limits (max ${MAX_LINES_PER_SOURCE_FILE}; allowlist: .loc-allowlist)..."
-LOC_VIOLATIONS=0
-while IFS= read -r file; do
-  [[ -z "$file" ]] && continue
-  lines=$(wc -l < "$file" 2>/dev/null | tr -d ' ')
-  if [[ "${lines:-0}" -gt "$MAX_LINES_PER_SOURCE_FILE" ]]; then
-    if is_allowlisted "$file"; then
-      warn "  $file: $lines lines (allowlisted debt — do not grow; extract modules)"
-    else
-      fail "  $file: $lines lines (max $MAX_LINES_PER_SOURCE_FILE)"
-      echo "  FIX: Split into smaller modules. Do not add to .loc-allowlist without an ADR."
-      LOC_VIOLATIONS=$((LOC_VIOLATIONS + 1))
-    fi
-  fi
-done < <(find ./src -name "*.rs" -type f 2>/dev/null | sort)
-
-if [[ $LOC_VIOLATIONS -eq 0 ]]; then
-  pass "LOC: no new oversized files"
+info "LOC limits (max ${MAX_LINES_PER_SOURCE_FILE}; src/**/*.rs + web/*.ts)..."
+if LOC_OUTPUT=$(bash "$REPO_ROOT/scripts/check-loc.sh" 2>&1); then
+  printf "%s\n" "$LOC_OUTPUT" | sed 's/^/  /'
+else
+  printf "%s\n" "$LOC_OUTPUT" | sed 's/^/  /'
+  fail "LOC limits"
+  echo "  FIX: See the entries above. Split the file, or pin a budget in .loc-allowlist"
+  echo "       (an ADR is required to add an entry)."
 fi
 printf "\n"
 
@@ -155,7 +147,7 @@ if [[ -f "$CI_YML" ]]; then
   # The jobs whose results CI Success aggregates. Keep in sync with the workflow —
   # the check below is bidirectional precisely so that forgetting to is a failure
   # rather than a silent hole (see L-018).
-  MERGE_JOBS=(fmt clippy architecture rust security security-npm deny web wasm e2e)
+  MERGE_JOBS=(fmt clippy architecture rust security security-npm deny loc web wasm e2e)
   # Read the `needs:` line of the ci-success job. It is NOT at a fixed offset:
   # comment blocks above it (which explain *why* the list matters) push it
   # further down, so scan until the next top-level job key.
