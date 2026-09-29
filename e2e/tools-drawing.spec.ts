@@ -425,7 +425,7 @@ test.describe('Edge Cases', () => {
         await waitForRender(page);
         
         const ascii = await requireAsciiContent(page);
-        expect(ascii).not.toMatch(/^[ \t\r]*(?:\n[ \t\r]*)*$/);
+        expect(ascii.trim()).not.toBe('');
         
         await page.screenshot({ path: 'test-results/edge-single-point.png' });
     });
