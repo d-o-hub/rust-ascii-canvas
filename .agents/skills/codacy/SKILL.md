@@ -38,6 +38,58 @@ does.
 
 > Verified 2026-09-27 on PR #216. Add `CODACY_API_TOKEN`, or run `codacy login`,
 > if the CLI is not authenticated.
+>
+> **Read G1–G4 before you conclude anything about CI.** The line above presents
+> two interchangeable options, and they are not interchangeable. This was
+> corrected here on 2026-09-29 after it caused a real wrong turn (harness
+> L-017), and it is the single easiest mistake to make with this tool.
+
+### Credentials: where they live, and what CI can see
+
+| | G1 locality | G2 read vs write | G3 scope |
+|---|---|---|---|
+| **Local machine** | `codacy login` stores an **account** API token, encrypted, at `~/.codacy/credentials` (`salt`/`iv`/`authTag`/`encrypted`, mode 600). Nothing is in the environment. | any read works | account-wide by nature |
+| **GitHub Actions** | **cannot see any of it.** A runner is an ephemeral VM; it reads repository secrets and OIDC, nothing else. | needs `CODACY_API_TOKEN` (read) or `CODACY_PROJECT_TOKEN` (read **and** coverage upload) as a repository secret | must be **project-scoped** |
+
+- **G1 — a local login is not a CI credential.** "The CLI is authenticated" and
+  "CI can reach Codacy" are unrelated facts. Concluding a sensor is wired
+  because the CLI works on your machine is the L-016 error wearing a costume.
+- **G2 — read and write need different privileges.** Querying issues and
+  uploading coverage are different operations with different tokens. A scheduled
+  read needs `CODACY_API_TOKEN`; a coverage upload needs `CODACY_PROJECT_TOKEN`.
+- **G3 — never put an account token in CI.** The CLI refuses to fall back to
+  one for scoped work on purpose: *"falling back to an account token would
+  silently run with far wider access than the scoped run you asked for."* That
+  guard is the tool telling you the scope was wrong. Honour it.
+- **G4 — a check you run by hand is a procedure, not a sensor.** If intake runs
+  only when an agent or a developer invokes it, it is local-only, and it must be
+  labelled that way rather than described as a gate.
+
+If the repository has no secret (`gh secret list` empty, as here on
+2026-09-29), then **no CI step exists and none may be claimed**. Say "not wired"
+and move on. `scripts/codacy-check.sh` in this repo is deliberately an
+agent procedure for exactly this reason, and its header says so.
+
+## A PR's green check does not mean the backlog is clear
+
+Codacy's **pull-request analysis is diff-scoped**. It reports only *new* issues
+in the diff:
+
+```bash
+codacy -o json pull-request gh d-o-hub rust-ascii-canvas 220
+#   isUpToStandards: true, newIssues: 0   ← while 11 High findings sat repo-wide
+```
+
+So "the Codacy check is green" is **structurally compatible with an arbitrary
+pre-existing backlog**. Always read the repository-level list as well:
+
+```bash
+codacy -o json issues          # the backlog — the only place it is visible
+npm run codacy:check            # wraps it; fails on Critical/High; warns, never fakes a pass, when unauthenticated
+```
+
+This is how `plans/FOLLOW_UPS.md` came to record "41 → 0 actionable" and be
+wrong. A backlog is not a PR concern, and no PR will ever report it.
 
 ## When to Use
 
@@ -132,12 +184,39 @@ escalate — with the specific findings quoted, not "check the dashboard".
 `SUCCESS`, which is the correct behaviour — an unverified check is not a passing
 check.
 
-## When Codacy is genuinely not useful
+## Narrowing Codacy's scope — a human decision, not an escape hatch
 
-If Codacy's analysis is superseded by a local sensor that already covers the same
-ground (this repo runs clippy `-D warnings`, ESLint, `cargo audit` and
-`cargo deny`), say so explicitly and propose dropping it as a required check —
-as an ADR, not as a drive-by edit. Use `configure-codacy-cloud` for the tooling.
+Codacy runs far more than this repo needs, and some of it is *wrong* for this
+repo. Two examples from 2026-09-29, both live:
+
+- **A framework rule set for a framework this project does not use.** Four
+  `useQwik*` Biome patterns judged ordinary TypeScript and produced a High
+  finding on a plain arrow function. `grep -i qwik package.json web/package.json`
+  is empty.
+- **A rule family no local sensor runs.** All 11 `ESLint8_security_detect-*`
+  findings were invisible to `gate:fast`, because neither ESLint config enabled
+  `eslint-plugin-security`.
+
+There are three legitimate responses, and **choosing among them is a human
+decision** — raise it with the findings quoted, do not pick one to make a red
+check go away:
+
+1. **Fix the code** for real findings. The default.
+2. **Bring local parity** for a rule family Codacy runs (this is what
+   `eslint-plugin-security` in both configs now does — see L-017).
+3. **Narrow the analyser**: a `biome.json`, `.codacy.yml` `exclude_paths`, or a
+   tool-level change via `configure-codacy-cloud`. Note the limit: a pattern
+   locked to the **Default coding standard** cannot be disabled, and
+   `codacy tool --help` exposes only `enable | disable | configuration-file` —
+   no per-rule parameter. A repo config file is often the only lever, and it has
+   no local oracle: verify it by pushing and reading
+   `codacy -o json pull-request`.
+
+**Never** remove `Codacy Static Code Analysis` from the ruleset's required checks
+to unblock a PR. That needs an ADR, a human decision, and an updated
+`.github/ruleset-main.json` — and it is not a shortcut around a finding, it is
+the deletion of the gate.
+
 Do not quietly tolerate a permanently red or permanently stuck third-party check;
 that is how a required check becomes decorative.
 
@@ -167,6 +246,15 @@ rather than pattern-match it.
 - **Tooling skills**: `codacy-cloud-cli`, `codacy-code-review`,
   `configure-codacy`, `configure-codacy-cloud`, `setup-coverage`
 - **Escalate to a human** when a fix would mean relaxing a gate or a check
+- **Upstream** — the auth-locality gap in the README of
+  `codacy/codacy-skills` is reported as
+  [codacy/codacy-skills#11](https://github.com/codacy/codacy-skills/issues/11);
+  do not re-file it. The fix is carried locally in the G1–G4 table above.
+- **Not upstream-editable** — this skill is local, but `codacy-cloud-cli`,
+  `codacy-analysis-cli`, `codacy-code-review`, `configure-codacy`,
+  `configure-codacy-cloud` and `setup-coverage` are in `skills-lock.json` and
+  are overwritten by the next sync. Fix a gap in those upstream, or carry it in
+  `AGENTS.md`, and do not edit them locally
 `detailsUrl` points at `app.codacy.com`, not a GitHub Actions run — that is the
 tell that this is an app check, not a job you can re-run.
 

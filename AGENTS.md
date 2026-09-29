@@ -152,8 +152,8 @@ roast, comment tracking, shadow E2E, and clicking merge.
 
 ## Codacy
 
-**Any Codacy warning, issue, or failing/stuck check on a GitHub PR — use the
-`codacy` skill.** Read it before touching code or deciding the PR can merge.
+**Any Codacy warning, issue, or failing/stuck check — use the `codacy` skill.**
+Read it before touching code or deciding the PR can merge.
 
 `Codacy Static Code Analysis` is a **required** status check, so a non-`SUCCESS`
 Codacy state blocks the merge and `npm run gate:pr` reports `MERGE BLOCKED`.
@@ -164,6 +164,43 @@ asking a human to fetch a dashboard. Never force the merge with `--admin` or by
 dropping the required check; if a fix needs a decision above your level,
 escalate with the findings quoted.
 
+### Four rules that are not optional (harness L-017)
+
+1. **A green PR check does not mean the backlog is clear.** Codacy's PR analysis
+   is **diff-scoped** — it reports only *new* issues. #222 merged with the check
+   green while 11 High findings sat repo-wide, and `plans/` had recorded "0
+   actionable" on that basis. Always read the repository-level list too:
+   `codacy -o json issues`, or `npm run codacy:check` (fails on Critical/High;
+   warns rather than faking a pass when unauthenticated). A backlog is not a PR
+   concern, so no PR will ever report it.
+2. **Every rule family a required check enforces must also run locally.** Both
+   `security_detect-unsafe-regex` and `security_detect-object-injection` are
+   locked to Codacy's *Default coding standard* — not disableable, not
+   configurable — and neither ESLint config enabled `eslint-plugin-security` at
+   all, so 11 findings were invisible to `gate:fast`. Both configs now run the
+   whole plugin. When adding a required check, ask what it enforces that nothing
+   local enforces; if the answer is "a rule family", that is a gap to close, not
+   a finding to fix one at a time.
+3. **A Codacy fix is verified by a push, never locally.** Codacy re-analyses only
+   the new head. Read it back with `codacy -o json pull-request <PR>`. One
+   finding per commit; never bundle a Codacy fix with unrelated work. Both rules
+   that fire here are non-disableable, so the **code** changes — no suppression,
+   and never weaken an assertion to silence a linter.
+4. **Removing or relaxing a required third-party check is a human decision.**
+   Never propose it as a route to clearing a red check without asking first.
+   Narrowing an *analyser* (a `biome.json`, an `exclude_paths` entry) is
+   different, and legitimate: Codacy's Biome was running four `useQwik*` rules
+   against a repo with no Qwik dependency. Fix, add local parity, or narrow the
+   analyser — and say which you did.
+
+**Credentials are not sensors.** `codacy login` stores an *account* token on this
+machine (encrypted, `~/.codacy/credentials`); a GitHub Actions runner cannot see
+it. CI needs `CODACY_API_TOKEN` or `CODACY_PROJECT_TOKEN` as a repository secret
+(`gh secret list` is empty, so no Codacy step runs in CI today). Never put an
+account token in CI — the CLI itself refuses to fall back to one for scoped work.
+Until a secret exists, `npm run codacy:check` is an **agent procedure, not a
+gate**, and is labelled as such wherever it appears.
+
 ## Reference docs
 
 - [Harness map](agents-docs/harness.md)
@@ -173,7 +210,7 @@ escalate with the findings quoted.
 - [Release runbook](plans/RELEASING.md)
 - [Production learnings](agents-docs/learnings-archive.md)
 - [Responsive grid](agents-docs/responsive-grid.md)
-- ADRs: `plans/ADRs/` (see **037-harness-engineering**, **044-merge-automation-and-delivery-loop**)
+- ADRs: `plans/ADRs/` (see **037-harness-engineering**, **044-merge-automation-and-delivery-loop**, **045-local-sensor-parity-with-required-checks**)
 
 ## Bot-generated PRs
 

@@ -4,7 +4,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { openEditor, requireAsciiContent } from './helpers';
+import { openEditor, requireAsciiContent, clickGridCell } from './helpers';
 
 
 async function waitForRender(page: Page): Promise<void> {
@@ -219,44 +219,25 @@ test.describe('Drawing Tools Interaction', () => {
         await page.click('[data-tool="text"]');
         
         const canvas = page.locator('#canvas');
-        const box = await canvas.boundingBox();
-        if (!box) return;
         
-        // Click at a known position - grid cell (10, 10)
-        // Using exact metrics from implementation (charWidth=8, lineHeight=20)
-        const charWidth = 8;
-        const lineHeight = 20;
+        // The cell under test, and an anchor cell in the top-left region.
         const gridX = 10;
         const gridY = 10;
-
-        // exportAscii() returns the content with its empty borders trimmed, so
-        // the export has no grid origin: a lone character at (10, 10) comes back
-        // as a single line, single column, and there is no row 10 to index. Drop
-        // an anchor at a known cell first, which pins the bounding box, and the
-        // assertion below then states the real claim — the character is offset
-        // from the anchor by exactly the difference between the two clicks.
         const anchorX = 2;
         const anchorY = 2;
 
+        // exportAscii() returns the content with its empty borders trimmed, so
+        // the export has no grid origin: a lone character at (10, 10) comes back
+        // as a single line, single column, and there is no row 10 to index. The
+        // anchor pins the bounding box, so the assertion below states the real
+        // claim — the character is offset from the anchor by exactly the
+        // difference between the two clicks.
         await canvas.focus();
-        // Anchor, then the cell under test. Two explicit clicks rather than a
-        // shared `clickCell` helper: the helper wrapped both in a closure over
-        // page/box/metrics, which is the shape Codacy's Biome
-        // `useQwikValidLexicalScope` rule flags. That rule is Qwik's
-        // serialisation check and this project has no Qwik — recorded as a
-        // Codacy tool misconfiguration rather than worked around with a
-        // suppression.
-        await page.mouse.click(
-            box.x + (anchorX * charWidth) + (charWidth / 2),
-            box.y + (anchorY * lineHeight) + (lineHeight / 2)
-        );
+        await clickGridCell(page, anchorX, anchorY);
         await waitForRender(page);
         await page.keyboard.type('A');
-        
-        await page.mouse.click(
-            box.x + (gridX * charWidth) + (charWidth / 2),
-            box.y + (gridY * lineHeight) + (lineHeight / 2)
-        );
+
+        await clickGridCell(page, gridX, gridY);
         await waitForRender(page);
         await page.keyboard.type('X');
         await waitForRender(page);
