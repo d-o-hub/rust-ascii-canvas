@@ -5,6 +5,17 @@
 
 import { type Locator, type Page, expect } from '@playwright/test';
 
+/** Every tool the editor exposes. `toolButtons` below must stay in sync. */
+export type ToolName =
+    | 'select'
+    | 'rectangle'
+    | 'line'
+    | 'arrow'
+    | 'diamond'
+    | 'text'
+    | 'freehand'
+    | 'eraser';
+
 export class EditorPage {
     readonly page: Page;
 
@@ -12,16 +23,16 @@ export class EditorPage {
     readonly canvas: Locator;
     readonly loadingOverlay: Locator;
 
-    readonly toolButtons: {
-        select: Locator;
-        rectangle: Locator;
-        line: Locator;
-        arrow: Locator;
-        diamond: Locator;
-        text: Locator;
-        freehand: Locator;
-        eraser: Locator;
-    };
+    /**
+     * Toolbar buttons keyed by tool name.
+     *
+     * A `Map` rather than a plain record: a record forces callers to reach a
+     * button by computed member access (`toolButtons[name]`), which is the sink
+     * Codacy's `security/detect-object-injection` rule flags. `selectTool`
+     * looks a button up by name instead, and reports an unknown tool by name
+     * rather than dereferencing `undefined`.
+     */
+    readonly toolButtons: ReadonlyMap<ToolName, Locator>;
 
     readonly actionButtons: {
         undo: Locator;
@@ -57,16 +68,16 @@ export class EditorPage {
         this.canvas = page.locator('#canvas');
         this.loadingOverlay = page.locator('#loading.hidden');
 
-        this.toolButtons = {
-            select: page.locator('[data-tool="select"]'),
-            rectangle: page.locator('[data-tool="rectangle"]'),
-            line: page.locator('[data-tool="line"]'),
-            arrow: page.locator('[data-tool="arrow"]'),
-            diamond: page.locator('[data-tool="diamond"]'),
-            text: page.locator('[data-tool="text"]'),
-            freehand: page.locator('[data-tool="freehand"]'),
-            eraser: page.locator('[data-tool="eraser"]'),
-        };
+        this.toolButtons = new Map<ToolName, Locator>([
+            ['select', page.locator('[data-tool="select"]')],
+            ['rectangle', page.locator('[data-tool="rectangle"]')],
+            ['line', page.locator('[data-tool="line"]')],
+            ['arrow', page.locator('[data-tool="arrow"]')],
+            ['diamond', page.locator('[data-tool="diamond"]')],
+            ['text', page.locator('[data-tool="text"]')],
+            ['freehand', page.locator('[data-tool="freehand"]')],
+            ['eraser', page.locator('[data-tool="eraser"]')],
+        ]);
 
         this.actionButtons = {
             undo: page.locator('#undo-btn'),
@@ -101,8 +112,11 @@ export class EditorPage {
         await this.page.waitForSelector('#canvas', { timeout: 10000 });
     }
 
-    async selectTool(toolName: keyof typeof this.toolButtons): Promise<void> {
-        const button = this.toolButtons[toolName];
+    async selectTool(toolName: ToolName): Promise<void> {
+        const button = this.toolButtons.get(toolName);
+        if (!button) {
+            throw new Error(`selectTool: unknown tool '${toolName}'`);
+        }
         await button.click();
         await expect(button).toHaveClass(/active/);
     }
@@ -117,7 +131,7 @@ export class EditorPage {
     }
 
     async drawWithTool(
-        toolName: keyof typeof this.toolButtons,
+        toolName: ToolName,
         startX: number,
         startY: number,
         endX: number,
