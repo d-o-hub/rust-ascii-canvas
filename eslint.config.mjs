@@ -13,6 +13,27 @@
 // both would double-report the same files.
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
+import security from 'eslint-plugin-security';
+
+/**
+ * Codacy runs `eslint-plugin-security` and its two rules that actually fire in
+ * this repository — `security/detect-unsafe-regex` and
+ * `security/detect-object-injection` — are enforced there by the *Default
+ * coding standard*, which cannot be disabled or configured. Until these rules
+ * ran locally, all 11 of those findings were invisible to `gate:fast` and to the
+ * `web` CI job: the sensor existed, it was green, and the rule family had never
+ * been enabled. That is harness L-017.
+ *
+ * The whole plugin is enabled, not just those two. Each rule is self-gating —
+ * `detect-child-process`, `detect-non-literal-fs-filename` and friends cannot
+ * fire unless the API they guard is used, and this is browser code plus a Node
+ * test harness — so the extra rules cost nothing and cover the day that code
+ * does. Measured baseline: 0 findings across `web/` and `e2e/` at the time of
+ * writing, after the 11 were fixed for real (no suppressions).
+ */
+const securityRules = Object.fromEntries(
+  Object.keys(security.rules).map(name => [`security/${name}`, 'error']),
+);
 
 export default tseslint.config(
   {
@@ -32,9 +53,11 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     files: ['**/*.ts'],
+    plugins: { security },
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'error',
+      ...securityRules,
     },
   },
   {
