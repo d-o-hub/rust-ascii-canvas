@@ -345,6 +345,14 @@ jobs:
       - name: ESLint (root — covers e2e/)
         run: pnpm exec eslint .
 
+      # LOC limits for src/**/*.rs AND web/*.ts. This ran in
+      # scripts/quality-gates.sh only, so it was local-only (L-016) and the web
+      # side was not scanned at all — which is how web/events.ts reached 850 lines
+      # while the sensor reported "LOC: no new oversized files". One script, two
+      # runners, so the two cannot drift (L-019).
+      - name: LOC limits (src + web)
+        run: bash scripts/check-loc.sh
+
       # Uses web's tsc deliberately: `typescript` is not a root dependency (it is
       # aliased to the TypeScript 6 preview in `web/package.json`). `pnpm exec
       # tsc` at the root only resolves when a hoisted copy happens to be linked
