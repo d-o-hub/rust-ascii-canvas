@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { clearAutosave, BASE_URL } from './helpers';
+import { clearAutosave } from './helpers';
 
 async function waitForRender(page: Page): Promise<void> {
     await page.waitForFunction(() => {
@@ -15,7 +15,7 @@ async function waitForRender(page: Page): Promise<void> {
 async function openAtViewport(page: import('@playwright/test').Page, width: number, height: number) {
     await page.setViewportSize({ width, height });
     await clearAutosave(page);
-    await page.goto(BASE_URL);
+    await page.goto('/');
     await page.waitForSelector('#loading.hidden', { state: 'attached', timeout: 30000 });
     await page.waitForSelector('#canvas', { timeout: 15000 });
     await page.waitForFunction(() => window.editor !== null, null, { timeout: 15000 });

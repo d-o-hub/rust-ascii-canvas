@@ -412,20 +412,22 @@ jobs:
           name: wasm-pkg
           path: web/pkg
 
+      # The dev server is started, awaited and torn down by Playwright's
+      # `webServer` in playwright.config.ts — the single source of truth, also
+      # used by `npm run gate:full`.
+      #
+      # This step used to hand-roll it: `nohup pnpm run dev` plus a
+      # `for i in {1..60}` readiness poll that `break`s when the server is ready
+      # but never `exit 1` when it is not. So a dev server that failed to boot
+      # produced a three-minute Playwright timeout pointing at the tests instead
+      # of at the cause. `webServer` fails at the point of failure, and
+      # `reuseExistingServer: false` (CI sets CI=true) makes it *throw* if
+      # something already holds the port, rather than testing a stale server.
+      #
+      # `web/pkg` must exist before this point: the WASM bindings are gitignored
+      # (harness L-001) and the job downloads the artifact above.
       - name: Run E2E tests
-        run: |
-          cd web
-          nohup pnpm run dev > /tmp/vite.log 2>&1 &
-          echo "Waiting for dev server..."
-          for i in {1..60}; do
-            if curl -s http://localhost:3003 > /dev/null 2>&1; then
-              echo "Dev server is ready"
-              break
-            fi
-            sleep 1
-          done
-          cd ..
-          npx playwright test --project=${{ matrix.project }} --timeout=120000
+        run: npx playwright test --project=${{ matrix.project }} --timeout=120000
         env:
           CI: true
 
