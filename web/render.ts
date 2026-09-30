@@ -83,17 +83,8 @@ export function resizeCanvas(): void {
     measureFont(state.editor);
 
     if (state.editor) {
-        if (!state.gridSizeLocked) {
-            const { width, height } = computeGridDimensions();
-            if (state.editor.width !== width || state.editor.height !== height) {
-                state.editor.resize(width, height);
-                state.offscreenCanvas = null;
-                state.offscreenCtx = null;
-                if (state.onGridResize) {
-                    state.onGridResize();
-                }
-            }
-        }
+        // Only main.ts sizes a newly created document from the viewport.
+        // A viewport/layout/keyboard change is presentation, never a crop.
         requestRender();
     }
 }

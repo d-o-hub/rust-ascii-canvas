@@ -198,6 +198,9 @@ impl LayerStack {
 impl LayerStack {
     /// Append an empty layer named after the current count and activate it.
     pub fn add_layer(&mut self) -> usize {
+        if self.len() >= crate::core::document::MAX_LAYERS {
+            return self.active;
+        }
         let (width, height) = {
             let grid = self.active().grid();
             (grid.width(), grid.height())

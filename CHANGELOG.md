@@ -6,6 +6,19 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Text Space/Unicode and unknown browser keys no longer become panning/Delete.
+  Tool buffers and unfinished gestures cannot leak across documents or layers.
+- Freehand/eraser strokes are atomic undo steps, including long, overlapping,
+  cancelled and no-op gestures. Paste during a stroke preserves exact history.
+- Added-layer undo/redo preserves live content/metadata/history. Shared layer and
+  dimension limits keep editable documents restorable, including history replay.
+- Viewport resize no longer crops content or clears history; explicit grid shrink
+  asks for confirmation. UI text fields retain native paste behavior.
+- PNG export includes committed visible content without selection or preview
+  overlays, and leaves editor state unchanged.
+- Registered Node WASM regressions now execute in CI and local full verification,
+  with nonzero execution required for each library/integration target.
+
 - **F-13 layer history: undo could rename the wrong layer.** The layer-history
   commands landed in #213 recorded a **positional index** and replayed it on
   undo, so any reorder or delete between record and replay made the undo target

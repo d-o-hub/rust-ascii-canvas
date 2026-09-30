@@ -11,6 +11,7 @@ mod line;
 mod rectangle;
 mod select;
 mod text;
+pub mod text_input;
 
 pub use arrow::ArrowTool;
 pub use diamond::DiamondTool;

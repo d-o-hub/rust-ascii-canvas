@@ -11,6 +11,7 @@
 pub mod ascii_export;
 pub mod cell;
 pub mod commands;
+pub mod document;
 pub mod grid;
 pub mod history;
 pub mod layer;

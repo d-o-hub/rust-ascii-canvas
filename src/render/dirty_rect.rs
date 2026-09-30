@@ -123,6 +123,10 @@ impl DirtyRect {
 
     /// Clamp the rect to grid bounds.
     pub fn clamp(&mut self, width: usize, height: usize) {
+        if self.is_empty() || width == 0 || height == 0 {
+            *self = Self::empty();
+            return;
+        }
         self.x1 = self.x1.max(0).min(width as i32 - 1);
         self.y1 = self.y1.max(0).min(height as i32 - 1);
         self.x2 = self.x2.max(0).min(width as i32 - 1);
@@ -141,12 +145,21 @@ impl DirtyRect {
 }
 
 /// Tracker for dirty regions.
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct DirtyTracker {
     /// Current dirty rect (union of all dirty regions)
     dirty: DirtyRect,
     /// Whether a full redraw is needed
     needs_full_redraw: bool,
+}
+
+impl Default for DirtyTracker {
+    fn default() -> Self {
+        Self {
+            dirty: DirtyRect::empty(),
+            needs_full_redraw: true,
+        }
+    }
 }
 
 impl DirtyTracker {
@@ -177,7 +190,7 @@ impl DirtyTracker {
 
     /// Check if full redraw is needed.
     pub fn needs_full_redraw(&self) -> bool {
-        self.needs_full_redraw || self.dirty.is_empty()
+        self.needs_full_redraw
     }
 
     /// Clear the dirty state (after rendering).
@@ -218,6 +231,26 @@ mod tests {
         assert_eq!(rect.y1, 5);
         assert_eq!(rect.x2, 10);
         assert_eq!(rect.y2, 10);
+    }
+
+    #[test]
+    fn clearing_dirty_state_stops_redraw_until_new_work() {
+        let mut tracker = DirtyTracker::new();
+        assert!(tracker.needs_full_redraw(), "first frame must render");
+        tracker.clear();
+        assert!(!tracker.needs_full_redraw(), "empty does not mean full");
+        tracker.mark_dirty(0, 0);
+        assert!(!tracker.needs_full_redraw());
+        assert!(!tracker.dirty_rect().is_empty());
+        tracker.request_full_redraw();
+        assert!(tracker.needs_full_redraw());
+    }
+
+    #[test]
+    fn clamping_empty_dirty_rect_does_not_create_work_on_one_cell_canvas() {
+        let mut dirty = DirtyRect::empty();
+        dirty.clamp(1, 1);
+        assert!(dirty.is_empty());
     }
 
     #[test]

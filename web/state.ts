@@ -19,6 +19,7 @@ export interface AppState {
     currentBorderStyleIndex: number;
     currentLineDirection: string;
     lastTouchDistance: number | null;
+    pointerGestureActive: boolean;
     lastFocusedHtmlElement: HTMLElement | null;
 
     // Callbacks to avoid circular dependency
@@ -73,6 +74,7 @@ export const state: AppState = {
     currentBorderStyleIndex: 0,
     currentLineDirection: 'auto',
     lastTouchDistance: null,
+    pointerGestureActive: false,
     lastFocusedHtmlElement: null,
 
     // Callbacks

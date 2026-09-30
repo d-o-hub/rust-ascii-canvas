@@ -168,10 +168,8 @@ jobs:
       - name: Run tests (Native)
         run: cargo test --all
 
-      - name: Run tests (WASM)
-        run: cargo test --all --target wasm32-unknown-unknown
-        env:
-          WASM_BINDGEN_TEST_ONLY_NODE: 1
+      - name: Run tests (WASM, nonzero Node execution required)
+        run: bash scripts/test-wasm.sh
 
   security:
     name: Security Audit (cargo)

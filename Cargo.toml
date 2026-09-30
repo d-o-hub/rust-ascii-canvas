@@ -68,6 +68,10 @@ path = "tests/core/mod.rs"
 name = "utils_tests"
 path = "tests/utils/mod.rs"
 
+[[test]]
+name = "wasm_tests"
+path = "tests/wasm/mod.rs"
+
 [[bench]]
 name = "grid_bench"
 path = "benches/grid_bench.rs"

@@ -1,7 +1,6 @@
 //! Freehand tool - draws free-form ASCII characters.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
-use smallvec::SmallVec;
 use std::any::Any;
 
 /// Freehand drawing tool.
@@ -12,8 +11,6 @@ pub struct FreehandTool {
     last_pos: Option<(i32, i32)>,
     /// Character to draw with
     draw_char: char,
-    /// Buffer for undo
-    ops_buffer: SmallVec<[DrawOp; 128]>,
 }
 
 impl Default for FreehandTool {
@@ -22,7 +19,6 @@ impl Default for FreehandTool {
             drawing: false,
             last_pos: None,
             draw_char: '*',
-            ops_buffer: SmallVec::new(),
         }
     }
 }
@@ -96,10 +92,8 @@ impl Tool for FreehandTool {
 
         self.drawing = true;
         self.last_pos = Some((x, y));
-        self.ops_buffer.clear();
 
         let op = DrawOp::new(x, y, self.draw_char);
-        self.ops_buffer.push(op.clone());
 
         ToolResult::new().with_op(op)
     }
@@ -119,27 +113,19 @@ impl Tool for FreehandTool {
         let ops = self.interpolate_to(x, y);
         self.last_pos = Some((x, y));
 
-        // Store for undo
-        self.ops_buffer.extend(ops.iter().cloned());
-
         ToolResult::new().with_ops(ops)
     }
 
-    fn on_pointer_up(&mut self, _x: i32, _y: i32, _ctx: &ToolContext) -> ToolResult {
-        self.drawing = false;
-        self.last_pos = None;
-
-        // Return finished result with all ops for undo
-        let ops: Vec<DrawOp> = self.ops_buffer.to_vec();
-        self.ops_buffer.clear();
-
-        ToolResult::new().with_ops(ops).finish()
+    fn on_pointer_up(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
+        // Earlier samples belong to the transaction owner, not a replay buffer.
+        let result = self.on_pointer_move(x, y, ctx);
+        self.reset();
+        result.finish()
     }
 
     fn reset(&mut self) {
         self.drawing = false;
         self.last_pos = None;
-        self.ops_buffer.clear();
     }
 
     fn is_active(&self) -> bool {
