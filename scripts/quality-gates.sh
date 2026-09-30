@@ -18,7 +18,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT" || exit 1
 
 readonly MAX_LINES_PER_SOURCE_FILE=500
-readonly LOC_ALLOWLIST_FILE="${REPO_ROOT}/.loc-allowlist"
 
 FIX=false
 FAST=false
@@ -206,7 +205,6 @@ if [[ -f "$CI_YML" ]]; then
     pass "ci-success aggregates all ${#MERGE_JOBS[@]} sensors + changes (bidirectional, L-018)"
   else
     fail "ci-success.needs drifted from the required job set"
-    local want
     want="$(IFS=,; echo "${MERGE_JOBS[*]}")"
     echo "  FIX: needs: [changes, ${want}] on the ci-success job, with MERGE_JOBS"
     echo "       in this script listing exactly those jobs."
@@ -559,7 +557,7 @@ if ! $FAST; then
     fail "E2E"
     echo "  FIX: Inspect Playwright report; fix product or test. Prefer POM helpers over waits."
     echo "       A '[WebServer]' line in the output means the dev server itself failed;"
-    echo "       playwright.config.ts `webServer` reports that directly (no manual boot)."
+    echo "       playwright.config.ts \`webServer\` reports that directly (no manual boot)."
     printf "%s\n" "$OUTPUT" >&2
   else
     pass "E2E: OK"
@@ -574,16 +572,16 @@ fi
 # SUMMARY
 # ============================================================
 if [[ $FAILED -ne 0 ]]; then
-  printf "${RED}─────────────────────────────────────────────────────────────────${NC}\n"
-  printf "${RED}│ Quality Gate FAILED (tier=%s)%*s│${NC}\n" "$TIER" $((40 - ${#TIER})) ""
-  printf "${RED}│ Self-correct using FIX: hints above, then re-run.             │${NC}\n"
-  printf "${RED}─────────────────────────────────────────────────────────────────${NC}\n"
+  printf '%s─────────────────────────────────────────────────────────────────%s\n' "$RED" "$NC"
+  printf '%s│ Quality Gate FAILED (tier=%s)%*s│%s\n' "$RED" "$TIER" $((40 - ${#TIER})) "" "$NC"
+  printf '%s│ Self-correct using FIX: hints above, then re-run.             │%s\n' "$RED" "$NC"
+  printf '%s─────────────────────────────────────────────────────────────────%s\n' "$RED" "$NC"
   exit 1
 fi
 
-printf "${GREEN}─────────────────────────────────────────────────────────────────${NC}\n"
-printf "${GREEN}│ All quality gates PASSED (tier=%s)%*s│${NC}\n" "$TIER" $((37 - ${#TIER})) ""
-printf "${GREEN}─────────────────────────────────────────────────────────────────${NC}\n"
+printf '%s─────────────────────────────────────────────────────────────────%s\n' "$GREEN" "$NC"
+printf '%s│ All quality gates PASSED (tier=%s)%*s│%s\n' "$GREEN" "$TIER" $((37 - ${#TIER})) "" "$NC"
+printf '%s─────────────────────────────────────────────────────────────────%s\n' "$GREEN" "$NC"
 if $FAST; then
   printf "Next: npm run gate:full before opening a PR.\n"
 fi

@@ -33,8 +33,11 @@ This document records a delivery candidate, not a release or merge assertion.
 
 Excluded: accessible layer-panel rewrite, full event/mobile decomposition, the
 foreign event-result refactor, broad harness/skills hardening, CI policy changes,
-dependency/version/release changes, and rendering optimization. ADR-047 remains
-only partially delivered by #229; this feature must not imply otherwise.
+dependency/version/release changes, and rendering optimization. One narrowly
+related pre-existing `quality-gates.sh` ShellCheck warning was removed in a
+separate follow-up commit at the user's request; this is not the broad harness
+wave. ADR-047 remains only partially delivered by #229; this feature must not
+imply otherwise.
 
 ## Actions and ownership
 
@@ -101,7 +104,8 @@ Isolated worktree evidence so far:
 - `npm run gate:fast` and `npm run gate:full` passed. Full gate included native
   Rust, both nonzero Node WASM targets, audits/deny, size budget and the local
   **115-test Chromium E2E inventory** (10 files). The repository Codacy procedure reports the existing
-  non-High `shellcheck_SC2034` warning only.
+  non-High `shellcheck_SC2034` warning before the follow-up cleanup; the final
+  `shellcheck scripts/quality-gates.sh` scan is clean.
 - Explicit local Codacy procedure on the committed changed TypeScript/E2E scope:
   ESLint8 scanned 8 files and Opengrep scanned 9 files, both with 0 findings.
   ESLint's type-aware parserServices rules were unavailable, so this is not a
