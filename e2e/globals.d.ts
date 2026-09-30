@@ -26,8 +26,25 @@ declare global {
              * `serializeDocument()`, which stores explicit per-cell coordinates.
              */
             exportAscii(): string;
+            exportForCopy?: () => string;
+            exportForCopyWithOptions?: (
+                trimTrailingWhitespace: boolean,
+                enforceBoundingBox: boolean,
+                convertUnicodeToAscii: boolean,
+            ) => string;
+            clear(): void;
             serializeDocument(): string;
             loadDocument(json: string): boolean;
+            resize(width: number, height: number): void;
+            onPointerMove(screenX: number, screenY: number): unknown;
+            pasteText(text: string): boolean;
+            exportPixelBuffer(): Uint8Array;
+            readonly width: number;
+            readonly height: number;
+            readonly has_selection: boolean;
+            readonly can_undo: boolean;
+            readonly can_redo: boolean;
+            selectAll(): void;
             setTool?(tool: string): void;
             getTool?(): string;
         } | null;

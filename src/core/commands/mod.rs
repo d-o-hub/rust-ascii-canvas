@@ -1,15 +1,19 @@
 //! Commands module - Command pattern for undo/redo operations.
 
+mod add_layer;
 mod composite;
 mod draw;
 mod layer;
+mod stroke;
 
+pub use add_layer::AddLayerCommand;
 pub use composite::CompositeCommand;
 pub use draw::DrawCommand;
 pub use layer::{
-    AddLayerCommand, DeleteLayerCommand, LayerCommand, MergeLayerDownCommand, MoveLayerCommand,
+    DeleteLayerCommand, LayerCommand, MergeLayerDownCommand, MoveLayerCommand,
     SetLayerLockedCommand, SetLayerNameCommand, SetLayerVisibleCommand,
 };
+pub use stroke::StrokeCommand;
 
 use crate::core::cell::Cell;
 use crate::core::grid::Grid;

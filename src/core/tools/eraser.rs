@@ -1,7 +1,6 @@
 //! Eraser tool - clears cells on the canvas.
 
 use super::{clamp_to_grid, DrawOp, Tool, ToolContext, ToolId, ToolResult};
-use smallvec::SmallVec;
 use std::any::Any;
 
 /// Eraser tool for clearing cells.
@@ -12,8 +11,6 @@ pub struct EraserTool {
     last_pos: Option<(i32, i32)>,
     /// Eraser size (radius in cells)
     size: i32,
-    /// Buffer for undo
-    ops_buffer: SmallVec<[DrawOp; 128]>,
 }
 
 impl Default for EraserTool {
@@ -22,7 +19,6 @@ impl Default for EraserTool {
             erasing: false,
             last_pos: None,
             size: 1,
-            ops_buffer: SmallVec::new(),
         }
     }
 }
@@ -113,10 +109,8 @@ impl Tool for EraserTool {
 
         self.erasing = true;
         self.last_pos = Some((x, y));
-        self.ops_buffer.clear();
 
         let ops = self.erase_at(x, y, ctx.grid_width, ctx.grid_height);
-        self.ops_buffer.extend(ops.iter().cloned());
 
         ToolResult::new().with_ops(ops)
     }
@@ -135,25 +129,25 @@ impl Tool for EraserTool {
         let ops = self.interpolate_to(x, y, ctx.grid_width, ctx.grid_height);
         self.last_pos = Some((x, y));
 
-        self.ops_buffer.extend(ops.iter().cloned());
-
         ToolResult::new().with_ops(ops)
     }
 
-    fn on_pointer_up(&mut self, _x: i32, _y: i32, _ctx: &ToolContext) -> ToolResult {
-        self.erasing = false;
-        self.last_pos = None;
-
-        let ops: Vec<DrawOp> = self.ops_buffer.to_vec();
-        self.ops_buffer.clear();
-
-        ToolResult::new().with_ops(ops).finish()
+    fn on_pointer_up(&mut self, x: i32, y: i32, ctx: &ToolContext) -> ToolResult {
+        if !self.erasing {
+            return ToolResult::new().finish();
+        }
+        let mut result = self.on_pointer_move(x, y, ctx);
+        if result.ops.is_empty() {
+            let (x, y) = clamp_to_grid(x, y, ctx.grid_width, ctx.grid_height);
+            result = result.with_ops(self.erase_at(x, y, ctx.grid_width, ctx.grid_height));
+        }
+        self.reset();
+        result.finish()
     }
 
     fn reset(&mut self) {
         self.erasing = false;
         self.last_pos = None;
-        self.ops_buffer.clear();
     }
 
     fn is_active(&self) -> bool {

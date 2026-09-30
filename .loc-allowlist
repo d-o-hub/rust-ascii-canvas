@@ -10,6 +10,5 @@
 # stale entries precisely so this file cannot rot into a list of exemptions.
 #
 # Covers `src/**/*.rs` and `web/*.ts` (excluding `*.test.ts`).
-src/wasm/helpers.rs=948
 web/events.ts=850
 web/ui.ts=540

@@ -370,7 +370,7 @@ fn escape_xml_char(c: char) -> String {
 }
 
 /// Helper function to parse hex color string into [r, g, b, a] bytes.
-fn parse_hex_color(hex: &str) -> Option<[u8; 4]> {
+pub(crate) fn parse_hex_color(hex: &str) -> Option<[u8; 4]> {
     let hex = hex.trim_start_matches('#');
     if hex.len() == 6 {
         let r = u8::from_str_radix(&hex[0..2], 16).ok()?;

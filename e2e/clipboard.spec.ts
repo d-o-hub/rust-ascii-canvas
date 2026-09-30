@@ -6,23 +6,6 @@ import { openEditor } from './helpers';
  * Verifies selection-aware export geometry (right borders, uniform line widths).
  */
 
-declare global {
-    interface Window {
-        editor: {
-            exportAscii(): string;
-            exportForCopy?: () => string;
-            exportForCopyWithOptions?: (
-                trimTrailingWhitespace: boolean,
-                enforceBoundingBox: boolean,
-                convertUnicodeToAscii: boolean,
-            ) => string;
-            serializeDocument(): string;
-            loadDocument(json: string): boolean;
-            clear(): void;
-        } | null;
-    }
-}
-
 test.describe('Copy / export fidelity', () => {
     test.beforeEach(async ({ page }) => {
         await openEditor(page);

@@ -104,10 +104,26 @@ async function initialize() {
         }
         state.ctx = ctxResult;
 
+        // Module execution can precede stylesheet readiness in WebKit. Choosing
+        // dimensions from the unstyled page would make them permanent defaults.
+        if (document.readyState !== 'complete') {
+            await new Promise<void>((resolve) => {
+                window.addEventListener('load', () => { resolve(); }, { once: true });
+            });
+        }
+
         // Measure font metrics MUST run before computeGridDimensions()
         measureFont();
 
-        // Set up canvas size first to have correct container rect
+        // WebKit can report a nonzero but provisional flex-container height.
+        // Let a paint complete before choosing the document's one-time defaults;
+        // later viewport changes must never resize an existing document.
+        resizeCanvas();
+        await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => { resolve(); });
+            });
+        });
         resizeCanvas();
 
         // If the container has collapsed height (e.g. layout pending on WebKit), wait for layout

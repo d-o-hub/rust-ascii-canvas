@@ -513,6 +513,17 @@ if ! $FAST; then
     printf "\n"
   fi
 
+  info "WASM tests (nonzero Node execution)..."
+  if ! OUTPUT=$(bash "$REPO_ROOT/scripts/test-wasm.sh" 2>&1); then
+    fail "WASM behavior tests"
+    echo "  FIX: Restore library/integration test registration and the Node runner; fix failing regressions."
+    printf "%s\n" "$OUTPUT" >&2
+  else
+    pass "WASM behavior tests: both targets executed nonzero tests"
+    printf "%s\n" "$OUTPUT"
+  fi
+  printf "\n"
+
   info "WASM build + size..."
   if ! OUTPUT=$(pnpm run build:wasm 2>&1); then
     fail "WASM build"

@@ -20,6 +20,16 @@ pub trait LayerCommand {
     /// Undo the command on the layer stack.
     fn undo(&mut self, stack: &mut LayerStack);
 
+    /// Whether replay can run without exceeding document limits.
+    fn can_apply(&self, _stack: &LayerStack) -> bool {
+        true
+    }
+
+    /// Whether restoration can run without exceeding document limits.
+    fn can_undo(&self, _stack: &LayerStack) -> bool {
+        true
+    }
+
     /// Get a description used for undo/redo labels.
     fn description(&self) -> &str;
 
@@ -222,55 +232,10 @@ impl MoveLayerCommand {
     }
 }
 
-/// Command to add a layer and make it active.
-pub struct AddLayerCommand {
-    index: usize,
-    /// Id of the layer that sat directly below the new one when it was first
-    /// applied. Indices shift when layers are reordered or removed, so a redo
-    /// re-derives the insert position from this anchor instead of trusting the
-    /// recorded index. `None` means the new layer went to the bottom.
-    below_id: Option<u64>,
-    layer: Layer,
-    active_before: u64,
-    applied: bool,
-}
-
-impl AddLayerCommand {
-    /// Build a command that appends a layer sized and named like `LayerStack::add_layer`.
-    pub fn adding_next(stack: &mut LayerStack) -> Self {
-        let index = stack.len();
-        let active = stack.active();
-        let mut layer = Layer::with_grid(
-            format!("Layer {}", index + 1),
-            crate::core::grid::Grid::new(active.grid().width(), active.grid().height()),
-        );
-        // Take the id now so apply and undo can find this exact layer later.
-        layer.set_id(stack.reserve_layer_id());
-        let below_id = below_id_at(stack, index);
-        Self {
-            index,
-            below_id,
-            layer,
-            active_before: stack.active_id(),
-            applied: false,
-        }
-    }
-
-    /// Id the added layer will carry.
-    pub fn layer_id(&self) -> u64 {
-        self.layer.id()
-    }
-
-    /// Index the new layer occupies.
-    pub fn index(&self) -> usize {
-        self.index
-    }
-}
-
 /// Id of the layer directly below `index`, or `None` at the bottom of the stack.
 /// This is the anchor a command records so a replayed layer lands in the right
 /// *place* rather than at an index that has since shifted.
-fn below_id_at(stack: &LayerStack, index: usize) -> Option<u64> {
+pub(super) fn below_id_at(stack: &LayerStack, index: usize) -> Option<u64> {
     if index == 0 {
         None
     } else {
@@ -280,47 +245,10 @@ fn below_id_at(stack: &LayerStack, index: usize) -> Option<u64> {
 
 /// Where a layer should be (re-)inserted, re-derived from the `below_id` anchor.
 /// The recorded index is only a fallback for when that neighbour is gone.
-fn insert_position(stack: &LayerStack, below_id: Option<u64>, recorded: usize) -> usize {
+pub(super) fn insert_position(stack: &LayerStack, below_id: Option<u64>, recorded: usize) -> usize {
     match below_id.and_then(|id| stack.index_of_id(id)) {
         Some(below) => below + 1,
         None => recorded.min(stack.len()),
-    }
-}
-
-impl LayerCommand for AddLayerCommand {
-    fn apply(&mut self, stack: &mut LayerStack) {
-        if !self.applied {
-            let target = insert_position(stack, self.below_id, self.index);
-            stack.insert_layer_tracking(target, self.layer.clone());
-            self.applied = true;
-        }
-        // Focus the layer by id, not by the index it happened to land on.
-        stack.set_active_id(self.layer.id());
-    }
-
-    fn undo(&mut self, stack: &mut LayerStack) {
-        if self.applied {
-            let _ = stack.remove_layer_by_id(self.layer.id());
-            // Adding a layer does not imply the one before it was the active one.
-            stack.set_active_id(self.active_before);
-            self.applied = false;
-        }
-    }
-
-    fn changes_content(&self) -> bool {
-        true
-    }
-
-    fn description(&self) -> &str {
-        "Add layer"
-    }
-
-    fn as_any(&self) -> &dyn std::any::Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn std::any::Any {
-        self
     }
 }
 
@@ -360,6 +288,10 @@ impl DeleteLayerCommand {
 }
 
 impl LayerCommand for DeleteLayerCommand {
+    fn can_undo(&self, stack: &LayerStack) -> bool {
+        !self.applied || stack.len() < crate::core::document::MAX_LAYERS
+    }
+
     fn apply(&mut self, stack: &mut LayerStack) {
         if !self.applied {
             if let Some(removed) = stack.remove_layer_by_id(self.id) {
@@ -370,7 +302,7 @@ impl LayerCommand for DeleteLayerCommand {
     }
 
     fn undo(&mut self, stack: &mut LayerStack) {
-        if self.applied {
+        if self.applied && self.can_undo(stack) {
             if let Some(layer) = self.layer.take() {
                 // Back where it belonged, not merely at the index it came from.
                 let target = insert_position(stack, self.below_id, self.index);
@@ -432,6 +364,10 @@ impl MergeLayerDownCommand {
 }
 
 impl LayerCommand for MergeLayerDownCommand {
+    fn can_undo(&self, stack: &LayerStack) -> bool {
+        !self.applied || stack.len() < crate::core::document::MAX_LAYERS
+    }
+
     fn apply(&mut self, stack: &mut LayerStack) {
         if !self.applied {
             // Locate both layers by id: refuse to merge if the stack no longer has
@@ -462,7 +398,7 @@ impl LayerCommand for MergeLayerDownCommand {
     }
 
     fn undo(&mut self, stack: &mut LayerStack) {
-        if self.applied {
+        if self.applied && self.can_undo(stack) {
             if let Some(lower) = stack.index_of_id(self.lower_id) {
                 stack.restore_optional_cells(lower, &self.lower_cells);
             }

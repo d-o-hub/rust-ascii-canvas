@@ -163,6 +163,10 @@ impl History {
         if kind == HistoryOutcome::Grid && layers.is_active_locked() {
             return HistoryOutcome::None;
         }
+        if matches!(self.undo_stack.back(), Some(HistoryEntry::Layer(cmd)) if !cmd.can_undo(layers))
+        {
+            return HistoryOutcome::None;
+        }
         if let Some(mut entry) = self.undo_stack.pop_back() {
             entry.undo(grid, layers);
             self.redo_stack.push_back(entry);
@@ -182,6 +186,10 @@ impl History {
             None => return HistoryOutcome::None,
         };
         if kind == HistoryOutcome::Grid && layers.is_active_locked() {
+            return HistoryOutcome::None;
+        }
+        if matches!(self.redo_stack.back(), Some(HistoryEntry::Layer(cmd)) if !cmd.can_apply(layers))
+        {
             return HistoryOutcome::None;
         }
         if let Some(mut entry) = self.redo_stack.pop_back() {

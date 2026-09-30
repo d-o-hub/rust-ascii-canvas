@@ -1,13 +1,12 @@
 //! WASM bindings - struct definition, constructor, and core methods.
 
+use crate::core::commands::StrokeCommand;
 use crate::core::layer::LayerStack;
 use crate::core::selection::{Selection, SelectionClipboard};
 use crate::core::tools::{DrawOp, EraserTool, RectangleTool, Tool, ToolId};
 use crate::core::EditorState;
 use crate::render::{CanvasRenderer, DirtyTracker, FontAtlas, FontMetrics};
-use crate::wasm::tool_manager::{
-    parse_tool_id, set_border_style, set_line_direction, set_tool_by_id,
-};
+use crate::wasm::tool_manager::{parse_tool_id, set_border_style, set_line_direction};
 use wasm_bindgen::prelude::*;
 
 /// WebAssembly-bindable ASCII editor instance for frontend integration.
@@ -24,6 +23,7 @@ pub struct AsciiEditor {
     pub(crate) active_tool: Box<dyn Tool>,
     pub(crate) tool_id: ToolId,
     pub(crate) preview_ops: Vec<DrawOp>,
+    pub(crate) stroke: Option<StrokeCommand>,
     pub(crate) current_selection: Option<Selection>,
     pub(crate) clipboard: SelectionClipboard,
     pub(crate) space_held: bool,
@@ -47,6 +47,8 @@ impl AsciiEditor {
     /// Creates a new `AsciiEditor` instance with the given dimensions.
     #[wasm_bindgen(constructor)]
     pub fn new(width: usize, height: usize) -> Self {
+        let width = width.clamp(1, crate::core::document::MAX_CANVAS_WIDTH);
+        let height = height.clamp(1, crate::core::document::MAX_CANVAS_HEIGHT);
         let state = EditorState::new(width, height);
         let renderer = CanvasRenderer::new();
 
@@ -58,6 +60,7 @@ impl AsciiEditor {
             active_tool: Box::new(RectangleTool::new()),
             tool_id: ToolId::Rectangle,
             preview_ops: Vec::new(),
+            stroke: None,
             current_selection: None,
             clipboard: SelectionClipboard::new(),
             space_held: false,
@@ -83,6 +86,12 @@ impl AsciiEditor {
     /// grids, so replaying them would corrupt or misplace content.
     #[wasm_bindgen]
     pub fn resize(&mut self, new_width: usize, new_height: usize) {
+        if !crate::core::document::valid_dimensions(new_width, new_height)
+            || (self.width() == new_width && self.height() == new_height)
+        {
+            return;
+        }
+        self.reset_interaction();
         self.state.grid.resize(new_width, new_height);
         self.layer_stack.resize(new_width, new_height);
         self.layer_stack.clear_all_histories();
@@ -112,15 +121,7 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = setTool)]
     pub fn set_tool(&mut self, tool_id: String) {
         if let Some(id) = parse_tool_id(&tool_id) {
-            self.tool_id = id;
-            set_tool_by_id(
-                &mut self.active_tool,
-                &mut self.tool_id,
-                &mut self.preview_ops,
-                &mut self.state,
-                &mut self.current_selection,
-                self.eraser_size,
-            );
+            self.set_tool_by_id_impl(id);
         }
     }
 
@@ -129,15 +130,7 @@ impl AsciiEditor {
     #[wasm_bindgen(js_name = setToolByShortcut)]
     pub fn set_tool_by_shortcut(&mut self, shortcut: char) -> bool {
         if let Some(id) = ToolId::from_shortcut(shortcut) {
-            self.tool_id = id;
-            set_tool_by_id(
-                &mut self.active_tool,
-                &mut self.tool_id,
-                &mut self.preview_ops,
-                &mut self.state,
-                &mut self.current_selection,
-                self.eraser_size,
-            );
+            self.set_tool_by_id_impl(id);
             true
         } else {
             false
@@ -216,6 +209,8 @@ impl AsciiEditor {
     /// lock change itself, so a user cannot get stuck behind a lock.
     #[wasm_bindgen]
     pub fn undo(&mut self) -> bool {
+        self.reset_interaction();
+        self.sync_active_layer();
         let outcome = self.layer_stack.undo_active(&mut self.state.grid);
         self.apply_history_outcome(outcome)
     }
@@ -223,6 +218,8 @@ impl AsciiEditor {
     /// Re-applies the newest undone drawing or layer operation.
     #[wasm_bindgen]
     pub fn redo(&mut self) -> bool {
+        self.reset_interaction();
+        self.sync_active_layer();
         let outcome = self.layer_stack.redo_active(&mut self.state.grid);
         self.apply_history_outcome(outcome)
     }
@@ -245,6 +242,7 @@ impl AsciiEditor {
         if self.is_active_layer_locked() {
             return;
         }
+        self.reset_interaction();
         self.state.grid.clear();
         self.layer_stack.active_mut().grid_mut().clear();
         self.layer_stack.active_mut().history_mut().clear();

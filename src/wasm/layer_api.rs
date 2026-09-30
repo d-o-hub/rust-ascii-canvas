@@ -20,6 +20,7 @@ use wasm_bindgen::prelude::*;
 impl AsciiEditor {
     /// Copy the live drawing surface into the active layer.
     pub(crate) fn sync_active_layer(&mut self) {
+        self.reset_interaction();
         let grid = self.state.grid.clone();
         *self.layer_stack.active_mut().grid_mut() = grid;
     }
@@ -27,9 +28,7 @@ impl AsciiEditor {
     /// Pull the active layer back into the live surface after a structural change.
     pub(crate) fn refresh_from_layers(&mut self) {
         self.state.grid = self.layer_stack.active().grid().clone();
-        self.current_selection = None;
-        self.preview_ops.clear();
-        self.dirty_tracker.request_full_redraw();
+        self.reset_interaction();
     }
 
     /// Whether the active layer rejects edits.
@@ -84,6 +83,9 @@ impl AsciiEditor {
 
     /// Add an empty layer, activate it, and record the change.
     pub(crate) fn add_layer_impl(&mut self) -> usize {
+        if self.layer_stack.len() >= crate::core::document::MAX_LAYERS {
+            return self.layer_stack.active_index();
+        }
         self.sync_active_layer();
         let active_before = self.layer_stack.active_id();
         let mut cmd = AddLayerCommand::adding_next(&mut self.layer_stack);
@@ -183,6 +185,7 @@ impl AsciiEditor {
         if old == visible {
             return;
         }
+        self.reset_interaction();
         let mut cmd = SetLayerVisibleCommand::new(id, old, visible);
         cmd.apply(&mut self.layer_stack);
         self.layer_stack.push_layer_command(Box::new(cmd));
@@ -195,7 +198,8 @@ impl AsciiEditor {
         self.set_active_layer_impl(index)
     }
 
-    /// Add a new empty layer and switch to it.
+    /// Add a new empty layer and switch to it. At the 32-layer limit, returns
+    /// the unchanged active index without modifying the document or history.
     #[wasm_bindgen(js_name = addLayer)]
     pub fn add_layer(&mut self) -> usize {
         self.add_layer_impl()
@@ -214,6 +218,7 @@ impl AsciiEditor {
         if old == name {
             return;
         }
+        self.reset_interaction();
         let mut cmd = SetLayerNameCommand::new(id, old, name);
         cmd.apply(&mut self.layer_stack);
         self.layer_stack.push_layer_command(Box::new(cmd));
@@ -241,6 +246,7 @@ impl AsciiEditor {
         if old == locked {
             return;
         }
+        self.reset_interaction();
         let mut cmd = SetLayerLockedCommand::new(id, old, locked);
         cmd.apply(&mut self.layer_stack);
         self.layer_stack.push_layer_command(Box::new(cmd));

@@ -29,6 +29,7 @@
     "dev:lan": "cd web && pnpm run dev:lan",
     "test": "cargo test && npx playwright test --project=chromium",
     "test:unit": "cargo test",
+    "test:wasm": "bash scripts/test-wasm.sh",
     "test:e2e": "npx playwright test",
     "test:web": "cd web && pnpm test",
     "lint": "cargo clippy --all-targets --all-features -- -D warnings && cargo fmt --check",

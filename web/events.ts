@@ -6,8 +6,6 @@ import { state } from './state.js';
 import {
     BORDER_STYLES,
     TOOL_INFO,
-    MIN_COLS,
-    MIN_ROWS,
 } from './constants.js';
 import {
     copyAsciiToClipboard,
@@ -38,6 +36,7 @@ import {
     updateUI,
 } from './ui.js';
 import type { EventResult } from './types.js';
+import { applyCustomGridSize, handlePasteEvent } from './document-events.js';
 
 export const { schedule: scheduleAutoSave, flush: flushAutoSave } = createAutoSaveScheduler(() => state.editor);
 
@@ -59,6 +58,7 @@ export function handlePointerDown(e: PointerEvent): void {
     e.preventDefault();
     state.canvas.focus();
     state.canvas.setPointerCapture(e.pointerId);
+    state.pointerGestureActive = true;
 
     const rect = state.canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -96,8 +96,9 @@ export function handlePointerMove(e: PointerEvent): void {
 
 export function handlePointerUp(e: PointerEvent): void {
     if (!state.editor || !state.canvas) return;
-    if (e.pointerType === 'touch') return;
+    if (e.pointerType === 'touch' || !state.pointerGestureActive) return;
     e.preventDefault();
+    state.pointerGestureActive = false;
     state.canvas.releasePointerCapture(e.pointerId);
 
     const rect = state.canvas.getBoundingClientRect();
@@ -108,12 +109,30 @@ export function handlePointerUp(e: PointerEvent): void {
     handleEventResult(result, { persist: true });
 }
 
+/** Cancel unfinished work, not the text cursor after a completed click. */
+export function cancelPointerGesture(): void {
+    if (!state.pointerGestureActive) return;
+    state.pointerGestureActive = false;
+    state.lastTouchDistance = null;
+    state.editor?.onPointerCancel();
+    requestRender();
+    updateUI();
+    updateIndicator();
+    scheduleAutoSave();
+}
+
+export function handlePointerCancel(e: PointerEvent): void {
+    // Implicit touch capture ends before touchend; its own lifecycle owns cancellation.
+    if (e.pointerType !== 'touch') cancelPointerGesture();
+}
+
 export function handleTouchStart(e: TouchEvent): void {
     if (!state.editor || !state.canvas) return;
     e.preventDefault();
     state.canvas.focus();
 
     if (e.touches.length === 1) {
+        state.pointerGestureActive = true;
         const touch = e.touches[0];
         const rect = state.canvas.getBoundingClientRect();
         const x = touch.clientX - rect.left;
@@ -121,6 +140,7 @@ export function handleTouchStart(e: TouchEvent): void {
         const result = state.editor.onPointerDown(x, y);
         handleEventResult(result);
     } else if (e.touches.length === 2) {
+        cancelPointerGesture();
         state.lastTouchDistance = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
             e.touches[0].clientY - e.touches[1].clientY
@@ -174,7 +194,8 @@ export function handleTouchEnd(e: TouchEvent): void {
     if (!state.editor || !state.canvas) return;
     e.preventDefault();
 
-    if (e.touches.length === 0 && e.changedTouches.length === 1) {
+    if (e.touches.length === 0 && e.changedTouches.length === 1 && state.pointerGestureActive) {
+        state.pointerGestureActive = false;
         const touch = e.changedTouches[0];
         const rect = state.canvas.getBoundingClientRect();
         const x = touch.clientX - rect.left;
@@ -223,29 +244,6 @@ export function handleWheel(e: WheelEvent): void {
 
     const result = state.editor.onWheel(e.deltaY, x, y);
     handleEventResult(result, { persist: false });
-}
-
-export function handlePasteEvent(e: ClipboardEvent): void {
-    if (!state.editor) return;
-
-    e.preventDefault();
-
-    const text = e.clipboardData?.getData('text/plain');
-    if (text) {
-        const success = state.editor.pasteText(text);
-        if (success) {
-            requestRender();
-            updateUI();
-            scheduleAutoSave();
-        }
-    } else {
-        const success = state.editor.paste();
-        if (success) {
-            requestRender();
-            updateUI();
-            scheduleAutoSave();
-        }
-    }
 }
 
 export function handleKeyDown(e: KeyboardEvent): void {
@@ -363,32 +361,6 @@ export async function copyToClipboard(): Promise<void> {
     await copySelectionAware(state.editor, showToast, getClipboardOptions());
 }
 
-export function applyCustomGridSize(): void {
-    if (!state.editor) return;
-    const gridWidthInput = document.querySelector('#grid-width');
-    const gridHeightInput = document.querySelector('#grid-height');
-    if (!(gridWidthInput instanceof HTMLInputElement) || !(gridHeightInput instanceof HTMLInputElement)) {
-        return;
-    }
-    const w = Math.max(MIN_COLS, Math.min(400, parseInt(gridWidthInput.value, 10) || MIN_COLS));
-    const h = Math.max(MIN_ROWS, Math.min(200, parseInt(gridHeightInput.value, 10) || MIN_ROWS));
-    gridWidthInput.value = String(w);
-    gridHeightInput.value = String(h);
-    state.gridSizeLocked = true;
-    if (state.editor.width !== w || state.editor.height !== h) {
-        state.editor.resize(w, h);
-        state.offscreenCanvas = null;
-        state.offscreenCtx = null;
-        requestRender();
-        updateUI();
-        syncGridInputs();
-        scheduleAutoSave();
-        showToast(`Grid: ${w} × ${h}`);
-    } else {
-        syncGridInputs();
-    }
-}
-
 export function wireOptionalButton(id: string, onClick: () => void): void {
     const el = document.querySelector(`#${CSS.escape(id)}`);
     if (!(el instanceof HTMLButtonElement)) return;
@@ -426,6 +398,7 @@ export function setupEventListeners(): void {
     document.addEventListener('visibilitychange', onVisibilityChangeFlushAutoSave);
 
     window.addEventListener('blur', () => {
+        cancelPointerGesture();
         if (state.editor) {
             state.editor.onKeyUp(' ');
         }
@@ -438,10 +411,13 @@ export function setupEventListeners(): void {
     state.canvas.addEventListener('pointermove', handlePointerMove);
     state.canvas.addEventListener('pointerup', handlePointerUp);
     state.canvas.addEventListener('pointerleave', handlePointerLeave);
+    state.canvas.addEventListener('pointercancel', handlePointerCancel);
+    state.canvas.addEventListener('lostpointercapture', handlePointerCancel);
 
     state.canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
     state.canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
     state.canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    state.canvas.addEventListener('touchcancel', cancelPointerGesture, { passive: false });
 
     if (state.mobileKeyboardProxy) {
         state.mobileKeyboardProxy.addEventListener('input', handleMobileInput);
@@ -622,13 +598,7 @@ export function setupEventListeners(): void {
         });
     });
     wireOptionalButton('png-btn', () => {
-        if (state.editor) {
-            state.editor.requestRedraw();
-            requestRender();
-            requestAnimationFrame(() => {
-                exportPng(state.offscreenCanvas, state.canvas, showToast);
-            });
-        }
+        if (state.editor) exportPng(state.editor, showToast);
         if (state.canvas) state.canvas.focus();
     });
     wireOptionalButton('svg-btn', () => {
@@ -666,7 +636,12 @@ export function setupEventListeners(): void {
 
     wireOptionalButton('add-layer-btn', () => {
         if (!state.editor) return;
+        const before = state.editor.layerCount;
         state.editor.addLayer();
+        if (state.editor.layerCount === before) {
+            showToast('Layer limit reached', true);
+            return;
+        }
         requestRender();
         updateUI();
         scheduleAutoSave();
@@ -818,13 +793,7 @@ export function setupEventListeners(): void {
     });
 
     wireOptionalButton('mobile-png-btn', () => {
-        if (state.editor) {
-            state.editor.requestRedraw();
-            requestRender();
-            requestAnimationFrame(() => {
-                exportPng(state.offscreenCanvas, state.canvas, showToast);
-            });
-        }
+        if (state.editor) exportPng(state.editor, showToast);
         closeDrawer();
         if (state.canvas) state.canvas.focus();
     });

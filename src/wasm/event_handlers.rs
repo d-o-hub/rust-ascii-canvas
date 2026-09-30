@@ -19,14 +19,14 @@ impl AsciiEditor {
             return self.js_event_result();
         }
 
+        if self.is_incremental_tool() {
+            self.reset_interaction();
+            self.begin_stroke();
+        }
         let (x, y) = self.renderer.screen_to_grid(screen_x, screen_y);
         self.last_cursor = Some((x, y));
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
-
-        if !result.ops.is_empty() && (self.is_incremental_tool() || self.tool_id == ToolId::Text) {
-            self.commit_ops(&result.ops);
-        }
 
         if self.tool_id == ToolId::Select {
             if let Some(ref sel) = self.current_selection {
@@ -39,7 +39,10 @@ impl AsciiEditor {
             }
         }
 
-        if self.is_incremental_tool() && result.modified {
+        if self.is_incremental_tool() {
+            self.extend_stroke(&result.ops);
+            self.preview_ops.clear();
+        } else if self.tool_id == ToolId::Text {
             self.commit_ops(&result.ops);
             self.preview_ops.clear();
         } else {
@@ -75,8 +78,8 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_move(x, y, &ctx);
 
-        if self.is_incremental_tool() && result.modified {
-            self.commit_ops(&result.ops);
+        if self.is_incremental_tool() {
+            self.extend_stroke(&result.ops);
             self.preview_ops.clear();
         } else if !result.ops.is_empty() {
             self.preview_ops = result.ops.clone();
@@ -112,7 +115,16 @@ impl AsciiEditor {
         let ctx = self.create_tool_context();
         let result = self.active_tool.on_pointer_up(x, y, &ctx);
 
+        if !self.preview_ops.is_empty() {
+            self.dirty_tracker.request_full_redraw();
+        }
         self.preview_ops.clear();
+
+        if self.is_incremental_tool() {
+            self.extend_stroke(&result.ops);
+            self.finish_stroke();
+            return self.js_event_result();
+        }
 
         if self.tool_id == ToolId::Select {
             if self.is_moving_selection {
@@ -130,30 +142,27 @@ impl AsciiEditor {
         self.js_event_result()
     }
 
+    /// Cancel an interrupted gesture without committing it (pointercancel / lost capture).
+    #[wasm_bindgen(js_name = onPointerCancel)]
+    pub fn on_pointer_cancel(&mut self) {
+        self.reset_interaction();
+    }
+
     /// Handles keyboard key down events for shortcuts, copy/paste, backspace/delete, etc.
     #[wasm_bindgen(js_name = onKeyDown)]
     pub fn on_key_down(&mut self, key: String, ctrl: bool, shift: bool) -> JsValue {
-        let key_char = if key.len() == 1 {
-            key.chars().next().unwrap_or('\0')
-        } else {
-            match key.as_str() {
-                "Enter" => '\n',
-                "Backspace" => '\x08',
-                "Delete" => '\0',
-                "Tab" => '\t',
-                _ => '\0',
-            }
-        };
+        let key_char = crate::core::tools::text_input::key_character(&key);
 
         if key == "Escape" {
-            self.active_tool.reset();
-            self.current_selection = None;
-            self.preview_ops.clear();
-            self.dirty_tracker.request_full_redraw();
+            self.reset_interaction();
             return self.js_event_result();
         }
 
-        if key_char == ' ' && !ctrl && !shift {
+        if key_char == Some(' ')
+            && !ctrl
+            && !shift
+            && !(self.tool_id == ToolId::Text && self.active_tool.is_active())
+        {
             self.space_held = true;
             return self.js_event_result();
         }
@@ -214,16 +223,19 @@ impl AsciiEditor {
         }
 
         if !ctrl && !shift && !self.active_tool.is_active() {
-            if let Some(tool_id) = ToolId::from_shortcut(key_char) {
+            if let Some(tool_id) = key_char.and_then(ToolId::from_shortcut) {
                 self.set_tool_by_id_impl(tool_id);
                 return self.js_event_result();
             }
         }
 
-        if self.tool_id == ToolId::Text && self.active_tool.is_active() {
+        if !ctrl && self.tool_id == ToolId::Text && self.active_tool.is_active() {
             if self.is_active_layer_locked() {
                 return self.js_event_result();
             }
+            let Some(key_char) = key_char else {
+                return self.js_event_result();
+            };
             let ctx = self.create_tool_context();
             let result = self.active_tool.on_key(key_char, &ctx);
             if result.modified {
@@ -241,6 +253,7 @@ impl AsciiEditor {
         if key == " " {
             self.space_held = false;
             self.is_panning = false;
+            self.last_pan_pos = None;
         }
     }
 
