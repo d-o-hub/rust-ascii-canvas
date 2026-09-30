@@ -160,12 +160,12 @@ test.describe('Named local drafts', () => {
     test('failed migration leaves legacy bytes and legacy content visible, not a blank replacement', async ({ page }) => {
         await seedStorage(page, LEGACY_KEY, legacy);
         await page.addInitScript(() => {
-            const original = Storage.prototype.setItem;
+            const original = Storage.prototype.setItem.bind(Storage.prototype);
             Storage.prototype.setItem = function (name, value) {
                 if (name === 'ascii-canvas-drafts-v1') {
                     throw new DOMException('Storage full', 'QuotaExceededError');
                 }
-                original.call(this, name, value);
+                original(name, value);
             };
         });
 
