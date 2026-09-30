@@ -31,12 +31,12 @@ async function newDraft(page: Page, name: string): Promise<void> {
 
 async function failWrites(page: Page): Promise<void> {
     await page.evaluate(() => {
-        const original = Storage.prototype.setItem;
+        const original = Storage.prototype.setItem.bind(Storage.prototype);
         Storage.prototype.setItem = function (key, value) {
             if (key === 'ascii-canvas-drafts-v1') {
                 throw new DOMException('Storage full', 'QuotaExceededError');
             }
-            original.call(this, key, value);
+            original(key, value);
         };
     });
 }
