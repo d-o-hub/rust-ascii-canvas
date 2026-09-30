@@ -18,6 +18,13 @@ All notable changes to this project will be documented in this file.
   overlays, and leaves editor state unchanged.
 - Registered Node WASM regressions now execute in CI and local full verification,
   with nonzero execution required for each library/integration target.
+- Added bounded browser-local named drafts with create, rename, switch, delete and
+  import-as-new. Switching validates and saves before replacing the live editor,
+  then starts with fresh history and view state.
+- Added visible saved/dirty/error/conflict status and a `.asc` backup action.
+  Legacy autosave migration is non-destructive; storage denial, quota, corrupt
+  shelves/documents and stale-tab conflicts preserve the live work instead of
+  silently replacing or overwriting it. Local drafts are not durable backups.
 
 - **F-13 layer history: undo could rename the wrong layer.** The layer-history
   commands landed in #213 recorded a **positional index** and replayed it on

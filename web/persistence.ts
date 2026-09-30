@@ -2,32 +2,10 @@
  * File persistence: localStorage auto-save and .asc download/upload.
  */
 
-import { AUTOSAVE_KEY } from './constants.js';
+import { importDraft, markDraftDirty, saveDraft } from './drafts-ui.js';
 import { logger } from './logger.js';
 import type { AsciiEditor } from './types.js';
 import type { ToastFn } from './clipboard.js';
-
-/** Save current document JSON to localStorage. */
-export function autoSave(editor: AsciiEditor): void {
-    try {
-        const json = editor.serializeDocument();
-        localStorage.setItem(AUTOSAVE_KEY, json);
-    } catch (err) {
-        logger.warn('Auto-save failed:', err);
-    }
-}
-
-/** Load autosaved document if present. Returns true if restored. */
-export function tryRestoreAutoSave(editor: AsciiEditor): boolean {
-    try {
-        const json = localStorage.getItem(AUTOSAVE_KEY);
-        if (!json) return false;
-        return editor.loadDocument(json);
-    } catch (err) {
-        logger.warn('Auto-restore failed:', err);
-        return false;
-    }
-}
 
 /** Download current document as a `.asc` JSON file. */
 export function downloadDocument(editor: AsciiEditor, showToast: ToastFn): void {
@@ -49,7 +27,6 @@ export function downloadDocument(editor: AsciiEditor, showToast: ToastFn): void 
 
 /** Open a file picker and load a `.asc` / JSON document. */
 export function openDocumentPicker(
-    editor: AsciiEditor,
     showToast: ToastFn,
     onLoaded: () => void,
 ): void {
@@ -62,11 +39,11 @@ export function openDocumentPicker(
         const reader = new FileReader();
         reader.onload = () => {
             const text = typeof reader.result === 'string' ? reader.result : '';
-            if (editor.loadDocument(text)) {
-                showToast(`Loaded ${file.name}`);
+            if (importDraft(text, file.name)) {
+                showToast(`Imported ${file.name} as a new local draft`);
                 onLoaded();
             } else {
-                showToast('Invalid diagram file', true);
+                showToast('Import failed; current draft is unchanged. See save status.', true);
             }
         };
         reader.onerror = () => {
@@ -97,15 +74,16 @@ export function createAutoSaveScheduler(
             timer = null;
         }
         const editor = getEditor();
-        if (editor) autoSave(editor);
+        if (editor) saveDraft();
     }
 
     function schedule(): void {
+        markDraftDirty();
         if (timer) clearTimeout(timer);
         timer = setTimeout(() => {
             timer = null;
             const editor = getEditor();
-            if (editor) autoSave(editor);
+            if (editor) saveDraft();
         }, delayMs);
     }
 
