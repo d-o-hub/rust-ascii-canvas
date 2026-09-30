@@ -29,8 +29,9 @@ The existing pure-core → render/UI → WASM → web architecture remains intac
   explicit crop confirmation; editable fields retain native paste; cancel on
   pointercancel, lost capture, touchcancel or blur without cancelling completed
   text taps. Layer-limit refusal is visible instead of claiming success.
-- Retain base `web/events.ts` event-result processing and base `main.ts`,
-  `persistence.ts`, `ui.ts`, HTML and styling. A narrow
+- Retain base `web/events.ts` event-result processing, `persistence.ts`, `ui.ts`,
+  HTML and styling. `main.ts` gains only the startup stylesheet/layout barrier
+  required by WebKit CI feedback (below). A narrow
   [`web/document-events.ts`](../web/document-events.ts) extraction owns paste/crop
   boundaries and uses the existing state autosave callback, avoiding a cycle.
   Do not import the foreign `eb3ce8f` event-result extraction or draft-dependent
@@ -38,7 +39,7 @@ The existing pure-core → render/UI → WASM → web architecture remains intac
   remove only the stale `src/wasm/helpers.rs` entry after real extraction.
 - Excluded: named drafts and their UI/status/storage/migration/conflicts, layer
   panel accessibility rewrite, full harness/skills overhaul, release changes and
-  remote/ruleset mutations. ADR-046's draft decision is accepted but deferred.
+  live ruleset mutations. ADR-046's draft decision is accepted but deferred.
 
 ## Shared prerequisite
 
@@ -78,7 +79,7 @@ on port **3003**. Port 3005 belongs to the independent security worker.
 3. Install frozen root/web dependencies, build fresh local `web/pkg`, run focused
    checks, then `gate:fast` and `gate:full` on this isolated tree — complete.
 4. Run focused Firefox/WebKit safety integration, review the final diff, record
-   exact results and stop any owned servers — complete. Parent review remains.
+   exact results and stop any owned servers — complete. Parent delivery follows below.
 
 Evidence logs are stored outside the tree at
 `/tmp/ascii-canvas-delivery-20260930/logs/safety-*.log`; the results below describe
@@ -137,8 +138,9 @@ new production CI/full-gate promise. No manual background server remains.
 ### Review boundaries and remaining work
 
 - Scope review confirms all extracted `src/` files are byte-identical to source;
-  the source itself was never edited. Base `main.ts`, persistence, UI, HTML,
-  styling, web dependencies and Playwright config are unchanged. No
+  the source itself was never edited. Base persistence, UI, HTML, styling, web
+  dependencies and Playwright config are unchanged. The later startup barrier
+  in `main.ts` is documented below. No
   `eventResult.ts` or draft modules were imported.
 - `helpers.rs` is 231 lines; `events.ts` shrank 850 → 819; `ui.ts` stays 540.
   Only the helpers allowlist entry was removed. No budget was raised or repinned.
@@ -171,7 +173,41 @@ new production CI/full-gate promise. No manual background server remains.
   This is a behavior-specific guide correction, not the deferred skills overhaul.
 - Commits/push and current-head CI/Codacy results are tracked in the PR body;
   local evidence above is not a claim of remote success or merge readiness.
+- Local Codacy procedure: inspect the file count, not only its exit status.
+  `--diff HEAD` compares committed endpoints and scans zero files even when the
+  index contains changes. Such results are not evidence. Use an explicit tracked
+  file path before committing, or `--pr` after committing, and require nonzero
+  execution. Separate explicit scans of the startup module/new fixture reported
+  no findings, but unavailable parserServices still prevent claiming full parity.
 - Deferred harness observation: base `pr-merge-gate.sh --json` prints commit-scope
   prose before its JSON document. Its exit status/verdict are usable, but stdout
   is not pure JSON. Fix stdout/stderr ownership in the separate harness delivery,
   not by silently changing merge predicates in this safety PR.
+
+## CI feedback: one-time startup sizing
+
+PR #229's first head (`8e4a280`) passed all native/WASM/web, Chromium, Firefox and
+Codacy checks, but WebKit failed the existing desktop responsive-size assertion
+on both attempts: 20 rows instead of more than 50. A local no-retry reproduction
+failed 2/3 times. Independent review found the failed width also matched the
+unstyled body's default margins; the old late `editor.resize()` had masked a
+stylesheet/layout initialization race.
+
+- Wait for page load (including stylesheets), then a completed paint before
+  choosing initial document dimensions. This happens before construction and
+  restoration, never by resizing an existing document. See [MDN's load
+  contract](https://developer.mozilla.org/en-US/docs/Web/API/Window/load_event).
+- Preserve the existing desktop assertions. Add `e2e/initial-layout.spec.ts`:
+  inject a positive provisional height so Chromium also detects this failure,
+  and verify a restored document's non-default dimensions/edge content survive.
+  The injected regression fails before the fix in Chromium (20 rows); the
+  post-paint candidate passed 10 consecutive real WebKit desktop launches.
+- This retained sensor runs in local full Chromium and every existing CI browser
+  job, closing the local/CI gap rather than relying on a rerun of a red check.
+- Final local verification: fast/full green, full Chromium against fresh
+  production build (103-test inventory), 33 focused checks across all three
+  engines, full WebKit with 102 passes and its one existing clipboard-permission
+  skip, and 24 additional production Firefox/WebKit safety passes. Pushed-head
+  outcomes are recorded separately in the PR body.
+- Later feature extractions must retain both this startup fix and the separate
+  PNG instance-spy test follow-up; the preserved source workspace predates them.

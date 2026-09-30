@@ -35,6 +35,9 @@ declare global {
             clear(): void;
             serializeDocument(): string;
             loadDocument(json: string): boolean;
+            resize(width: number, height: number): void;
+            onPointerMove(screenX: number, screenY: number): unknown;
+            pasteText(text: string): boolean;
             exportPixelBuffer(): Uint8Array;
             readonly width: number;
             readonly height: number;

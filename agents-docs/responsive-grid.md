@@ -6,7 +6,13 @@ and cleared every layer's history when a viewport narrowed.
 
 ## Initial sizing only
 
-A fresh editor chooses useful defaults from its container after font measurement:
+A fresh editor chooses useful defaults only after stylesheets and initial layout
+are ready, then font measurement. A positive container height is not proof that
+layout is ready: WebKit can expose the unstyled canvas's intrinsic 150px height.
+Wait for page load and a completed paint **before creating the editor**, never
+correct a provisional size later by resizing a live document.
+
+The final sizing sequence is:
 
 ```ts
 measureFont();
@@ -44,10 +50,13 @@ declarations, not a hand-maintained duplicate interface, describe the binding.
 
 ## Verification checklist
 
-- Measure font metrics before initial responsive sizing.
+- Wait for stylesheet/layout readiness, then measure font metrics before sizing.
 - Preserve saved/imported dimensions across desktop/mobile views.
 - Draw at an edge, narrow/restore the viewport, then verify content and undo/redo.
 - Cancel manual cropping and assert serialized document and history unchanged.
 - Invalidate the offscreen canvas when document dimensions actually change.
-- Run `e2e/document-safety.spec.ts` and `e2e/responsive.spec.ts`; viewport-specific
-  tests set their viewport explicitly rather than assuming extra project names.
+- Run `e2e/initial-layout.spec.ts`, `e2e/document-safety.spec.ts` and
+  `e2e/responsive.spec.ts`; the initial-layout sensor injects a nonzero provisional
+  height in every engine, so Chromium-only local full checks catch this race too.
+- Viewport-specific tests set their viewport explicitly rather than assuming
+  extra project names.
