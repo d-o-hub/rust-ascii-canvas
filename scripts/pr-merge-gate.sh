@@ -133,9 +133,54 @@ changes_requested() { jq '[.reviews[] | select(.state == "CHANGES_REQUESTED")] |
 # would ship that branch's work. A confident answer about the wrong object is
 # worse than no answer: it reads as verified. Fail closed when the field is
 # absent or null rather than report "0 commits".
-commits_data_ok() { jq -e '.commits | type == "array"' >/dev/null; }
+#
+# The check is on *shape*, not just presence: under `set -euo pipefail` a
+# malformed element (a number where gh sent an object) made `commits_list` die
+# mid-report, so the run exited without emitting any verdict at all — fail
+# closed, but silently. Rejected here instead, with an explanation.
+commits_data_ok() {
+  jq -e '.commits
+         | (type == "array")
+           and all(.[];
+               if type == "object"
+               then (has("oid") and (.oid | type == "string")
+                     and has("messageHeadline")
+                     and (.messageHeadline | type == "string"))
+               else false end)' >/dev/null
+}
 commits_total()   { jq '.commits | length'; }
 commits_list()    { jq -r '.commits[] | "\(.oid[0:7]) \(.messageHeadline)"'; }
+
+# Scope vs context, split on purpose (L-021): commit_scope_state reads only the
+# PR payload and is therefore exercisable offline; checkout_state is the only
+# thing that touches `git`, and its answer is reported as context — never as
+# evidence about the PR. Use printf, not echo: the self-test captures these
+# outputs, and `echo` is shadowed in --json mode (see above).
+#   commit_scope_state → unreadable | empty | ok
+#   checkout_state     → unknown-head | no-git | head | detached-at-head | stale | other
+commit_scope_state() {
+  local payload
+  payload="$(cat)"          # stdin, like every other predicate here
+  if ! commits_data_ok <<<"$payload"; then printf '%s\n' unreadable
+  elif [[ "$(commits_total <<<"$payload")" -eq 0 ]]; then printf '%s\n' empty
+  else printf '%s\n' ok
+  fi
+}
+checkout_state() {
+  # Defaults, not `$1`: `set -u` turns a missing argument into an abort with no
+  # verdict, which is the wrong failure shape for a guard-rail.
+  local pr_name="${1:-}" pr_oid="${2:-}" loc_name="${3:-}" loc_oid="${4:-}"
+  if [[ -z "$pr_name" || -z "$pr_oid" ]]; then printf '%s\n' unknown-head
+  elif [[ -z "$loc_name" || -z "$loc_oid" ]]; then printf '%s\n' no-git
+  elif [[ "$loc_oid" == "$pr_oid" && "$loc_name" == "$pr_name" ]]; then printf '%s\n' head
+  # Same commit, different branch name — a detached checkout or a local branch
+  # that happens to agree. Checking names first would have called this "not the
+  # PR head", i.e. claimed the content differed when it did not.
+  elif [[ "$loc_oid" == "$pr_oid" ]]; then printf '%s\n' detached-at-head
+  elif [[ "$loc_name" == "$pr_name" ]]; then printf '%s\n' stale
+  else printf '%s\n' other
+  fi
+}
 
 # --- Offline self-test ------------------------------------------------------
 # Proves the merge contract on fixtures. No network, no gh, no repo mutation.
@@ -246,6 +291,37 @@ if $SELF_TEST; then
   expect "commits:null REJECTED"     "$r" false
   if commits_data_ok <<<"$CSMISSING"; then r=true; else r=false; fi
   expect "commits absent REJECTED"   "$r" false
+  CSNUM='{"commits":[1,2]}'                       # gh schema drift, not an object
+  CSNOID='{"commits":[{"messageHeadline":"x"}]}'   # oid gone → commits_list would die
+  CSNOH='{"commits":[{"oid":"9dfc490f"}]}'         # headline gone
+  if commits_data_ok <<<"$CSNUM"; then r=true; else r=false; fi
+  expect "non-object elements REJECTED" "$r" false
+  if commits_data_ok <<<"$CSNOID"; then r=true; else r=false; fi
+  expect "element without oid REJECTED" "$r" false
+  if commits_data_ok <<<"$CSNOH"; then r=true; else r=false; fi
+  expect "element without headline REJECTED" "$r" false
+  echo
+  echo "— scope vs context (L-021) —"
+  # commit_scope_state must be answerable from the PR payload alone — that is
+  # the whole point: it can never be about this clone.
+  expect "scope: ok"                 ok         "$(commit_scope_state <<<"$CS1")"
+  expect "scope: empty array"        empty      "$(commit_scope_state <<<"$CSEMPTY")"
+  expect "scope: null"               unreadable "$(commit_scope_state <<<"$CSNULL")"
+  expect "scope: absent"             unreadable "$(commit_scope_state <<<"$CSMISSING")"
+  expect "scope: numeric elements"   unreadable "$(commit_scope_state <<<"$CSNUM")"
+  expect "scope: element without oid" unreadable "$(commit_scope_state <<<"$CSNOID")"
+  # checkout_state is the only git-touching answer, and its six outcomes are
+  # what the report distinguishes. Order matters: an OID match wins over a
+  # branch-name match, so a detached checkout at the PR head is not reported as
+  # "not the PR head" (i.e. as content that differs).
+  HEAD_SHA="9dfc490fdf23663d721943e31511520bbed1195c"
+  OTHER_SHA="ab9c6160b7d2cd3421895801ad819f71036e1dfc"
+  expect "checkout: branch + sha match"   head             "$(checkout_state main "$HEAD_SHA" main "$HEAD_SHA")"
+  expect "checkout: detached at head"     detached-at-head "$(checkout_state main "$HEAD_SHA" HEAD "$HEAD_SHA")"
+  expect "checkout: same branch, stale"   stale            "$(checkout_state main "$HEAD_SHA" main "$OTHER_SHA")"
+  expect "checkout: unrelated branch"     other            "$(checkout_state main "$HEAD_SHA" wip/nothing "$OTHER_SHA")"
+  expect "checkout: PR head unknown"      unknown-head     "$(checkout_state "" "" main "$HEAD_SHA")"
+  expect "checkout: git unavailable"      no-git           "$(checkout_state main "$HEAD_SHA" "" "")"
   echo
   echo "— --json stdout contract —"
   # The merge-gate skill documents `gate:pr -- --json | jq .` as safe, so the
@@ -454,44 +530,57 @@ fi
 # "NOTE: every commit above ships with this PR" was simply false. The PR's own
 # commit list is the only list that answers the question.
 BASE_BRANCH="$(jq -r '.baseRefName // "main"' <<<"$PR_JSON")"
-if ! commits_data_ok <<<"$PR_JSON"; then
-  fail "Could not read the commit list for PR #$PR"
-  echo "  FIX: re-run ./scripts/pr-merge-gate.sh $PR. If it persists, check gh"
-  echo "       scopes ('read: pull requests'). An unverified scope is not a pass."
-else
-  COMMIT_COUNT="$(commits_total <<<"$PR_JSON")"
-  if [[ "$COMMIT_COUNT" -eq 0 ]]; then
+case "$(commit_scope_state <<<"$PR_JSON")" in
+  unreadable)
+    fail "Could not read the commit list for PR #$PR"
+    echo "  FIX: re-run ./scripts/pr-merge-gate.sh $PR. If it persists, check gh"
+    echo "       scopes ('read: pull requests'). An unverified scope is not a pass."
+    ;;
+  empty)
     fail "PR #$PR reports 0 commits — nothing to merge, or the query was truncated"
     echo "  FIX: open the PR in a browser and confirm it actually has commits."
-  else
-    ok "Commit scope: $COMMIT_COUNT commit(s) would merge into $BASE_BRANCH"
+    ;;
+  ok)
+    ok "Commit scope: $(commits_total <<<"$PR_JSON") commit(s) would merge into $BASE_BRANCH"
     commits_list <<<"$PR_JSON" | while IFS= read -r c; do echo "    $c"; done
     echo "  NOTE: every commit above ships with this PR. If any is not part of"
     echo "        the change you intend to make, your branch is wrong — rebase it"
     echo "        onto origin/$BASE_BRANCH. (harness L-011)"
-  fi
-fi
+    ;;
+esac
 
 # Context, not evidence: where this checkout happens to be. It never feeds the
 # commit list above (L-021); it only tells you whether your working tree is the
-# thing CI just tested.
+# thing CI just tested. The outcome is decided by checkout_state() so that all
+# six possibilities are fixture-tested offline, including the two that used to
+# be unreachable-by-reading: a detached checkout at the PR head (same commit,
+# other branch — not "the content differs") and a checkout where git is absent.
 PR_HEAD_NAME="$(jq -r '.headRefName // ""' <<<"$PR_JSON")"
 PR_HEAD_OID="$(jq -r '.headRefOid // ""' <<<"$PR_JSON")"
 LOCAL_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
 LOCAL_OID="$(git rev-parse HEAD 2>/dev/null || true)"
-if [[ -z "$PR_HEAD_NAME" || -z "$PR_HEAD_OID" ]]; then
-  warn "PR head is unknown — cannot compare it with this checkout"
-elif [[ -z "$LOCAL_BRANCH" || -z "$LOCAL_OID" ]]; then
-  warn "git unavailable here — cannot say where this checkout is; scope above is the PR's"
-elif [[ "$LOCAL_BRANCH" == "$PR_HEAD_NAME" && "$LOCAL_OID" == "$PR_HEAD_OID" ]]; then
-  ok "Local checkout matches the PR head ($PR_HEAD_NAME @ ${PR_HEAD_OID:0:7})"
-elif [[ "$LOCAL_BRANCH" == "$PR_HEAD_NAME" ]]; then
-  warn "Local '$PR_HEAD_NAME' is at ${LOCAL_OID:0:7}, PR head is ${PR_HEAD_OID:0:7} — your tree is stale"
-  echo "  FIX: git fetch origin && git rebase origin/$BASE_BRANCH"
-  echo "       CI tested ${PR_HEAD_OID:0:7}; do not claim local verification of it."
-else
-  ok "Local checkout '$LOCAL_BRANCH' is not the PR head — scope above is the PR's (L-021)"
-fi
+case "$(checkout_state "$PR_HEAD_NAME" "$PR_HEAD_OID" "$LOCAL_BRANCH" "$LOCAL_OID")" in
+  unknown-head)
+    warn "PR head is unknown — cannot compare it with this checkout"
+    ;;
+  no-git)
+    warn "git unavailable here — cannot say where this checkout is; scope above is the PR's"
+    ;;
+  head)
+    ok "Local checkout matches the PR head ($PR_HEAD_NAME @ ${PR_HEAD_OID:0:7})"
+    ;;
+  detached-at-head)
+    ok "This checkout is the PR head commit ${LOCAL_OID:0:7} (PR head branch: $PR_HEAD_NAME, local: '$LOCAL_BRANCH')"
+    ;;
+  stale)
+    warn "Local '$PR_HEAD_NAME' is at ${LOCAL_OID:0:7}, PR head is ${PR_HEAD_OID:0:7} — your tree is stale"
+    echo "  FIX: git fetch origin && git rebase origin/$BASE_BRANCH"
+    echo "       CI tested ${PR_HEAD_OID:0:7}; do not claim local verification of it."
+    ;;
+  other)
+    ok "Local checkout '$LOCAL_BRANCH' is not the PR head — scope above is the PR's (L-021)"
+    ;;
+esac
 
 # --- Verdict ----------------------------------------------------------------
 if [[ "$JSON_OUT" == "true" ]]; then
