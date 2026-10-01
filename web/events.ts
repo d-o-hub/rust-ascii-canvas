@@ -326,6 +326,7 @@ export function setupEventListeners(): void {
                 else if (val === '3') size = 2;
                 else if (val === '5') size = 3;
                 state.editor.setEraserSize(size);
+                showToast(`Eraser radius: ${val} Cell${val === '1' ? '' : 's'}`);
             }
         });
     }
@@ -344,8 +345,10 @@ export function setupEventListeners(): void {
         });
         state.borderStyleSelect.addEventListener('change', () => {
             if (state.editor && state.borderStyleSelect) {
-                state.editor.setBorderStyle(state.borderStyleSelect.value);
-                state.currentBorderStyleIndex = BORDER_STYLES.indexOf(state.borderStyleSelect.value);
+                const val = state.borderStyleSelect.value;
+                state.editor.setBorderStyle(val);
+                state.currentBorderStyleIndex = BORDER_STYLES.indexOf(val);
+                showToast(`Border: ${val}`);
             }
         });
     }
@@ -371,6 +374,8 @@ export function setupEventListeners(): void {
                 if (state.editor) {
                     state.editor.setLineDirection(direction);
                 }
+                const capitalized = direction.charAt(0).toUpperCase() + direction.slice(1);
+                showToast(`Line direction: ${capitalized}`);
             });
         });
     }
