@@ -11,14 +11,14 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 - ↩️ **Full Undo/Redo**: Command pattern with configurable history depth
 - 🔍 **Zoom & Pan**: Mouse wheel zoom, `+` / `-` keyboard zoom, Space+drag panning
 - 📋 **One-Click Copy**: Selection-aware ASCII export with CRLF for Windows editors
-- 💾 **Save / Load**: `.asc` JSON documents + localStorage auto-save
+- 💾 **Save / Load**: `.asc` JSON documents + bounded named local drafts (with non-destructive legacy autosave migration and backup status)
 - 🖼 **PNG & SVG Export**: Download the rendered canvas as an image or vector SVG
 - 📚 **Layers**: Named layers with rename, visibility, lock, reorder, delete, merge + composite export
 - 📐 **Custom Grid Size**: Responsive defaults plus manual cols/rows
 - ⌨️ **Keyboard-First**: Full keyboard shortcut support
 - 🎨 **Dark + Light Theme**: Figma-inspired UI with theme switcher
 - ⚡ **60 FPS Rendering**: Dirty-rect optimization, high-performance WASM pixel buffer path
-- 📦 **Offline-First**: Works offline after first load
+- 📦 **Offline-First**: Works offline after first load; local drafts stay in this browser and are not durable backups
 
 ## Quick Start
 

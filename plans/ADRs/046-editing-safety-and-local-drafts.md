@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — explicitly approved by the user on 2026-09-30. **PARTIAL implementation in the editor-safety delivery slice:** input, atomic gestures, cancellation/history, layer payload/limits, document validation/reset, viewport/crop safety and clean pixel export. The named-local-draft decision remains accepted but its UI, storage, migration and conflict handling are **deferred to a separate delivery**. Existing single-slot autosave is unchanged here. The implementation is a delivery candidate, not merged or released; acceptance is not PR/remote-gate evidence.
+Accepted — explicitly approved by the user on 2026-09-30. **Delivered in two scoped candidates:** editor-safety in #229, and named local drafts in this delivery candidate. The named-draft UI, storage, migration and conflict handling are implemented here; the larger harness/skills overhaul and accessible layer-panel work remain deferred. The candidate is not merged or released; acceptance is not PR/remote-gate evidence.
 
 ## Context
 
@@ -32,4 +32,4 @@ Interaction/session and document limits gain shared core definitions, while brow
 
 ## Verification
 
-Scoped implementation and isolated-tree test evidence are recorded in the [editor-safety delivery plan](../editor-safety-delivery-2026-09-30.md). No named-draft implementation or verification is claimed by this slice. Approval does not establish remote CI or merge readiness.
+Editor-safety evidence is recorded in the [editor-safety delivery plan](../editor-safety-delivery-2026-09-30.md). Named-draft implementation and isolated-tree evidence are recorded in the [local-drafts delivery plan](../local-drafts-delivery-2026-09-30.md). This decision does not establish remote CI or merge readiness; ordinary review, Codacy and merge-gate requirements remain.

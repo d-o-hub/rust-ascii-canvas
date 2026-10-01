@@ -900,6 +900,44 @@ body {
     background: var(--muted);
 }
 
+/* Local draft controls and persistent recovery feedback (also visible on mobile). */
+.draft-controls {
+    display: grid;
+    gap: var(--spacing-sm);
+}
+
+.draft-controls p {
+    color: var(--muted);
+    font-size: 11px;
+    margin: 0;
+}
+
+.draft-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.save-status-bar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: 4px var(--spacing-sm);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+}
+
+#save-status[data-state="error"], #save-status[data-state="conflict"] {
+    color: var(--error, #f87171);
+}
+
+.layer-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+}
+
 /* Mobile Helpers */
 .mobile-only {
     display: none;

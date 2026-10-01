@@ -255,7 +255,7 @@ PR_JSON="$(gh pr view "$PR" --json number,title,url,isDraft,mergeable,reviewDeci
   exit 1
 }
 
-GRAPHQL="$(gh api graphql -f query='
+GRAPHQL_QUERY="$(cat <<'GRAPHQL'
 query($owner:String!,$repo:String!,$number:Int!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$number){
@@ -264,7 +264,10 @@ query($owner:String!,$repo:String!,$number:Int!){
       }
     }
   }
-}' -F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR" 2>/dev/null)" || {
+}
+GRAPHQL
+)"
+GRAPHQL="$(gh api graphql -f query="$GRAPHQL_QUERY" -F "owner=$OWNER" -F "repo=$REPO_NAME" -F "number=$PR" 2>/dev/null)" || {
   echo "ERROR: could not read review threads for PR #$PR (GraphQL)." >&2
   echo "  FIX: verify token scopes (needs 'read: pull requests')." >&2
   exit 1

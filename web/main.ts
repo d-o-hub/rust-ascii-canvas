@@ -9,7 +9,7 @@ import { logger } from './logger.js';
 import type { AsciiEditor as AsciiEditorType } from './types.js';
 import { FONT_SIZE, TOOL_INFO, THEME_KEY } from './constants.js';
 import { getElement } from './utils.js';
-import { tryRestoreAutoSave } from './persistence.js';
+import { initializeDrafts } from './drafts-ui.js';
 import { state } from './state.js';
 import {
     computeGridDimensions,
@@ -145,7 +145,13 @@ async function initialize() {
         state.editor.setFontMetrics(state.charWidth, state.lineHeight, FONT_SIZE);
 
         // Initialize theme from localStorage
-        const savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+        let savedTheme = 'dark';
+        try {
+            savedTheme = localStorage.getItem(THEME_KEY) || 'dark';
+        } catch {
+            // Storage denial must not prevent editing or downloading. The draft
+            // status UI reports the persistent-storage failure with recovery help.
+        }
         const mobileThemeIcon = document.getElementById('mobile-theme-icon');
         const mobileThemeBtn = document.getElementById('mobile-theme-btn');
         const nextThemeLabel = savedTheme === 'light' ? 'Switch to dark theme' : 'Switch to light theme';
@@ -175,13 +181,9 @@ async function initialize() {
             }
         }
 
-        // Restore auto-saved document if present (locks grid so resize cannot crop it).
-        if (tryRestoreAutoSave(state.editor)) {
-            logger.info('Restored auto-saved diagram');
-            state.gridSizeLocked = true;
-            state.offscreenCanvas = null;
-            state.offscreenCtx = null;
-        }
+        // Restore the selected local draft, or migrate the legacy autosave
+        // without deleting or overwriting its original bytes.
+        initializeDrafts();
 
         // Set up event listeners
         setupEventListeners();

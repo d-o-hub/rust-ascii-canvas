@@ -386,6 +386,7 @@ function applyHistory(action: 'undo' | 'redo'): void {
     }
     requestRender();
     updateUI();
+    if (done) scheduleAutoSave();
     if (state.canvas) state.canvas.focus();
 }
 
@@ -585,9 +586,12 @@ export function setupEventListeners(): void {
         downloadDocument(state.editor, showToast);
         if (state.canvas) state.canvas.focus();
     });
+    wireOptionalButton('draft-download', () => {
+        if (state.editor) downloadDocument(state.editor, showToast);
+    });
     wireOptionalButton('load-btn', () => {
         if (!state.editor) return;
-        openDocumentPicker(state.editor, showToast, () => {
+        openDocumentPicker(showToast, () => {
             state.gridSizeLocked = true;
             state.offscreenCanvas = null;
             state.offscreenCtx = null;
@@ -780,7 +784,7 @@ export function setupEventListeners(): void {
 
     wireOptionalButton('mobile-load-btn', () => {
         if (!state.editor) return;
-        openDocumentPicker(state.editor, showToast, () => {
+        openDocumentPicker(showToast, () => {
             state.gridSizeLocked = true;
             state.offscreenCanvas = null;
             state.offscreenCtx = null;
