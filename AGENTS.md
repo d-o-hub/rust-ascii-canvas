@@ -25,11 +25,12 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
 
 ### What the tiers cover
 
-- **fast** — fmt, clippy `-D warnings`, build, `cargo test`, architecture, LOC,
-  web lint/tsc/Vitest, **root lint + e2e tsc**, privacy + secret scan. Builds
-  `web/pkg` if missing (it is gitignored, and CI downloads the wasm artifact
-  before `tsc` — L-001).
-- **full** — adds cargo audit/deny, WASM build + size budget, Playwright E2E.
+- **fast** — locked Rust checks, architecture/LOC, retained sensor/CI/skill
+  fixtures, web lint/tsc/Vitest, **root lint + e2e tsc**, privacy + secret scan.
+  Rebuilds `web/pkg` when its source/output fingerprint is stale; CI verifies
+  the downloaded fingerprint before typechecking (L-001, ADR-047).
+- **full** — adds committed-lockfile Rust/npm audits, cargo-deny, nonzero Node
+  WASM tests, artifact validity/size, and production-dist Chromium E2E.
 - **pr** — the merge contract only; see *Merge & ship* below.
 
 ### The gate script is not a gate (learned)
@@ -73,7 +74,9 @@ core (pure) ← render, ui ← wasm ← web/
 
 - Build WASM: `npm run build:wasm` (wasm-bindgen **0.2.128**, see `mise.toml`).
 - Web lint/test: `cd web && pnpm lint && pnpm exec tsc --noEmit && pnpm test`.
-- E2E: Playwright from repo root; prefer `--project=chromium` locally.
+- WASM behavior: `npm run test:wasm` (nonzero Node execution required).
+- E2E: Playwright owns server startup; focused runs use dev, full/CI use built
+  `dist` (`PRODUCTION_E2E=1`). `BASE_URL` targets an external preview.
 
 ## Tool behaviour checklist (behaviour harness)
 
@@ -123,8 +126,9 @@ production → failure → reproduce → candidate fix → evaluate
 Two stages carry most of the value: **reproduce** (an automated failing test —
 no repro, no fix) and **shadow** (full E2E against a production-shaped build;
 `playwright.config.ts` already honours `BASE_URL`, so a Netlify Deploy Preview
-works with no config change). Canary here is an opt-in RC tag, **not** a
-percentage rollout — this is a static app with no traffic splitting.
+works with no config change). RC canaries are **not implemented**: the release
+workflow accepts stable `x.y.z` only. Use Deploy Preview shadow checks today;
+do not dispatch an RC or claim percentage rollout for this static app.
 
 Runbook and per-stage exit criteria: [agents-docs/delivery.md](agents-docs/delivery.md)
 · skill `production-loop`.
@@ -145,7 +149,7 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Decide + perform the merge | `merge-gate` |
 | Ship safely (shadow → canary → promote) | `production-loop` |
 | Rust implementation | `rust-engineer`, `rust-best-practices`, `rust-wasm` |
-| TypeScript / Vite | `typescript-expert`, `vite` |
+| TypeScript / Vite | `repo-typescript` (local commands/referrals), `typescript-expert`, `vite` |
 | Tool QA | `tool-validation` |
 | Exploratory UX | `dogfood` |
 | Maintain this doc | `agents-md` |

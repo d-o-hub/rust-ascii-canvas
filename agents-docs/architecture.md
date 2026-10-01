@@ -31,9 +31,16 @@ Agents **must** read this before changing module boundaries, adding dependencies
 
 ## File size
 
-- Soft/hard limit: **500 lines** per source file (`.rs`, and prefer for `.ts` too).
-- Known debt is listed in `.loc-allowlist` (one path per line). **Do not grow allowlisted files**; prefer extracting modules.
-- New files over 500 lines fail the quality gate.
+- Hard limit: **500 lines** for `src/**/*.rs` and `web/*.ts`, excluding
+  `web/*.test.ts` (exact scope lives in `scripts/check-loc.sh`).
+- Known debt uses **`path=lines`**, one entry per line, in `.loc-allowlist`.
+  The numeric budget is a ratchet: a file may shrink, never grow past its pin.
+  The legacy bare-path form is still accepted by the sensor but has no numeric
+  ratchet; do not add it. A new entry needs an ADR; do not raise budgets.
+- Extract focused modules. Remove entries once files are within the normal
+  limit; missing paths and stale entries are debt, not permission to grow.
+- The shared sensor is `bash scripts/check-loc.sh`, run locally by both gate
+  tiers and directly by CI's cross-cutting **LOC Limits** (`loc`) job.
 
 ## WASM / web boundary
 

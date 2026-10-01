@@ -404,3 +404,62 @@ Append here when the same class of failure hits CI or agents twice (or once with
 | **Where it runs** | **Both** runners. Locally: `npm run gate:pr` (`package.json:43`) and `npm run gate:pr:test` (`:44`); `scripts/quality-gates.sh:217` runs the `--self-test` in the **fast** tier. In CI: `ci.yml:468` runs the same `--self-test` in the `PR Readiness (merge gate)` job, and `ci.yml:492` runs the live `--json` report as an advisory step. |
 | **Verified** | **Live A/B** on merged PR #230, run from this clone whose `HEAD` is `eb3ce8f`: old script → `Commit scope: 1 commit(s) would merge into main` + `eb3ce8f refactor(web): extract the shared event-result processor (first step of R-09)` (and from a clone with no `origin/main`: `0 commits ahead of origin/main (local branch not pushed?)`); new script → PR #230's real five commits with subjects and `Local checkout 'fix/merge-gate-commit-scope' is not the PR head — scope above is the PR's (L-021)`. The commit-scope section is the only behavioural difference between the two runs (both exit 1 solely because the PR is already merged → `Mergeability is UNKNOWN`). **Offline fixtures** in `--self-test`: one commit (short+subject), five commits (total + lines), empty array, `commits:null`, `commits` absent, non-object elements, element without `oid`, element without `messageHeadline` (last three all rejected — that is defect (a)); all six `checkout_state` outcomes including `detached-at-head` — defect (b); and three probes of the stdout contract (json keeps stdout clean / json sends the report to stderr / plain still prints). **Mutation, to show the fixtures bite:** the first draft of `commit_scope_state` read `$1` while every sibling predicate reads stdin — six fixtures went red immediately instead of silently passing. Live on this PR: `MERGEABLE — all guard-rails satisfied`, and `--json` stdout parses under `jq -e` while the human report still lands on stderr. `bash -n`, `shellcheck`, `gate:fast`, `gate:full` green. |
 | **Agent rule** | Never read the object under test from the machine you are standing on: a ref in the local clone is not the same claim as an identifier fetched for the thing you are judging. And when a pipe is documented as safe, make it *impossible* to break — the rule lived in a comment above `ok/fail/warn` while `echo` walked around it. |
+### L-022 — Warning text cannot make an exit-zero audit unverified (2026-09-30)
+
+- **Observed:** the npm audit returned 0 when neither lockfile was checked; prose
+  containing `network` could even classify an advisory as a transport failure.
+  The WASM size command similarly passed when the artifact did not exist.
+- **Prevention:** structured audit counts and exit status must agree, both
+  lockfiles must be checked, and missing/unavailable evidence exits nonzero.
+  Artifact validity precedes size comparison. Retained positive/negative fixtures
+  run through `test-sensors.py`, locally in fast and directly in CI architecture;
+  the actual audit/artifact checks run in full and CI security-npm/wasm.
+- **Scope:** not a claim of zero vulnerabilities forever. The corrected audit
+  immediately found two High advisories in root brace-expansion 5.0.9; a targeted
+  locked resolution to 5.0.12 cleared them without ignores or overrides.
+
+### L-023 — Test files and generated bindings are not execution evidence (2026-09-30)
+
+- **Observed:** `tests/wasm/` was not a Cargo target; Node-only CI also disagreed
+  with its browser configuration. Existing JS/d.ts files could satisfy local
+  checks even when their Rust inputs changed. E2E tested development, not dist.
+- **Prevention:** `test-wasm.sh` requires nonzero passing library **and** registered
+  integration execution. Input/output fingerprints are checked before consuming
+  bindings and travel with the CI artifact. Full/CI E2E build dist and let
+  Playwright own a strict production preview; focused runs retain dev startup.
+- **Where:** shared runner in full/CI rust; freshness in fast and CI web/e2e;
+  production build/E2E in full/CI e2e. Retained build/config fixtures run in fast
+  and CI architecture/web. CI path/job/result-map fixtures cover applicability,
+  not just the presence of a script name. See ADR-047.
+
+### L-024 — Mixing pnpm majors can make `run` attempt an implicit install (2026-09-30)
+
+- **Observed twice during integration:** a pnpm-10 frozen install followed by
+  shell pnpm 11 caused `ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY`; the second
+  instance blocked the production build after every fast check passed.
+- **Prevention:** root and web `packageManager` pin pnpm 10.34.5, matching each
+  CI setup. Retained `test-ci.py` fixtures reject missing/ranged/mismatched pins
+  and a drifted CI setup version. The checker runs in fast and CI architecture.
+- **Recovery:** explicitly install both workspaces with the pinned manager and
+  `CI=true pnpm install --frozen-lockfile`; never delete the lockfile or fall
+  back to an unlocked install to clear this error. See CONTRIBUTING.md.
+
+### L-025 — Prose QA and green unit tests missed boundary data loss (2026-09-30)
+
+- **Observed:** typing Space/unknown keys, undoing long strokes or an edited added
+  layer, loading during a tool session, and resizing the viewport lost or
+  resurrected cells. A 33-layer document could not load its own save.
+- **Prevention:** core stroke/document invariants, binding-level key/session
+  regressions, and browser viewport/draft/cancellation/PNG regressions now cover
+  these boundaries. Core tests run fast/CI rust; WASM tests run full/CI rust;
+  browser tests run full/CI e2e. Tool-validation names these exact contracts.
+- **Adversarial follow-up:** accepted paste could overlap a provisional stroke,
+  disappear on cancel and resurrect that stroke on undo. Both paste paths now
+  capture their origin then cancel the stroke before recording undo values;
+  retained WASM/browser regressions verify cancel, completion and exact replay.
+  No-op strokes preserve redo and consume no history; independence fixtures seed
+  real content for both eraser gestures instead of counting an empty erase.
+- **Guidance:** assert content **and** history/restoration, not only a tool's
+  modified flag. Test failure paths (quota, conflict, rejected replacement) as
+  well as successful saves. Local drafts are not a durable backup or a CAS
+  protocol; known stale writes are refused and recovery stays explicit.
