@@ -25,12 +25,11 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
 
 ### What the tiers cover
 
-- **fast** — locked Rust checks, architecture/LOC, retained sensor/CI/skill
-  fixtures, web lint/tsc/Vitest, **root lint + e2e tsc**, privacy + secret scan.
-  Rebuilds `web/pkg` when its source/output fingerprint is stale; CI verifies
-  the downloaded fingerprint before typechecking (L-001, ADR-047).
-- **full** — adds committed-lockfile Rust/npm audits, cargo-deny, nonzero Node
-  WASM tests, artifact validity/size, and production-dist Chromium E2E.
+- **fast** — fmt, clippy `-D warnings`, build, `cargo test`, architecture, LOC,
+  web lint/tsc/Vitest, **root lint + e2e tsc**, privacy + secret scan. Builds
+  `web/pkg` if missing (it is gitignored, and CI downloads the wasm artifact
+  before `tsc` — L-001).
+- **full** — adds cargo audit/deny, WASM build + size budget, Playwright E2E.
 - **pr** — the merge contract only; see *Merge & ship* below.
 
 ### The gate script is not a gate (learned)
@@ -74,9 +73,7 @@ core (pure) ← render, ui ← wasm ← web/
 
 - Build WASM: `npm run build:wasm` (wasm-bindgen **0.2.128**, see `mise.toml`).
 - Web lint/test: `cd web && pnpm lint && pnpm exec tsc --noEmit && pnpm test`.
-- WASM behavior: `npm run test:wasm` (nonzero Node execution required).
-- E2E: Playwright owns server startup; focused runs use dev, full/CI use built
-  `dist` (`PRODUCTION_E2E=1`). `BASE_URL` targets an external preview.
+- E2E: Playwright from repo root; prefer `--project=chromium` locally.
 
 ## Tool behaviour checklist (behaviour harness)
 

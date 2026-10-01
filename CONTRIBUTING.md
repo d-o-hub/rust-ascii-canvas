@@ -7,7 +7,7 @@ Thank you for your interest in contributing!
 ### Prerequisites
 
 - Rust (stable) with target `wasm32-unknown-unknown`
-- Node.js 22+, Python 3.10+, and pnpm **10.34.5** (both manifests and CI pin it)
+- Node.js 22+ and pnpm 10
 - [mise](https://mise.jdx.dev/) recommended (`mise.toml` pins wasm-bindgen-cli **0.2.128** and binaryen)
 
 ### Quick start
@@ -20,8 +20,8 @@ cd rust-ascii-canvas
 mise install
 
 # JS deps (root + web)
-pnpm install --frozen-lockfile
-(cd web && pnpm install --frozen-lockfile)
+pnpm install
+cd web && pnpm install && cd ..
 
 # Build WASM into web/pkg
 pnpm run build:wasm
@@ -46,7 +46,8 @@ Two things to know before reaching for `dev:lan`:
   from a Windows host on WSL2 — see
   [Microsoft's WSL networking notes](https://learn.microsoft.com/en-us/windows/wsl/networking#accessing-a-wsl-2-distribution-from-your-local-area-network-lan).
 - **Port 3003 is strict.** If it is taken, the dev server exits instead of moving
-  to 3004, because focused Playwright runs use `http://127.0.0.1:3003`. A silent port change would run the suite against
+  to 3004, because the e2e sensors poll `http://localhost:3003` and Playwright's
+  `baseURL` is pinned to it. A silent port change would run the suite against
   whatever stale server still holds 3003.
 
 ## Quality harness (keep quality left)
@@ -69,28 +70,12 @@ ln -sf ../../scripts/pre-commit-fast.sh .git/hooks/pre-commit
 
 ```bash
 cargo fmt --all -- --check
-cargo clippy --locked --all-targets --all-features -- -D warnings
-cargo test --locked --all
-python3 scripts/wasm-freshness.py --ensure
-(cd web && pnpm lint && pnpm test)
-pnpm run test:wasm
-pnpm run check-size
-pnpm exec playwright test --project=chromium  # Playwright owns dev startup
-# Production-shaped local/CI evidence, without a hand-started server:
-pnpm run build:web
-PRODUCTION_E2E=1 pnpm exec playwright test --project=chromium
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all
+cd web && pnpm lint && pnpm exec tsc --noEmit && pnpm test
+pnpm run build:wasm && pnpm run check-size
+npx playwright test --project=chromium
 ```
-
-Both workspaces must use the pinned pnpm version: mixing pnpm 10 and 11 can
-make `pnpm run` attempt an implicit reinstall and fail without a TTY. Confirm
-`pnpm --version` at the root and in `web/`. For an existing cross-major install,
-explicitly run `CI=true pnpm install --frozen-lockfile` in both directories; never
-fall back to an unlocked resolve. The CI coherence fixtures enforce pin parity.
-
-Full gates require reachable advisory registries and installed cargo-audit /
-cargo-deny: **unverified is nonzero**, not a successful skipped audit. The
-production server uses strict port 4173 and is torn down by Playwright.
-`BASE_URL=https://<deploy-preview>` skips local startup for shadow testing.
 
 ## Architecture
 
