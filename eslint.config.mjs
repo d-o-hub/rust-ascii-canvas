@@ -57,6 +57,14 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': 'error',
+      // Codacy's ESLint runs `no-inner-declarations` (an `eslint:recommended`
+      // rule in ESLint 8) and flagged a block-level function declaration in
+      // web/layers.ts. Local ESLint 10's recommended set no longer includes it,
+      // so the finding was invisible here — the same divergence class as L-017.
+      // Codacy's ESLint 8 default is `blockScopedFunctions: 'disallow'`; ESLint 10's
+      // recommended set resolves to `'allow'`, which is why simply enabling the rule
+      // would look like parity while never firing on the pattern Codacy flags.
+      'no-inner-declarations': ['error', 'functions', { blockScopedFunctions: 'disallow' }],
       ...securityRules,
     },
   },
