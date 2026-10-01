@@ -396,6 +396,58 @@ describe('UX Improvements', () => {
         state.zoomInBtn = null;
         state.zoomOutBtn = null;
     });
+
+    it('should show toast status feedback when changing toolbar options', () => {
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas element must exist');
+        state.canvas = canvasNode;
+        state.statusToast = document.getElementById('status-toast');
+
+        state.editor = {
+            setEraserSize: vi.fn(),
+            setBorderStyle: vi.fn(),
+            setLineDirection: vi.fn(),
+            tool: 'line',
+        } as unknown as typeof state.editor;
+
+        const borderSelect = document.createElement('select');
+        borderSelect.id = 'border-style';
+        const singleOption = document.createElement('option');
+        singleOption.value = 'single';
+        const doubleOption = document.createElement('option');
+        doubleOption.value = 'double';
+        borderSelect.appendChild(singleOption);
+        borderSelect.appendChild(doubleOption);
+
+        const autoBtn = document.createElement('button');
+        autoBtn.className = 'direction-btn';
+        autoBtn.setAttribute('data-direction', 'auto');
+
+        document.body.appendChild(borderSelect);
+        document.body.appendChild(autoBtn);
+
+        state.eraserRadiusSelect = document.querySelector('#eraser-radius');
+        state.borderStyleSelect = borderSelect;
+        state.directionBtns = document.querySelectorAll('.direction-btn');
+
+        setupEventListeners();
+
+        if (state.eraserRadiusSelect) {
+            state.eraserRadiusSelect.value = '3';
+            state.eraserRadiusSelect.dispatchEvent(new Event('change'));
+            expect(state.statusToast?.textContent).toBe('Eraser radius: 3 Cells');
+        }
+
+        borderSelect.value = 'double';
+        borderSelect.dispatchEvent(new Event('change'));
+        expect(state.statusToast?.textContent).toBe('Border: double');
+
+        autoBtn.dispatchEvent(new MouseEvent('click'));
+        expect(state.statusToast?.textContent).toBe('Line direction: Auto');
+
+        borderSelect.remove();
+        autoBtn.remove();
+    });
 });
 
 /**

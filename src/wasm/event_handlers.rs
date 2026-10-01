@@ -158,6 +158,7 @@ impl AsciiEditor {
             return self.js_event_result();
         }
 
+        #[allow(clippy::nonminimal_bool)]
         if key_char == Some(' ')
             && !ctrl
             && !shift
