@@ -154,14 +154,22 @@ roast, comment tracking, shadow E2E, and clicking merge.
 ## Codacy
 
 **Any Codacy warning, issue, or failing/stuck check — use the `codacy` skill.**
-Read it before touching code or deciding the PR can merge.
+Read it before touching code or deciding the PR can merge. That covers the
+GitHub CI check `Codacy Static Code Analysis` in **every** non-`SUCCESS` state:
+`FAILURE` with findings, warnings on the PR, or `ACTION_REQUIRED` (a check that
+reports without a verdict).
 
 `Codacy Static Code Analysis` is a **required** status check, so a non-`SUCCESS`
 Codacy state blocks the merge and `npm run gate:pr` reports `MERGE BLOCKED`.
-Codacy is a third-party GitHub App: there is no Actions run to re-dispatch. Its
-findings **are** readable from the CLI — `codacy -o json pull-request <PR>` gives
-file, line, pattern id and severity, so read them and fix them rather than
-asking a human to fetch a dashboard. Never force the merge with `--admin` or by
+Codacy is a third-party GitHub App: there is no Actions run to re-dispatch, so
+the CLI is the re-dispatch. Read findings with `codacy -o json pull-request <PR>`
+(file, line, pattern id, severity); if the check is stale or stuck, re-analyse
+the head yourself with
+`codacy pull-request gh <org> <repo> <PR> --reanalyze-and-wait` — it polls every
+10 s for up to 20 min, so re-run it when an analysis outlasts the window. A
+completed analysis that still leaves the check non-`SUCCESS` is a stuck check:
+say so with both states quoted (CLI result and check state) instead of assuming
+the analysis passed or failed. Never force the merge with `--admin` or by
 dropping the required check; if a fix needs a decision above your level,
 escalate with the findings quoted.
 
