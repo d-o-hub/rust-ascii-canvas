@@ -21,7 +21,7 @@ Specializes in creating and maintaining agent documentation, best practices guid
 
 - Writing code (use rust-engineer or other coding skills)
 - Testing applications (use agent-browser or dogfood)
-- Database work (use database-optimizer)
+- Database work (no database-specialist skill is installed; scope and select appropriate tooling first)
 
 ## Core Capabilities
 
@@ -93,9 +93,13 @@ Specializes in creating and maintaining agent documentation, best practices guid
    the architecture rules stay here even though they push the file past the
    original 120-line guideline. Do not duplicate a skill's content here: point at
    the skill instead.
-2. **Per-skill budget: ≤300 lines** for `SKILL.md`. Push detail into
-   `references/` (lowercase) and `templates/` (lowercase) — these are the
-   directory names this repo actually uses; do not invent `REFERENCES/`.
+2. **Local per-skill budget: ≤300 lines** for `SKILL.md`. Push detail into
+   `references/` and `templates/` (lowercase). Ownership, metadata and exact
+   upstream exceptions are declared in `.agents/skill-manifest.json`; locked
+   imports are not silently rewritten to meet a local budget. See
+   [the schema and maintenance procedure](../../../agents-docs/SKILL_TEMPLATE.md).
+   Run `python3 scripts/check-skills.py` and `python3 scripts/test-skills.py`;
+   both are offline stdlib checks, not the upstream PyYAML packaging helper.
 3. Always document in plans/ folder for architectural decisions
 4. Update documentation after each successful task
 5. Use consistent formatting across all docs

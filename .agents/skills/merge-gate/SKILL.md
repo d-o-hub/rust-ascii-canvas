@@ -11,7 +11,7 @@ description: >
 # Merge Gate
 
 The **merge contract** for this repo, in one place. A PR may be merged when
-**all five** hold:
+**all six checks below** hold (the first five are mechanical; the roast is an agent procedure):
 
 | # | Condition | Enforced by |
 |---|-----------|-------------|
@@ -20,6 +20,7 @@ The **merge contract** for this repo, in one place. A PR may be merged when
 | 3 | **Every** status check concluded `SUCCESS` | `pr-merge-gate.sh` + ruleset `required_status_checks` |
 | 4 | **Every** review thread resolved | `pr-merge-gate.sh` (report) + ruleset `required_review_thread_resolution` |
 | 5 | No `CHANGES_REQUESTED` **currently** (per `reviewDecision`) | `pr-merge-gate.sh` |
+| 6 | Adversarial pass clean: no unresolved Blockers/Majors | `pr-roast` (not encoded by `gate:pr`) |
 
 ## When to Use
 
@@ -30,7 +31,7 @@ The **merge contract** for this repo, in one place. A PR may be merged when
 ## Don't Invoke When
 
 - Gates are still red → run `verify` first
-- The change is not product or harness work (e.g. merging a bot lockfile bump) — still run the gate, but skip the roast
+- No exception for bot, dependency, or documentation PRs: run the mechanical gate **and** the adversarial pass for every PR.
 
 ## Procedure
 
@@ -38,7 +39,9 @@ The **merge contract** for this repo, in one place. A PR may be merged when
 # 1. Mechanical check (read-only; never merges)
 npm run gate:pr            # or: ./scripts/pr-merge-gate.sh <PR>
 
-# 2. If green, arm auto-merge. CI then performs the merge when it goes green.
+# 2. Run pr-roast on the current head; fix every Blocker/Major and re-verify.
+#    Disputed Blocker: stop for human judgment. No bot/dependency exemption.
+#    Only after BOTH gate:pr and the roast are clean, arm auto-merge.
 gh pr merge <PR> --auto --squash
 
 # 3. Confirm it is armed
@@ -113,8 +116,8 @@ lines to **stderr**, so `npm run gate:pr -- --json | jq .` is safe to pipe.
 ## Integration
 
 - **After** `verify` and `code-review`
-- **Before** `pr-roast` findings are fixed — a roast verdict of *Request
-  changes* is a reason to fix, not to merge
+- **After** `pr-roast` findings are fixed and the current head is re-verified —
+  a roast verdict of *Request changes* blocks merging and arming auto-merge
 - **Related** `pr-roast`, `production-loop`, `agents-docs/delivery.md`
 - **Sensor:** `scripts/pr-merge-gate.sh` (self-test: `--self-test`)
 - **Server-side state:** `scripts/ruleset-check.sh` + `.github/ruleset-main.json`
