@@ -1,6 +1,6 @@
 # ASCII Canvas Editor
 
-A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Features a polished dark UI inspired by Figma, running at 60 FPS with zero browser text-selection artifacts.
+An **ASCII diagram editor** built with Rust and WebAssembly, with a dark/light UI inspired by Figma and a WASM pixel-buffer rendering path.
 
 ## Features
 
@@ -14,7 +14,7 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 - 💾 **Save / Load**: `.asc` JSON documents + bounded named local drafts (with non-destructive legacy autosave migration and backup status)
 - 🖼 **PNG & SVG Export**: Download the rendered canvas as an image or vector SVG
 - 📚 **Layers**: Named layers with rename, visibility, lock, reorder, delete, merge + composite export
-- 📐 **Custom Grid Size**: Responsive defaults plus manual cols/rows
+- 📐 **Custom Grid Size**: Responsive initial dimensions, viewport-only resizing, and confirmed manual cropping
 - ⌨️ **Keyboard-First**: Full keyboard shortcut support
 - 🎨 **Dark + Light Theme**: Figma-inspired UI with theme switcher
 - ⚡ **60 FPS Rendering**: Dirty-rect optimization, high-performance WASM pixel buffer path
@@ -25,8 +25,9 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 ### Prerequisites
 
 - [Rust](https://rustup.rs/) (1.75+)
-- [wasm-pack](https://rustwasm.github.io/wasm-pack/installer/) (0.13.1+)
-- [Node.js](https://nodejs.org/) (22+)
+- `wasm32-unknown-unknown` Rust target and wasm-bindgen-cli **0.2.128** (see `mise.toml`)
+- [Node.js](https://nodejs.org/) (22+) and pnpm **10.34.5** (pinned in both manifests)
+- Python 3.10+ for the quality harness
 
 ### Build
 
@@ -35,8 +36,9 @@ A **production-grade ASCII diagram editor** built with Rust and WebAssembly. Fea
 git clone https://github.com/d-o-hub/rust-ascii-canvas.git
 cd rust-ascii-canvas
 
-# Install dependencies and build both WASM and Web
-npm install
+# Install both locked JS workspaces and build WASM + Web
+pnpm install --frozen-lockfile
+(cd web && pnpm install --frozen-lockfile)
 npm run build
 
 # Start dev server
@@ -50,8 +52,8 @@ a phone or another device on the LAN, use `npm run dev:lan` — see
 ### Quality gates (agent + human)
 
 ```shell
-npm run gate:fast   # fmt, clippy, tests, architecture, web lint/tsc/vitest
-npm run gate:full   # + WASM build, size budget, E2E
+npm run gate:fast   # Rust/web + retained harness/skill fixtures, fresh bindings
+npm run gate:full   # + audits, Node WASM tests, valid/size-bounded WASM, production E2E
 ```
 
 Coding-agent harness: [`AGENTS.md`](AGENTS.md), [`agents-docs/harness.md`](agents-docs/harness.md). Architecture layers: [`agents-docs/architecture.md`](agents-docs/architecture.md).
@@ -83,8 +85,28 @@ ascii-canvas/
 ├── benches/                # Rust benchmarks
 ├── e2e/                    # Playwright E2E tests
 ├── playwright.config.ts    # Playwright config
-└── wasm-pack.toml          # wasm-pack config
+└── mise.toml               # Development toolchain configuration
 ```
+
+## Local Drafts and Recovery
+
+The **Local drafts** panel keeps up to 20 named diagrams in this browser, with
+an overall shelf limit of 4 million serialized characters (browser quota may be
+smaller). New, rename, switch, delete and **Save locally** operate on the shelf;
+**Download backup** saves a portable `.asc` file. Importing a file creates a new
+draft instead of replacing an existing one.
+
+- Switching persists the current document before replacing it. A storage error
+  leaves it open and displays **Save failed**; download a backup before reloading.
+- The previous single-document autosave is migrated without deleting its original
+  recovery copy. Draft metadata does not change the `.asc` v1 format.
+- Another tab changing the shelf pauses local saving to prevent a known stale
+  overwrite. Download your work, then reload to resolve the conflict. This is
+  optimistic conflict detection, not collaborative editing or cross-process CAS.
+- Switching drafts starts fresh undo history and viewport state. Undo history is
+  not persisted across reloads. Browser storage is not an archival backup.
+- Window resizing does not crop diagrams. Manual grid shrinking asks for
+  confirmation because it crops outside cells and clears coordinate-based history.
 
 ## Select Tool
 
@@ -260,11 +282,11 @@ See [ADR-040 (App-Only Distribution)](plans/ADRs/040-app-only-distribution.md) f
 ## Performance
 
 - **Dirty-Rect Rendering**: Only redraws modified regions, significantly reducing CPU usage during edits.
-- **Zero Per-Frame Allocations**: Pre-allocated buffers for core rendering loops.
+- **Reusable Pixel Buffers**: Core rendering reuses its pixel buffer. Browser `ImageData` construction and upload still incur per-frame work; performance depends on document size and device.
 - **SmallVec**: Stack allocation for small collections to avoid heap thrashing.
 - **Optimized WASM**: LTO, stripping, and `opt-level = "z"` for minimum binary size.
 - **Instrumentation**: `AsciiEditor` tracks `fullRenderCount` and `dirtyRenderCount` for performance auditing.
-- **History Coalescing**: Consecutive small draw operations (like freehand drawing) are automatically coalesced into single undo/redo steps.
+- **Atomic Strokes**: Each completed freehand/eraser gesture is one undo/redo step, regardless of its pointer-event count. Interrupted gestures are cancelled.
 
 ## Mobile Support
 

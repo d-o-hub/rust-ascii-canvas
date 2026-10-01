@@ -31,8 +31,8 @@ that a machine can check**. A stage you cannot verify is a stage you are guessin
 | 5 | **evaluate** | `gate:fast` green | `verify` |
 | 6 | **adversarial** | no Blocker/Major outstanding | `pr-roast` |
 | 7 | **shadow** | E2E matrix green against a production-shaped build | agent |
-| 8 | **canary** | RC published, opt-in consumers green | Release workflow |
-| 9 | **promote / rollback** | released & deployed, or reverted | agent + ruleset |
+| 8 | **canary** | **Unsupported** until prerelease policy/workflow is implemented | future design, not an available command |
+| 9 | **promote / rollback** | stable release deployed, or human-authorized revert PR merged and verified | agent + normal merge contract |
 
 ## Stage notes
 
@@ -77,10 +77,13 @@ Every defect the roast finds is, by construction, one the sensors missed.
 Run the real suite against a build that serves no users.
 `playwright.config.ts` already honours `BASE_URL`, so no config change is needed.
 
+Use the local production-build procedure in the
+[verify skill](../.agents/skills/verify/SKILL.md). Playwright owns server startup,
+readiness and teardown; do not leave a separately started Vite server running.
+For an already-running deployment, run from the repository root:
+
 ```bash
-# Local production build (optimized bundle, not the dev server)
-cd web && pnpm run build && pnpm run preview
-BASE_URL=http://localhost:4173 npx playwright test --project=chromium
+BASE_URL=https://<deploy-preview-host> npx playwright test --project=chromium --project=firefox --project=webkit
 ```
 
 For a Netlify **Deploy Preview** (created automatically per PR), point
@@ -89,16 +92,15 @@ and catches the class of bug that only appears in a bundled, optimized build.
 
 ### 8. Canary — what it honestly means here
 
-This is a **static** app: no server, no traffic splitting, no feature-flag
-service. So:
+**RC publication/promotion is unsupported today.** ADR-044 describes an opt-in
+RC design, but `release.yml` and `scripts/release.sh` both validate only `x.y.z`
+and reject prereleases. Do not create an RC manually to bypass those guards.
 
-- **Do**: publish an opt-in **RC tag** (e.g. `v0.1.5-rc.1`) with the optimized
-  WASM attached, and have a small set of testers/consumers take it explicitly.
-- **Do not**: describe an RC tag as "5% of users". A true percentage rollout
-  needs Netlify Split Testing, which is a paid feature this repo does not use.
-
-An RC tag is a **smoke test with a wider audience**, not a statistics-based
-canary. Say so when reporting.
+This static app has no traffic splitting. A future RC would be an opt-in smoke
+test with a wider audience, not "5% of users". Until a separately reviewed
+release-policy change adds prerelease fixtures and workflow support, use Deploy
+Previews for shadow testing and report the missing canary stage honestly.
+See the active backlog in [FOLLOW_UPS.md](../plans/FOLLOW_UPS.md).
 
 ### 9. Promote / rollback
 
@@ -109,8 +111,9 @@ gh workflow run release.yml -f dry_run=true && gh run watch
 gh workflow run release.yml && gh run watch
 gh release view vX.Y.Z
 
-# Roll back
-git revert <merge-sha> && git push origin main     # redeploys prior state
+# Roll back ONLY after explicit human authorization, on a new branch
+# Follow RELEASING.md: git revert <squash-sha>, verify, open PR, roast, merge gate.
+# Never push a rollback directly to main.
 ```
 
 `git revert` takes **no** `-m` flag here: this repo mandates squash merges
@@ -124,7 +127,8 @@ Keep these in the loop — they are judgement, not chore:
 - scope and specification
 - architecture decisions (ADR)
 - a **disputed** `pr-roast` Blocker
-- production rollback when it is itself destructive
+- **every production rollback authorization**, including an apparently simple revert;
+  destructive/data-format risk requires an explicit recovery plan too
 
 Remove these from the loop — the harness handles them:
 
@@ -139,6 +143,7 @@ Remove these from the loop — the harness handles them:
 Stop and ask a human when:
 
 - the repro cannot be automated
+- a production rollback is proposed (always obtain human authorization)
 - rollback would itself be destructive (format change, data migration)
 - a `pr-roast` Blocker is disputed
 - a change relaxes a **merge guard-rail** — that needs an ADR and an explicit

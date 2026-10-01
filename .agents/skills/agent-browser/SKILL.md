@@ -41,10 +41,14 @@ agent-browser fill @e1 "user@example.com" && agent-browser fill @e2 "password123
 
 ## Essential Commands
 
+Use the installed CLI's `--help` to confirm version-specific flags. The quick
+commands below follow the bundled command reference; the CLI is optional here,
+while repository regression tests use the pinned Playwright dependency.
+
 ```bash
 # Navigation
 agent-browser open https://example.com
-agent-browser go back
+agent-browser back
 agent-browser reload
 
 # Snapshots (Text/DOM)
@@ -56,7 +60,8 @@ agent-browser click @e1
 agent-browser fill @e2 "Text to type"
 agent-browser select @e3 "Option Value"
 agent-browser hover @e4
-agent-browser press @e1 Enter
+agent-browser focus @e1
+agent-browser press Enter
 agent-browser scroll down
 
 # Verification & Waiting

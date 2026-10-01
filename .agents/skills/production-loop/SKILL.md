@@ -1,129 +1,85 @@
 ---
 name: production-loop
-description: >
-  Run the production→failure→reproduce→fix→evaluate→adversarial→shadow→canary→
-  promote/rollback loop for this repo. Use when a production bug arrives, when
-  shipping a risky change, when asked to "roll this out safely", "canary",
-  "promote", or "roll back". Defines the exit criteria for each stage so the
-  agent carries the work without a human in the loop.
+description: Run the production failure, reproduction, fix, evaluation, adversarial review and shadow verification loop. Use for production bugs, risky shipping, canary/promote questions or rollback. Production rollback requires explicit human authorization; RC releases are currently unsupported.
 ---
 
-# Production Loop (shadow → canary → promote)
+# Production Loop
 
-Nine stages from *something broke* to *shipped, or rolled back*. The goal is
-that the human is needed for **judgment**, not for **choreography**.
+Keep humans responsible for judgment, not repetitive verification. The full
+runbook is [delivery.md](../../../agents-docs/delivery.md); release mechanics are
+in [RELEASING.md](../../../plans/RELEASING.md).
 
-Full runbook with commands: [agents-docs/delivery.md](../../../agents-docs/delivery.md).
+## Stages and truthful exit criteria
 
-## When to Use
+| Stage | Exit criterion |
+|-------|----------------|
+| Production → failure | Concrete symptom, steps, input, expected/actual behavior and affected deployment. |
+| Reproduce | Automated test fails for this specific reason. No repro means escalate, not guess. |
+| Candidate fix | Consider at least two approaches; record why the chosen one wins. |
+| Evaluate | Focused tests and `npm run gate:fast` pass; `npm run gate:full` before handoff. |
+| Adversarial | `pr-roast` clean: no unresolved Blockers/Majors. Green gates are not a substitute. |
+| Shadow | E2E matrix green against a production-shaped build/Deploy Preview serving no production users. |
+| Canary | **Unsupported today.** RC design exists, but the release workflow rejects prerelease versions. |
+| Promote | Human-approved scope, clean roast, `merge-gate`, and supported stable release procedure. |
+| Rollback | Explicit human authorization, reviewed squash-revert PR, normal merge checks and deployment verification. |
 
-- A bug is reported against production (issue, `dogfood` finding, broken flow)
-- A change is risky enough to want staged exposure
-- Asked to roll out, canary, promote, or roll back
+Do not use this delivery loop to bypass `pr-roast` for docs or bot changes. A
+small change may need less shadow coverage, but the merge contract still applies.
 
-## Don't Invoke When
-
-- The change is docs-only or a trivial fix — run `verify` and merge
-- Nothing is deployed yet (no production to protect)
-
-## The loop
-
-| # | Stage | Exit criterion | Automated by |
-|---|-------|----------------|--------------|
-| 1 | **production** | main deployed; sensors green | CI + Netlify |
-| 2 | **failure** | a concrete symptom is captured (steps, input, expected vs actual) | reporter / `dogfood` |
-| 3 | **reproduce** | an automated failing test that fails for this reason | you, TDD |
-| 4 | **candidate fix** | ≥2 candidates considered; one chosen with reasoning | you |
-| 5 | **evaluate** | `gate:fast` green | `verify` |
-| 6 | **adversarial** | no Blockers/Majors outstanding | `pr-roast` |
-| 7 | **shadow** | full E2E matrix green against a preview build | `BASE_URL` + Netlify |
-| 8 | **canary** | RC tag published; opt-in consumers green | Release workflow |
-| 9 | **promote / rollback** | released & deployed, or reverted | Release workflow |
-
-### Rules that make this work
-
-- **Stage 3 is non-negotiable.** No automated reproduction → no fix. A fix you
-  cannot reproduce will not be verifiable as fixed, and "it seems to work" is
-  how regressions ship.
-- **Never skip 6 because 5 is green.** Gates passing is the precondition for
-  roasting, not a substitute for it.
-- **One stage at a time.** Do not promote on a red shadow.
-- **Rollback must be cheaper than debugging.** If rollback is hard, the canary
-  is not a real safety net — say so rather than pretending it is.
-
-## Stage details
-
-### 2–3. Failure → reproduce
+## Reproduce and evaluate
 
 ```bash
-# Rust core: pin the bug with a unit/integration test first
 cargo test <module> -- --nocapture
-# Browser behaviour: pin it in E2E
 npx playwright test --project=chromium e2e/<file>.spec.ts
+npm run gate:fast
+npm run gate:full
 ```
 
-Record the repro in the PR body. A bug report without a repro becomes a
-guessing game, and guesswork is what this loop exists to replace.
+Record the failing test and evidence in the PR. Do not weaken assertions to clear
+a gate. Use [verify](../verify/SKILL.md) for the actual sensor inventory.
 
-### 4. Candidate fix
+## Shadow
 
-Consider at least two approaches (e.g. minimal patch vs. structural fix) and
-record why the chosen one wins. One candidate is not a decision, it is a reflex.
-
-### 7. Shadow
-
-Run the real test suite against a production-shaped build that serves no users.
-`playwright.config.ts` already honours `BASE_URL`, so no config change is needed:
+Playwright owns local server startup/readiness/teardown. For an **already-running**
+Netlify Deploy Preview, `BASE_URL` disables local startup:
 
 ```bash
-# Local production build
-cd web && pnpm run build && pnpm run preview   # serves the built bundle
-BASE_URL=http://localhost:4173 npx playwright test --project=chromium
+BASE_URL=https://<deploy-preview-host> npx playwright test --project=chromium --project=firefox --project=webkit
 ```
 
-For a Netlify **Deploy Preview** (per-PR), point `BASE_URL` at the deploy URL.
-This is the highest-value stage here: it is nearly free and catches the class of
-bug that only appears in a bundled, optimized build.
+Use the production-build command documented by `verify` for a local optimized
+bundle. Do not start an orphan dev server, change directories and then run the
+root test command from `web/`, or mistake dev-server E2E for production evidence.
 
-### 8. Canary
+## Canary limitation (not an executable release path)
 
-This is a **static** app with no traffic-splitting infrastructure, so be honest
-about what a canary is here:
+The opt-in RC concept in ADR-044 is a **future design**, not shipped automation.
+Both `.github/workflows/release.yml` and `scripts/release.sh` accept only `x.y.z`,
+so `v0.1.5-rc.1` cannot pass the current pipeline. There is no supported RC tag,
+prerelease publication or RC promotion command. Do not create a manual GitHub
+release as a workaround or describe an RC as a percentage rollout. Use shadow
+previews now; implementing RC support needs a separate reviewed release-policy
+change and fixtures. Track it in [FOLLOW_UPS.md](../../../plans/FOLLOW_UPS.md).
 
-- Publish an opt-in **RC tag** (e.g. `v0.1.5-rc.1`) with the optimized WASM
-  attached, and have a small set of testers/consumers take it explicitly.
-- True percentage rollout would need Netlify Split Testing (paid). That is a
-  known limitation — do not describe an RC tag as "5% of users".
+## Promote / rollback
 
-### 9. Promote / rollback
+For a stable release, follow the version-bump PR, preflight and dry-run procedure
+in `RELEASING.md`; do not dispatch before release authorization and merge checks.
 
-```bash
-# Promote
-./scripts/release.sh                                   # preflight: pins + not already released
-gh workflow run release.yml -f dry_run=true && gh run watch
-gh workflow run release.yml && gh run watch
+For production rollback, **ask the human first**, even when a revert seems easy.
+After authorization, identify the bad **squash commit**, branch from updated main,
+run `git revert <squash-sha>` (**no `-m`**), and open a normal PR. Run gates,
+`pr-roast` and `merge-gate` before merging; never push a revert directly to main
+or force an `--admin` merge. Verify the resulting deployment with the agreed
+reproduction. Revert a release through a new patch version, never by moving a tag.
 
-# Roll back
-gh release create vX.Y.Z-rc.1 --notes "rollback"   # or revert the merge on main
-git revert -m 1 <merge-sha> && git push origin main # redeploys the prior state
-```
+## Escalation
 
-Rollback path in detail: [plans/RELEASING.md](../../../plans/RELEASING.md).
+Stop for unclear blast radius, an unautomatable repro, destructive data/format
+risk, a disputed roast Blocker, every production rollback decision, or a release
+policy/guard-rail change. Routine checks, repairs, comment tracking and a clean
+PR's auto-merge choreography do not need a human click.
 
-## Escalation — when to stop and ask a human
-
-Stop and ask when:
-
-- The repro cannot be automated (you cannot prove the fix)
-- Rollback would itself be destructive (data migration, format change)
-- A `pr-roast` Blocker is disputed
-- The failure is in production and blast radius is unclear
-
-Do **not** ask about: running gates, fixing red CI, resolving threads, arming
-auto-merge, or publishing an RC. Those are the loop's job.
-
-## Integration
-
-- `verify` (stage 5) → `pr-roast` (6) → `merge-gate` (9) → `production-loop`
-- `dogfood` discovers failures (stage 2)
-- `goap-adr-planner` for the architecture decisions this loop surfaces
+Integration: `dogfood` → reproduction → `verify` → `pr-roast` → `merge-gate`.
+Use `goap-adr-planner` for decisions; this procedure does not itself authorize
+publishing a release, changing a ruleset or altering user data.
