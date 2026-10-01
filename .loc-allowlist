@@ -10,5 +10,4 @@
 # stale entries precisely so this file cannot rot into a list of exemptions.
 #
 # Covers `src/**/*.rs` and `web/*.ts` (excluding `*.test.ts`).
-web/events.ts=850
-web/ui.ts=540
+# No oversized source files remain.

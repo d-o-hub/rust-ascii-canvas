@@ -1,10 +1,11 @@
 import type { Page } from '@playwright/test';
 
-/** Clear autosave so tests start from a blank editor. */
+/** Clear browser-local documents so tests start from a blank editor. */
 export async function clearAutosave(page: Page): Promise<void> {
     await page.addInitScript(() => {
         try {
             localStorage.removeItem('ascii-canvas-autosave');
+            localStorage.removeItem('ascii-canvas-drafts-v1');
         } catch {
             /* ignore */
         }

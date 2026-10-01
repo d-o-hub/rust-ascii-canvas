@@ -1,26 +1,27 @@
 /**
- * ASCII Canvas Editor - Events Module
+ * ASCII Canvas Editor — window and canvas input.
+ *
+ * What is left here after R-09: the pointer, wheel and keyboard handlers, the
+ * shared `EventResult` plumbing they feed, and `setupEventListeners`, which is
+ * the app's single public surface (used only by `main.ts`).
+ *
+ * Three concerns moved out because they were never input handling:
+ *
+ *   - `events-mobile.ts` — touch, the mobile keyboard proxy, the drawer and the
+ *     mobile action buttons;
+ *   - `events-file.ts` — clipboard, `.asc` documents, PNG/SVG export and the
+ *     grid-size button, plus `wireOptionalButton` / `applyHistory`, which two
+ *     modules need; the grid-size *policy* itself stays in #229's
+ *     `document-events.ts`;
+ *   - `eventResult.ts` / `autosave.ts` — the shared plumbing, extracted so the
+ *     three modules above do not have to import back into this one.
+ *
+ * This file was 850 lines; `setupEventListeners` alone was 430 of them.
  */
 
+import { BORDER_STYLES, TOOL_INFO } from './constants.js';
+import { debouncedResizeCanvas, requestRender, updateCursorIndicator, updateIndicator } from './render.js';
 import { state } from './state.js';
-import {
-    BORDER_STYLES,
-    TOOL_INFO,
-} from './constants.js';
-import {
-    copyAsciiToClipboard,
-    copyToClipboard as copySelectionAware,
-    getClipboardOptions,
-} from './clipboard.js';
-import { createAutoSaveScheduler, downloadDocument, openDocumentPicker } from './persistence.js';
-import { exportPng } from './exportPng.js';
-import { exportSvg } from './exportSvg.js';
-import {
-    requestRender,
-    debouncedResizeCanvas,
-    updateCursorIndicator,
-    updateIndicator,
-} from './render.js';
 import {
     cycleBorderStyle,
     fitZoom,
@@ -30,17 +31,28 @@ import {
     setZoom,
     showShortcutsModal,
     showToast,
-    syncGridInputs,
     toggleTheme,
-    updateToolButtons,
     updateUI,
 } from './ui.js';
-import type { EventResult } from './types.js';
-import { applyCustomGridSize, handlePasteEvent } from './document-events.js';
-
-export const { schedule: scheduleAutoSave, flush: flushAutoSave } = createAutoSaveScheduler(() => state.editor);
-
-state.scheduleAutoSave = scheduleAutoSave;
+import { flushAutoSave, scheduleAutoSave } from './autosave.js';
+import { handlePasteEvent } from './document-events.js';
+import {
+    applyHistory,
+    copyToClipboard,
+    wireOptionalButton,
+    wireFileEvents,
+} from './events-file.js';
+import { cancelPointerGesture, handleEventResult } from './eventResult.js';
+import {
+    closeDrawer,
+    handleMobileInput,
+    handlePointerLeave,
+    handleTouchEnd,
+    handleTouchMove,
+    handleTouchStart,
+    shouldCloseDrawerOnEscape,
+    wireMobileEvents,
+} from './events-mobile.js';
 
 export function onPageHideFlushAutoSave(): void {
     if (state.editor) flushAutoSave();
@@ -109,129 +121,10 @@ export function handlePointerUp(e: PointerEvent): void {
     handleEventResult(result, { persist: true });
 }
 
-/** Cancel unfinished work, not the text cursor after a completed click. */
-export function cancelPointerGesture(): void {
-    if (!state.pointerGestureActive) return;
-    state.pointerGestureActive = false;
-    state.lastTouchDistance = null;
-    state.editor?.onPointerCancel();
-    requestRender();
-    updateUI();
-    updateIndicator();
-    scheduleAutoSave();
-}
-
 export function handlePointerCancel(e: PointerEvent): void {
-    // Implicit touch capture ends before touchend; its own lifecycle owns cancellation.
+    // Touch has its own touchend/touchcancel lifecycle. Implicit touch capture
+    // is released before touchend, so handling it here would cancel valid taps.
     if (e.pointerType !== 'touch') cancelPointerGesture();
-}
-
-export function handleTouchStart(e: TouchEvent): void {
-    if (!state.editor || !state.canvas) return;
-    e.preventDefault();
-    state.canvas.focus();
-
-    if (e.touches.length === 1) {
-        state.pointerGestureActive = true;
-        const touch = e.touches[0];
-        const rect = state.canvas.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        const result = state.editor.onPointerDown(x, y);
-        handleEventResult(result);
-    } else if (e.touches.length === 2) {
-        cancelPointerGesture();
-        state.lastTouchDistance = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-        );
-    }
-}
-
-export function handleTouchMove(e: TouchEvent): void {
-    if (!state.editor || !state.canvas) return;
-    e.preventDefault();
-
-    if (e.touches.length === 1) {
-        const touch = e.touches[0];
-        const rect = state.canvas.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-
-        const pan = state.editor.pan as number[] | Float64Array;
-        const gridX = Math.floor((x - pan[0]) / state.editor.zoom / state.charWidth);
-        const gridY = Math.floor((y - pan[1]) / state.editor.zoom / state.lineHeight);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
-        const hasTextCursor = state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
-        if (!hasTextCursor) {
-            updateCursorIndicator(gridX, gridY);
-        } else {
-            updateIndicator();
-        }
-
-        const result = state.editor.onPointerMove(x, y);
-        handleEventResult(result, { persist: false });
-    } else if (e.touches.length === 2) {
-        const currentDistance = Math.hypot(
-            e.touches[0].clientX - e.touches[1].clientX,
-            e.touches[0].clientY - e.touches[1].clientY
-        );
-
-        if (state.lastTouchDistance !== null) {
-            const delta = state.lastTouchDistance - currentDistance;
-            const rect = state.canvas.getBoundingClientRect();
-            const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
-            const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
-
-            const result = state.editor.onWheel(delta * 2, centerX, centerY);
-            handleEventResult(result, { persist: false });
-        }
-        state.lastTouchDistance = currentDistance;
-    }
-}
-
-export function handleTouchEnd(e: TouchEvent): void {
-    if (!state.editor || !state.canvas) return;
-    e.preventDefault();
-
-    if (e.touches.length === 0 && e.changedTouches.length === 1 && state.pointerGestureActive) {
-        state.pointerGestureActive = false;
-        const touch = e.changedTouches[0];
-        const rect = state.canvas.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const y = touch.clientY - rect.top;
-        const result = state.editor.onPointerUp(x, y);
-        handleEventResult(result);
-    }
-    state.lastTouchDistance = null;
-}
-
-export function handleMobileInput(e: Event): void {
-    if (!state.editor) return;
-    if (e.target instanceof HTMLInputElement) {
-        const value = e.target.value;
-
-        if (value.length === 0) {
-            const result = state.editor.onKeyDown('Backspace', false, false);
-            handleEventResult(result);
-            e.target.value = ' ';
-        } else if (value.length > 1) {
-            const newChars = value.substring(1);
-            for (const char of newChars) {
-                const result = state.editor.onKeyDown(char, false, false);
-                handleEventResult(result);
-            }
-            e.target.value = ' ';
-        }
-    }
-}
-
-export function handlePointerLeave(): void {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- defensive runtime guard: wasm impl can return null though the TS type says otherwise
-    const hasTextCursor = state.editor && state.editor.tool.toLowerCase() === 'text' && typeof state.editor.textCursorPosition === 'function' && state.editor.textCursorPosition() !== null;
-    if (!hasTextCursor && state.cursorIndicator) {
-        state.cursorIndicator.classList.add('hidden');
-    }
 }
 
 export function handleWheel(e: WheelEvent): void {
@@ -245,6 +138,7 @@ export function handleWheel(e: WheelEvent): void {
     const result = state.editor.onWheel(e.deltaY, x, y);
     handleEventResult(result, { persist: false });
 }
+
 
 export function handleKeyDown(e: KeyboardEvent): void {
     if (!state.editor) return;
@@ -319,76 +213,6 @@ export function handleKeyUp(e: KeyboardEvent): void {
     }
 }
 
-export function handleEventResult(result: EventResult | null, options: { persist?: boolean } = {}): void {
-    if (!result) {
-        updateIndicator();
-        return;
-    }
-    const persist = options.persist !== false;
-
-    if (result.needs_redraw) {
-        requestRender();
-    }
-
-    if (result.tool) {
-        updateToolButtons(result.tool);
-    }
-
-    if (state.editor && state.editor.tool.toLowerCase() === 'text') {
-        const touchUi = typeof window.matchMedia === 'function'
-            && window.matchMedia('(pointer: coarse)').matches;
-        if (touchUi && state.mobileKeyboardProxy && document.activeElement !== state.mobileKeyboardProxy) {
-            state.mobileKeyboardProxy.focus();
-        }
-    } else if (state.mobileKeyboardProxy && document.activeElement === state.mobileKeyboardProxy) {
-        state.mobileKeyboardProxy.blur();
-        if (state.canvas) state.canvas.focus();
-    }
-
-    if (result.should_copy && result.ascii) {
-        void copyAsciiToClipboard(result.ascii, showToast, getClipboardOptions());
-    }
-
-    updateUI();
-    if (persist) {
-        scheduleAutoSave();
-    }
-    updateIndicator();
-}
-
-export async function copyToClipboard(): Promise<void> {
-    if (!state.editor) return;
-    await copySelectionAware(state.editor, showToast, getClipboardOptions());
-}
-
-export function wireOptionalButton(id: string, onClick: () => void): void {
-    const el = document.querySelector(`#${CSS.escape(id)}`);
-    if (!(el instanceof HTMLButtonElement)) return;
-    el.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-    });
-    el.addEventListener('click', onClick);
-}
-
-/**
- * Undo/redo report whether they did anything. When there *is* something to undo
- * but the active layer is locked, the editor refuses it and keeps the entry, so
- * say why instead of appearing to do nothing (ADR-043 decision 3).
- */
-function applyHistory(action: 'undo' | 'redo'): void {
-    if (!state.editor) return;
-    const done = action === 'undo' ? state.editor.undo() : state.editor.redo();
-    if (!done) {
-        const pending = action === 'undo' ? state.editor.can_undo : state.editor.can_redo;
-        if (pending) {
-            showToast(`Cannot ${action} on a locked layer - unlock it first`, true);
-        }
-    }
-    requestRender();
-    updateUI();
-    if (state.canvas) state.canvas.focus();
-}
-
 export function setupEventListeners(): void {
     if (!state.canvas) return;
 
@@ -431,6 +255,10 @@ export function setupEventListeners(): void {
     state.canvas.addEventListener('keyup', handleKeyUp);
 
     window.addEventListener('paste', handlePasteEvent);
+
+    // Extracted wiring (R-09): mobile drawer + actions, and documents/exports/grid.
+    wireMobileEvents();
+    wireFileEvents();
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -585,60 +413,6 @@ export function setupEventListeners(): void {
         });
     }
 
-    wireOptionalButton('save-btn', () => {
-        if (!state.editor) return;
-        downloadDocument(state.editor, showToast);
-        if (state.canvas) state.canvas.focus();
-    });
-    wireOptionalButton('load-btn', () => {
-        if (!state.editor) return;
-        openDocumentPicker(state.editor, showToast, () => {
-            state.gridSizeLocked = true;
-            state.offscreenCanvas = null;
-            state.offscreenCtx = null;
-            syncGridInputs();
-            requestRender();
-            updateUI();
-            flushAutoSave();
-        });
-    });
-    wireOptionalButton('png-btn', () => {
-        if (state.editor) exportPng(state.editor, showToast);
-        if (state.canvas) state.canvas.focus();
-    });
-    wireOptionalButton('svg-btn', () => {
-        if (state.editor) {
-            exportSvg(state.editor, showToast);
-        }
-        if (state.canvas) state.canvas.focus();
-    });
-    function applyGridAndFocus(): void {
-        applyCustomGridSize();
-        if (state.canvas) state.canvas.focus();
-    }
-
-    wireOptionalButton('apply-grid-btn', applyGridAndFocus);
-
-    const gridWidthHtmlElement = document.querySelector('#grid-width') as HTMLInputElement | null;
-    const gridHeightHtmlElement = document.querySelector('#grid-height') as HTMLInputElement | null;
-    function handleGridKeyDown(e: KeyboardEvent): void {
-        if (e.key === 'Enter') {
-            applyGridAndFocus();
-        } else if (e.key === 'Escape') {
-            syncGridInputs();
-            if (e.target instanceof HTMLElement) {
-                e.target.blur();
-            }
-            if (state.canvas) state.canvas.focus();
-        }
-    }
-    if (gridWidthHtmlElement) {
-        gridWidthHtmlElement.addEventListener('keydown', handleGridKeyDown as EventListener);
-    }
-    if (gridHeightHtmlElement) {
-        gridHeightHtmlElement.addEventListener('keydown', handleGridKeyDown as EventListener);
-    }
-
     wireOptionalButton('add-layer-btn', () => {
         if (!state.editor) return;
         const before = state.editor.layerCount;
@@ -651,7 +425,7 @@ export function setupEventListeners(): void {
         updateUI();
         scheduleAutoSave();
         showToast('Layer added');
-        if (state.canvas) state.canvas.focus();
+        document.querySelector<HTMLElement>('.layer-item.active')?.focus();
     });
 
     if (state.helpBtn) {
@@ -700,125 +474,4 @@ export function setupEventListeners(): void {
         });
     }
 
-    // Mobile Drawer Setup
-    const sidePanel = document.getElementById('side-panel');
-    const drawerOverlay = document.getElementById('drawer-overlay');
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const closeDrawerBtn = document.getElementById('close-drawer-btn');
-
-    function closeDrawer(restoreFocus = false): void {
-        const isOpen = sidePanel?.classList.contains('open');
-        if (sidePanel) sidePanel.classList.remove('open');
-        if (drawerOverlay) drawerOverlay.classList.remove('open');
-        if (mobileMenuBtn) mobileMenuBtn.setAttribute('aria-expanded', 'false');
-        if (restoreFocus && isOpen && mobileMenuBtn) {
-            mobileMenuBtn.focus();
-        }
-    }
-
-    // Escape closes the drawer unless the Text tool owns Escape (canvas
-    // commits/dismisses the text cursor). Narrowed before use (ADR-040).
-    function shouldCloseDrawerOnEscape(): boolean {
-        if (!sidePanel) return false;
-        if (!sidePanel.classList.contains('open')) return false;
-        return state.editor?.tool.toLowerCase() !== 'text';
-    }
-
-    if (mobileMenuBtn && sidePanel && drawerOverlay) {
-        mobileMenuBtn.setAttribute('aria-expanded', 'false');
-        mobileMenuBtn.setAttribute('aria-controls', 'side-panel');
-
-        mobileMenuBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        mobileMenuBtn.addEventListener('click', () => {
-            const isOpen = sidePanel.classList.contains('open');
-            sidePanel.classList.toggle('open');
-            drawerOverlay.classList.toggle('open');
-            mobileMenuBtn.setAttribute('aria-expanded', (!isOpen).toString());
-        });
-    }
-
-    if (closeDrawerBtn) {
-        closeDrawerBtn.addEventListener('mousedown', (e) => { e.preventDefault(); });
-        closeDrawerBtn.addEventListener('click', () => { closeDrawer(); });
-    }
-
-    if (drawerOverlay) {
-        drawerOverlay.addEventListener('click', () => { closeDrawer(); });
-    }
-
-    // Mobile Actions Wiring
-    wireOptionalButton('mobile-undo-btn', () => {
-        applyHistory('undo');
-        closeDrawer();
-    });
-
-    wireOptionalButton('mobile-redo-btn', () => {
-        applyHistory('redo');
-        closeDrawer();
-    });
-
-    wireOptionalButton('mobile-copy-btn', () => {
-        void copyToClipboard();
-        closeDrawer();
-        if (state.canvas) state.canvas.focus();
-    });
-
-    wireOptionalButton('mobile-clear-btn', () => {
-        if (!state.editor) return;
-        if (confirm('Clear the canvas? This cannot be undone.')) {
-            state.editor.clear();
-            requestRender();
-            updateUI();
-            scheduleAutoSave();
-            showToast('Canvas cleared');
-            closeDrawer();
-            if (state.canvas) state.canvas.focus();
-        }
-    });
-
-    wireOptionalButton('mobile-save-btn', () => {
-        if (!state.editor) return;
-        downloadDocument(state.editor, showToast);
-        closeDrawer();
-        if (state.canvas) state.canvas.focus();
-    });
-
-    wireOptionalButton('mobile-load-btn', () => {
-        if (!state.editor) return;
-        openDocumentPicker(state.editor, showToast, () => {
-            state.gridSizeLocked = true;
-            state.offscreenCanvas = null;
-            state.offscreenCtx = null;
-            syncGridInputs();
-            requestRender();
-            updateUI();
-            flushAutoSave();
-        });
-        closeDrawer();
-    });
-
-    wireOptionalButton('mobile-png-btn', () => {
-        if (state.editor) exportPng(state.editor, showToast);
-        closeDrawer();
-        if (state.canvas) state.canvas.focus();
-    });
-
-    wireOptionalButton('mobile-svg-btn', () => {
-        if (state.editor) {
-            exportSvg(state.editor, showToast);
-        }
-        closeDrawer();
-        if (state.canvas) state.canvas.focus();
-    });
-
-    wireOptionalButton('mobile-theme-btn', () => {
-        toggleTheme();
-        closeDrawer();
-        if (state.canvas) state.canvas.focus();
-    });
-
-    wireOptionalButton('mobile-help-btn', () => {
-        showShortcutsModal();
-        closeDrawer();
-    });
 }
