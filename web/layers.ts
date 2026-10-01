@@ -70,7 +70,7 @@ export function refreshLayers(updateUI: () => void, showToast: (message: string)
             editor.setActiveLayer(target);
             finish(target, 'select');
         });
-        function button(action: string, text: string, label: string, disabled: boolean, run: () => void, pressed = false): void {
+        const button = (action: string, text: string, label: string, disabled: boolean, run: () => void, pressed = false): void => {
             const control = document.createElement('button');
             control.type = 'button';
             control.className = pressed ? 'layer-item-btn active' : 'layer-item-btn';
@@ -81,7 +81,7 @@ export function refreshLayers(updateUI: () => void, showToast: (message: string)
             control.disabled = disabled;
             control.addEventListener('click', run);
             item.append(control);
-        }
+        };
         button('visible', layer.visible ? '👁' : '◌', layer.visible ? 'Hide layer' : 'Show layer', false, () => {
             editor.setLayerVisible(index, !layer.visible);
             finish(index, 'visible');
