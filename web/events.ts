@@ -213,15 +213,6 @@ export function handleKeyUp(e: KeyboardEvent): void {
     }
 }
 
-
-
-
-/**
- * Undo/redo report whether they did anything. When there *is* something to undo
- * but the active layer is locked, the editor refuses it and keeps the entry, so
- * say why instead of appearing to do nothing (ADR-043 decision 3).
- */
-
 export function setupEventListeners(): void {
     if (!state.canvas) return;
 

@@ -36,6 +36,11 @@ export function wireOptionalButton(id: string, onClick: () => void): void {
     el.addEventListener('click', onClick);
 }
 
+/**
+ * Undo/redo report whether they did anything. When there *is* something to undo
+ * but the active layer is locked, the editor refuses it and keeps the entry, so
+ * say why instead of appearing to do nothing (ADR-043 decision 3).
+ */
 export function applyHistory(action: 'undo' | 'redo'): void {
     if (!state.editor) return;
     const done = action === 'undo' ? state.editor.undo() : state.editor.redo();
