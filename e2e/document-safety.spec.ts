@@ -63,6 +63,28 @@ test('pasting into a layer name stays native and never pastes into the canvas', 
     await expect(name).toHaveValue('Pasted layer name');
 });
 
+test('keyboard layer navigation and actions preserve meaningful focus', async ({ page }) => {
+    await openEditor(page);
+    await page.locator('#add-layer-btn').click();
+    const rows = page.locator('.layer-item');
+    await expect(rows.first()).toBeFocused();
+    await rows.first().press('ArrowDown');
+    await expect(rows.last()).toHaveAttribute('aria-current', 'true');
+    await expect(rows.last()).toBeFocused();
+    const hide = rows.last().getByRole('button', { name: 'Hide layer', exact: true });
+    await hide.focus();
+    await hide.press('Enter');
+    await expect(rows.last().getByRole('button', { name: 'Show layer', exact: true })).toBeFocused();
+    const up = rows.last().getByRole('button', { name: 'Move up', exact: true });
+    await up.focus();
+    await up.press('Enter');
+    await expect(rows.first()).toBeFocused(); // old action is now disabled at top
+    page.once('dialog', dialog => { void dialog.accept(); });
+    await rows.first().getByRole('button', { name: 'Delete layer', exact: true }).press('Enter');
+    await expect(rows).toHaveCount(1);
+    await expect(rows.first()).toBeFocused(); // only-layer delete action is disabled
+});
+
 test('desktop and mobile PNG export committed pixels without clearing selection', async ({ page }) => {
     await openEditor(page);
     await page.locator('[data-tool="text"]').click();
