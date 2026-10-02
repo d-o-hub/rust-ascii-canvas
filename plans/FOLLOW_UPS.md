@@ -12,7 +12,7 @@ Remote issues/releases have not been re-queried in this documentation pass.
 | P0 / 2026-09-30 audit | **Shipped as #228–#233; sensors remainder open** | [Implementation evidence](recommendations-implementation-2026-09-30.md): the audit's editor-safety, drafts, palette, npm and R-09 pieces merged as #229/#230/#231/#228/#233. Only the truthful-sensors row below remains. |
 | P0 / editing + local drafts | **Shipped: #229, #230, #231** | Keyboard/atomic-stroke/paste/session safety, clean PNG, accessible layers and bounded drafts merged with native/WASM/Vitest/browser regressions. No v1 format change, cloud accounts or collaboration; retain documented optimistic-conflict/storage/history limits. |
 | P0 / R-09 LOC debt | **Shipped: #233** | The events/ui split landed on main and `.loc-allowlist` carries no oversized entries. The former working-tree remainder (file/mobile extraction, helpers/ui/events sizes) merged with #229/#230/#233. |
-| P0 / truthful sensors + skills | **Ported onto `refactor/fail-closed-sensors`; PR pending** | Fail-closed sensors, nonzero WASM execution, production E2E, CI applicability/freshness/pnpm parity, and offline skill checks pass retained fixtures. Wiring is in both local runners and ci.yml; remote CI has not run this diff. ADR-047 accepted by the user on 2026-09-30; normal PR/remote gates remain required. |
+| P0 / truthful sensors + skills | **Shipped: #241** | Fail-closed sensors, nonzero WASM execution, production E2E, CI applicability/freshness/pnpm parity, and offline skill checks pass retained fixtures. Wiring is in both local runners and ci.yml. ADR-047 accepted; merge contract + pr-roast + Codacy all green on the final head. |
 | P0 / root npm findings | **Shipped: #228** | Narrow root lockfile update `brace-expansion` 5.0.9 -> 5.0.12 fixed High GHSA-qhr7-859c-m2p7 / GHSA-6j4f-fj2g-mc7p; frozen install and both audits passed; no ignores/overrides. |
 | P1 / release | **Not dispatched** | Release the next stable version only after a reviewed version-bump PR and the normal runbook. v0.1.4 is already released; never repeat its bump/changelog work. |
 | P1 / release workflow validation | **Existing findings; separate reviewed change** | Unchanged `release.yml` fails actionlint: publish condition uses `needs.guard-rails` without that job in its dependencies; ShellCheck also reports quoting/unused-variable issues. Fix and validate without changing release pins casually. Edited `ci.yml` passes actionlint. |
@@ -37,6 +37,12 @@ Remote issues/releases have not been re-queried in this documentation pass.
   #232 (merge-gate commit scope, harness **L-021**), #233 (R-09 web split).
 - **R-05 dependency pruning** and **R-07/Codacy rule-family parity**: #218–#223.
   These completions do not establish the current remote finding count.
+- **L-026 Bandit parity for the Python sensors**: `scripts/bandit-check.py`
+  closes the last rule-family gap Codacy enforced and nothing local did. Runs
+  in the full tier and in the CI `architecture` job; fail-closed (missing
+  bandit/uvx → 2). Threshold HIGH matches `codacy:check`; LOW/MEDIUM findings
+  print as advisory so the 33 current subprocess/argv patterns the sensors
+  structurally require do not need per-line suppressions.
 
 ## Historical triage and completion records
 

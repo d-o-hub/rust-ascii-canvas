@@ -6,6 +6,11 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- Bandit parity for the required Codacy check (harness **L-026**): a new
+  `scripts/bandit-check.py` sensor mirrors `npm-audit.py`'s fail-closed
+  contract (0 clean / 1 findings ≥ HIGH / 2 unverified), runs the full tier
+  locally and a `Bandit parity for the required Codacy check` step in the CI
+  `architecture` job, and closes the L-017 rule-family gap for Python.
 - Fail-closed quality harness (ADR-047): structured npm audit evidence that
   cannot pass while a lockfile went unchecked, artifact validity required
   before size budgets, WASM binding freshness gates in local and CI checks,

@@ -18,7 +18,7 @@ EXEMPT = {'ci-success', 'pr-readiness'}  # Readiness is independently required.
 DIRECT = {'architecture': ['bash scripts/check-architecture.sh', 'python3 scripts/check-ci.py',
                            'python3 scripts/test-ci.py', 'python3 scripts/test-sensors.py',
                            'python3 scripts/check-skills.py', 'python3 scripts/test-skills.py',
-                           'python3 scripts/test-build.py'],
+                           'python3 scripts/test-build.py', 'python3 scripts/bandit-check.py'],
           'rust': ['bash scripts/test-wasm.sh'],
           'security': ['cargo audit --file Cargo.lock'],
           'security-npm': ['bash scripts/npm-audit.sh'],

@@ -463,3 +463,37 @@ Append here when the same class of failure hits CI or agents twice (or once with
   modified flag. Test failure paths (quota, conflict, rejected replacement) as
   well as successful saves. Local drafts are not a durable backup or a CAS
   protocol; known stale writes are refused and recovery stays explicit.
+
+### L-026 — Codacy's Bandit family had no local sensor (2026-10-02, PR #241 follow-up)
+
+- **Observed:** Codacy runs Bandit across `scripts/*.py`. PR #241 arrived with
+  17 new Bandit findings (B603 subprocess-without-shell-equals-true and B404
+  import subprocess) that neither `gate:fast` nor `gate:full` reproduced; the
+  check landed in `ACTION_REQUIRED` and the only route to a verdict was the
+  Codacy CLI. Same shape as L-013 (audit covering only Rust), L-014 (lint
+  missing `e2e/`), L-017 (rule families a required check enforces but nothing
+  local does) — the ecosystem-level gap is now closed for Python too.
+- **Prevention:** `scripts/bandit-check.py` mirrors `npm-audit.py`'s contract
+  (0 clean / 1 findings ≥ HIGH / 2 unverified). Missing `bandit` and missing
+  `uvx` both fail closed; a non-empty `errors[]` array, a prose payload, an
+  unknown severity string, or a findings/status cross-check mismatch are all
+  UNVERIFIED rather than pass. Retained fixtures in `test-sensors.py` cover
+  clean, HIGH, CRITICAL, sub-threshold advisories, missing tool, scanner
+  errors, unknown severity, prose output, and both mismatch directions.
+- **Where it runs:** **both** runners — `scripts/quality-gates.sh` full tier
+  and a `Bandit parity for the required Codacy check` step in the `architecture`
+  CI job. `check-ci.py` `DIRECT['architecture']` now requires the CI invocation;
+  `ci-paths.json` records `scripts/bandit-check.py → architecture`.
+- **Threshold:** HIGH + CRITICAL. Codacy's own PR gate blocks in the same
+  band (`npm run codacy:check` also fails on Critical/High). LOW/MEDIUM
+  findings are printed as an advisory count so a developer sees them without
+  the sensor going red on the 33 currently-accepted subprocess/argv patterns
+  the sensors structurally require. Triaging those to zero locally would mean
+  either 33 `# nosec` annotations (a code change for a non-defect) or a
+  baseline file (a second source of truth). Neither buys signal; a *real*
+  HIGH/CRITICAL regression is what this sensor exists to catch.
+- **Guidance:** when adding a required third-party check, enumerate every
+  rule family it runs and ask which of those families have no local sensor.
+  A green Codacy PR check on `main` still means nothing for regressions in
+  a rule family nothing local invokes — L-017's "green check ≠ clear backlog"
+  lesson extended to a new scanner.

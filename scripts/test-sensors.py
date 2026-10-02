@@ -38,6 +38,32 @@ class Sensors(unittest.TestCase):
         return subprocess.run(['bash', 'scripts/check-loc.sh'],
                               cwd=self.root, env=self.env, text=True, capture_output=True)
 
+    def bandit(self, payload, status=0):
+        (self.root / 'bandit-payload').write_text(payload)
+        (self.root / 'bandit-status').write_text(str(status))
+        executable = self.root / 'bin/bandit'
+        executable.write_text('''#!/usr/bin/python3
+import pathlib, sys
+cwd = pathlib.Path.cwd()
+with (cwd / 'bandit-calls').open('a') as log:
+    log.write(' '.join(sys.argv[1:]) + '\\n')
+sys.stdout.write((cwd / 'bandit-payload').read_text())
+sys.exit(int((cwd / 'bandit-status').read_text()))
+''')
+        executable.chmod(0o755)
+
+    def run_bandit(self):
+        return subprocess.run(['python3', 'scripts/bandit-check.py'],
+                              cwd=self.root, env=self.env, text=True, capture_output=True)
+
+    @staticmethod
+    def bandit_report(*severities, errors=()):
+        results = [{'filename': 'scripts/x.py', 'line_number': index + 1,
+                    'test_id': 'B603', 'issue_severity': severity,
+                    'issue_confidence': 'HIGH', 'issue_text': 'finding'}
+                   for index, severity in enumerate(severities)]
+        return {'errors': list(errors), 'generated_at': 'now', 'metrics': {}, 'results': results}
+
     def assert_status(self, result, expected):
         self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
 
@@ -170,6 +196,54 @@ sys.exit(status)
         result = self.loc()
         self.assert_status(result, 0)
         self.assertIn('STALE', result.stdout)
+
+    def test_bandit_clean_requires_json_and_recursive(self):
+        self.bandit(json.dumps(self.bandit_report()))
+        self.assert_status(self.run_bandit(), 0)
+        calls = (self.root / 'bandit-calls').read_text().splitlines()
+        self.assertEqual(len(calls), 1)
+        self.assertIn('-f json', calls[0])
+        self.assertIn('-r', calls[0])
+
+    def test_bandit_high_fails(self):
+        self.bandit(json.dumps(self.bandit_report('HIGH')), status=1)
+        result = self.run_bandit()
+        self.assert_status(result, 1)
+        self.assertIn('1 finding(s) at or above HIGH', result.stdout)
+
+    def test_bandit_critical_fails(self):
+        self.bandit(json.dumps(self.bandit_report('CRITICAL')), status=1)
+        self.assert_status(self.run_bandit(), 1)
+
+    def test_bandit_advisories_below_threshold_pass(self):
+        self.bandit(json.dumps(self.bandit_report('LOW', 'MEDIUM', 'MEDIUM')), status=1)
+        result = self.run_bandit()
+        self.assert_status(result, 0)
+        self.assertIn('3 below threshold', result.stdout)
+
+    def test_bandit_missing_tool_is_unverified(self):
+        self.assert_status(self.run_bandit(), 2)
+
+    def test_bandit_scanner_errors_are_unverified(self):
+        self.bandit(json.dumps(self.bandit_report('HIGH', errors=[{'message': 'bad file'}])),
+                    status=1)
+        self.assert_status(self.run_bandit(), 2)
+
+    def test_bandit_unknown_severity_is_unverified(self):
+        self.bandit(json.dumps(self.bandit_report('BOGUS')), status=1)
+        self.assert_status(self.run_bandit(), 2)
+
+    def test_bandit_prose_output_is_unverified(self):
+        self.bandit('Traceback (most recent call last): ...', status=1)
+        self.assert_status(self.run_bandit(), 2)
+
+    def test_bandit_status_findings_mismatch_is_unverified(self):
+        # Findings without the expected non-zero exit, or a clean-looking
+        # report accompanying a failed run, both prove nothing.
+        for severities, status in ((('HIGH',), 0), ((), 1)):
+            with self.subTest(severities=severities, status=status):
+                self.bandit(json.dumps(self.bandit_report(*severities)), status=status)
+                self.assert_status(self.run_bandit(), 2)
 
 
 if __name__ == '__main__':
