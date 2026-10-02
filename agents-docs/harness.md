@@ -479,11 +479,22 @@ Append here when the same class of failure hits CI or agents twice (or once with
   unknown severity string, or a findings/status cross-check mismatch are all
   UNVERIFIED rather than pass. Retained fixtures in `test-sensors.py` cover
   clean, HIGH, CRITICAL, sub-threshold advisories, missing tool, scanner
-  errors, unknown severity, prose output, and both mismatch directions.
+  errors, unknown severity, prose output, both mismatch directions, and a
+  stale installed bandit whose `--version` does not match the CI pin.
+- **Version drift:** the sensor prefers `uvx --from bandit==1.9.4` (exact
+  pin) and, when falling back to an installed `bandit`, verifies its
+  `--version` matches before trusting it. A stale 1.7 bandit on a dev PATH
+  is a **different sensor** than CI's and cannot report PASS for the
+  required check — the same L-005 shape (dep vs CLI skew), applied to the
+  harness itself.
 - **Where it runs:** **both** runners — `scripts/quality-gates.sh` full tier
   and a `Bandit parity for the required Codacy check` step in the `architecture`
-  CI job. `check-ci.py` `DIRECT['architecture']` now requires the CI invocation;
-  `ci-paths.json` records `scripts/bandit-check.py → architecture`.
+  CI job, immediately after a `python3 -m pip install --break-system-packages
+  "bandit==1.9.4"` install step. `check-ci.py` `DIRECT['architecture']`
+  requires **both** the install and the sensor invocation, so removing
+  either fails coherence (the very first CI run of this PR caught the
+  install gap by correctly reporting UNVERIFIED, which is L-016 firing on
+  the author). `ci-paths.json` records `scripts/bandit-check.py → architecture`.
 - **Threshold:** HIGH + CRITICAL. Codacy's own PR gate blocks in the same
   band (`npm run codacy:check` also fails on Critical/High). LOW/MEDIUM
   findings are printed as an advisory count so a developer sees them without

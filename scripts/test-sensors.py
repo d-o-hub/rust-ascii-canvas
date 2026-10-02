@@ -38,13 +38,17 @@ class Sensors(unittest.TestCase):
         return subprocess.run(['bash', 'scripts/check-loc.sh'],
                               cwd=self.root, env=self.env, text=True, capture_output=True)
 
-    def bandit(self, payload, status=0):
+    def bandit(self, payload, status=0, version='bandit 1.9.4'):
         (self.root / 'bandit-payload').write_text(payload)
         (self.root / 'bandit-status').write_text(str(status))
+        (self.root / 'bandit-version').write_text(version)
         executable = self.root / 'bin/bandit'
         executable.write_text('''#!/usr/bin/python3
 import pathlib, sys
 cwd = pathlib.Path.cwd()
+if '--version' in sys.argv:
+    sys.stdout.write((cwd / 'bandit-version').read_text() + '\\n')
+    sys.exit(0)
 with (cwd / 'bandit-calls').open('a') as log:
     log.write(' '.join(sys.argv[1:]) + '\\n')
 sys.stdout.write((cwd / 'bandit-payload').read_text())
@@ -222,7 +226,9 @@ sys.exit(status)
         self.assertIn('3 below threshold', result.stdout)
 
     def test_bandit_missing_tool_is_unverified(self):
-        self.assert_status(self.run_bandit(), 2)
+        result = self.run_bandit()
+        self.assert_status(result, 2)
+        self.assertIn('not found on PATH', result.stderr)
 
     def test_bandit_scanner_errors_are_unverified(self):
         self.bandit(json.dumps(self.bandit_report('HIGH', errors=[{'message': 'bad file'}])),
@@ -236,6 +242,14 @@ sys.exit(status)
     def test_bandit_prose_output_is_unverified(self):
         self.bandit('Traceback (most recent call last): ...', status=1)
         self.assert_status(self.run_bandit(), 2)
+
+    def test_bandit_stale_version_is_unverified(self):
+        # An installed bandit that is not the CI-pinned 1.9.4 is a different
+        # sensor and cannot report PASS for the required check (L-005/L-026).
+        self.bandit(json.dumps(self.bandit_report()), version='bandit 1.7.0')
+        result = self.run_bandit()
+        self.assert_status(result, 2)
+        self.assertIn('does not match the pinned bandit', result.stderr)
 
     def test_bandit_status_findings_mismatch_is_unverified(self):
         # Findings without the expected non-zero exit, or a clean-looking

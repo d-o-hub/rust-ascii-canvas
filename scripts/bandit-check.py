@@ -16,11 +16,11 @@ TARGET = 'scripts'
 def classify(output, status):
     """Never classify prose; require a complete structured report."""
     report = json.loads(output)
-    if not isinstance(report, dict) or 'error' in report:
-        raise ValueError('bandit errored or emitted prose')
+    if not isinstance(report, dict):
+        raise ValueError('bandit emitted prose or a non-object payload')
     if report.get('errors'):
         raise ValueError(f'bandit reported {len(report["errors"])} scanner error(s)')
-    results = report['results']
+    results = report.get('results')
     if not isinstance(results, list):
         raise ValueError('missing results array')
     for item in results:
@@ -40,19 +40,28 @@ def classify(output, status):
 
 
 def command():
-    """Prefer an installed bandit; fall back to uvx with the CI pin; else unverified."""
-    if shutil.which('bandit'):
-        return ['bandit', '-r', '-f', 'json', '-q', TARGET]
+    """Run the pinned scanner. uvx gives an exact version match; an installed
+    bandit must also match, or this is a different sensor than CI ran (L-005)."""
     if shutil.which('uvx'):
         return ['uvx', '--from', f'bandit=={PIN}', 'bandit', '-r', '-f', 'json', '-q', TARGET]
+    if shutil.which('bandit'):
+        probe = subprocess.run(['bandit', '--version'], cwd=ROOT, capture_output=True,
+                               text=True, timeout=30)
+        if probe.returncode != 0:
+            raise ValueError('bandit --version failed; the tool is broken')
+        first = probe.stdout.splitlines()[0] if probe.stdout else ''
+        if first != f'bandit {PIN}':
+            raise ValueError(f'installed {first!r} does not match the pinned bandit {PIN}')
+        return ['bandit', '-r', '-f', 'json', '-q', TARGET]
     raise ValueError(f'bandit=={PIN} (or uvx) not found on PATH')
 
 
 def main():
     try:
-        result = subprocess.run(command(), cwd=ROOT, capture_output=True, text=True, timeout=300)
+        argv = command()
+        result = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, timeout=300)
         findings, advisories = classify(result.stdout, result.returncode)
-    except (OSError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError) as error:
+    except (OSError, subprocess.TimeoutExpired, ValueError) as error:
         print(f'[UNVERIFIED] bandit: {error}; install bandit=={PIN} (or uvx) and retry',
               file=sys.stderr)
         return 2

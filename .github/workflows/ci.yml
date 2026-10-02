@@ -161,6 +161,8 @@ jobs:
       # Codacy runs Bandit and its PR gate blocks on Critical/High. Until this
       # step landed, a HIGH Bandit finding in scripts/*.py was invisible locally
       # and only appeared as a stuck Codacy check on the PR (L-017, L-026).
+      - name: Install Bandit (pinned)
+        run: python3 -m pip install --break-system-packages "bandit==1.9.4"
       - name: Bandit parity for the required Codacy check
         run: python3 scripts/bandit-check.py
       - name: Version pin parity
