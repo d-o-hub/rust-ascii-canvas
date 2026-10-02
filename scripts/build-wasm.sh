@@ -59,4 +59,4 @@ else
 fi
 
 node scripts/check-artifact.mjs
-python3 scripts/wasm-freshness.py --record "$INPUT_DIGEST"
+printf '%s\n' "$INPUT_DIGEST" | python3 scripts/wasm-freshness.py --record

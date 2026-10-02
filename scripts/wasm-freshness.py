@@ -2,8 +2,9 @@
 """Content provenance for generated bindings, shared locally and with CI artifacts.
 
 --check never builds (CI download verification); --ensure rebuilds stale local
-bindings. Build calls --print before compilation and --record DIGEST afterwards,
-so an input changed during compilation cannot be stamped as current.
+bindings. Build calls --print before compilation and pipes that digest into
+--record afterwards, so an input changed during compilation cannot be stamped
+as current.
 """
 import argparse
 import hashlib
@@ -59,14 +60,14 @@ def main():
     group.add_argument('--check', action='store_true')
     group.add_argument('--ensure', action='store_true')
     group.add_argument('--print', action='store_true', dest='print_digest')
-    group.add_argument('--record', metavar='INPUT_DIGEST')
+    group.add_argument('--record', action='store_true')
     args = parser.parse_args()
     try:
         if args.print_digest:
             print(input_digest())
         elif args.record:
             current = evidence()
-            if args.record != current['inputs']:
+            if sys.stdin.read().strip() != current['inputs']:
                 raise ValueError('build inputs changed during compilation; rebuild')
             STAMP.write_text(json.dumps(current, sort_keys=True) + '\n')
             print('[PASS] Recorded WASM input/output fingerprint')
@@ -77,7 +78,7 @@ def main():
                 if not args.ensure:
                     raise
                 print('[INFO] WASM stale/missing; rebuilding before typechecks', flush=True)
-                subprocess.run(['bash', str(ROOT / 'scripts/build-wasm.sh')], cwd=ROOT, check=True)
+                subprocess.run(['bash', 'scripts/build-wasm.sh'], cwd=ROOT, check=True)
                 check()
             print('[PASS] WASM bindings match source/config/lockfile and generated outputs')
     except (OSError, ValueError, subprocess.CalledProcessError) as error:

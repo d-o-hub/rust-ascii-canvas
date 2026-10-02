@@ -107,8 +107,8 @@ def lockfile_committed(text, is_tracked=None):
         return
     if is_tracked is None:
         def is_tracked():
-            probe = subprocess.run(['git', '-C', str(ROOT), 'ls-files', '--error-unmatch', 'Cargo.lock'],
-                                   capture_output=True)
+            probe = subprocess.run(['git', 'ls-files', '--error-unmatch', 'Cargo.lock'],
+                                   cwd=ROOT, capture_output=True)
             return probe.returncode == 0
     require(is_tracked(), 'Cargo.lock is used by --locked/audit steps but is not committed '
                           '(un-ignore and commit it, or drop --locked)')

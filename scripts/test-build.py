@@ -25,71 +25,83 @@ class BuildEvidence(unittest.TestCase):
             (self.root / 'web/pkg' / name).write_text('generated fixture\n')
         (self.root / 'web/pkg/ascii_canvas_bg.wasm').write_bytes(b'\0asm\1\0\0\0')
 
-    def freshness(self, *args):
-        return subprocess.run(['python3', str(self.root / 'scripts/wasm-freshness.py'), *args],
+    def freshness(self, mode):
+        # Literal command lists keep these fixtures free of shell/PATH taint;
+        # the temp repo is selected via cwd only.
+        if mode == 'print':
+            return subprocess.run(['python3', 'scripts/wasm-freshness.py', '--print'],
+                                  cwd=self.root, text=True, capture_output=True)
+        if mode == 'ensure':
+            return subprocess.run(['python3', 'scripts/wasm-freshness.py', '--ensure'],
+                                  cwd=self.root, text=True, capture_output=True)
+        return subprocess.run(['python3', 'scripts/wasm-freshness.py', '--check'],
                               cwd=self.root, text=True, capture_output=True)
 
     def stamp(self):
-        digest = self.freshness('--print')
+        digest = self.freshness('print')
         self.assertEqual(digest.returncode, 0, digest.stderr)
-        result = self.freshness('--record', digest.stdout.strip())
+        result = subprocess.run(['python3', 'scripts/wasm-freshness.py', '--record'],
+                                cwd=self.root, text=True, capture_output=True,
+                                input=digest.stdout)
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_missing_stamp_rejected(self):
-        self.assertNotEqual(self.freshness('--check').returncode, 0)
+        self.assertNotEqual(self.freshness('check').returncode, 0)
 
     def test_fresh_inputs_and_outputs(self):
         self.stamp()
-        self.assertEqual(self.freshness('--check').returncode, 0)
+        self.assertEqual(self.freshness('check').returncode, 0)
 
     def test_changed_input_is_stale(self):
         self.stamp()
         (self.root / 'src/lib.rs').write_text('changed API')
-        self.assertNotEqual(self.freshness('--check').returncode, 0)
+        self.assertNotEqual(self.freshness('check').returncode, 0)
 
     def test_changed_output_is_stale(self):
         self.stamp()
         (self.root / 'web/pkg/ascii_canvas.d.ts').write_text('old output')
-        self.assertNotEqual(self.freshness('--check').returncode, 0)
+        self.assertNotEqual(self.freshness('check').returncode, 0)
 
     def test_missing_output_is_stale(self):
         self.stamp()
         (self.root / 'web/pkg/ascii_canvas.js').unlink()
-        self.assertNotEqual(self.freshness('--check').returncode, 0)
+        self.assertNotEqual(self.freshness('check').returncode, 0)
 
     def test_source_change_during_build_cannot_be_stamped(self):
-        digest = self.freshness('--print').stdout.strip()
+        digest = self.freshness('print').stdout
         (self.root / 'src/lib.rs').write_text('changed during build')
-        self.assertNotEqual(self.freshness('--record', digest).returncode, 0)
+        result = subprocess.run(['python3', 'scripts/wasm-freshness.py', '--record'],
+                                cwd=self.root, text=True, capture_output=True, input=digest)
+        self.assertNotEqual(result.returncode, 0)
 
     def test_ensure_rebuilds_stale_inputs(self):
         (self.root / 'scripts/build-wasm.sh').write_text('''#!/bin/sh
 set -e
 echo rebuilt > build-called
 digest=$(python3 scripts/wasm-freshness.py --print)
-python3 scripts/wasm-freshness.py --record "$digest"
+printf '%s\\n' "$digest" | python3 scripts/wasm-freshness.py --record
 ''')
         self.stamp()
         (self.root / 'src/lib.rs').write_text('changed API')
-        result = self.freshness('--ensure')
+        result = self.freshness('ensure')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue((self.root / 'build-called').exists())
-        self.assertEqual(self.freshness('--check').returncode, 0)
+        self.assertEqual(self.freshness('check').returncode, 0)
 
     def test_ensure_propagates_build_failure(self):
         (self.root / 'scripts/build-wasm.sh').write_text('#!/bin/sh\nexit 42\n')
-        self.assertNotEqual(self.freshness('--ensure').returncode, 0)
-        self.assertNotEqual(self.freshness('--check').returncode, 0)
+        self.assertNotEqual(self.freshness('ensure').returncode, 0)
+        self.assertNotEqual(self.freshness('check').returncode, 0)
 
     def test_invalid_stamp_is_stale(self):
         (self.root / 'web/pkg/.build-fingerprint.json').write_text('{}')
-        self.assertNotEqual(self.freshness('--check').returncode, 0)
+        self.assertNotEqual(self.freshness('check').returncode, 0)
 
     def wasm(self, output, status=0):
         cargo = self.root / 'bin/cargo'
         cargo.write_text(f'#!/bin/sh\necho "$*" >> "{self.root / "cargo-calls"}"\nprintf "%s\\n" "{output}"\nexit {status}\n')
         cargo.chmod(0o755)
-        return subprocess.run(['bash', str(self.root / 'scripts/test-wasm.sh')], cwd=self.root,
+        return subprocess.run(['bash', 'scripts/test-wasm.sh'], cwd=self.root,
                               env=dict(os.environ, PATH=f'{self.root / "bin"}:/usr/bin:/bin'),
                               text=True, capture_output=True)
 
