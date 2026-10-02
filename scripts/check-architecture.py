@@ -72,17 +72,17 @@ def root_members(tokens, index):
     members = set()
     depth = 1
     first = True
-    for token in tokens[index + 1:]:
-        if token == '}':
+    for word in tokens[index + 1:]:
+        if word == '}':
             depth -= 1
             if depth == 0:
                 return members
-        elif token == '{':
+        elif word == '{':
             depth += 1
-        elif depth == 1 and token == ',':
+        elif depth == 1 and word == ',':
             first = True
         elif depth == 1 and first:
-            members.add(token)
+            members.add(word)
             first = False
     raise ValueError('unbalanced crate use tree')
 
@@ -90,14 +90,14 @@ def root_members(tokens, index):
 def violations(text, layer, module_depth):
     matches = list(TOKEN.finditer(code_only(text)))
     tokens = [match[0] for match in matches]
-    for index, token in enumerate(tokens):
+    for index, word in enumerate(tokens):
         bad = set()
-        if layer == 'core' and token in {'web_sys', 'js_sys', 'wasm_bindgen'}:
-            bad.add(token)
-        if token == 'crate' and tokens[index + 1:index + 2] == ['::']:
+        if layer == 'core' and word in {'web_sys', 'js_sys', 'wasm_bindgen'}:
+            bad.add(word)
+        if word == 'crate' and tokens[index + 1:index + 2] == ['::']:
             bad |= root_members(tokens, index + 2) & FORBIDDEN[layer]
         # A path reaching the crate root through super is equally a dependency.
-        if token == 'super' and (index < 2 or tokens[index - 2] != 'super'):
+        if word == 'super' and (index < 2 or tokens[index - 2] != 'super'):
             cursor = index
             count = 0
             while tokens[cursor:cursor + 2] == ['super', '::']:
