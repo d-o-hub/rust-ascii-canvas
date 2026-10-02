@@ -39,27 +39,35 @@ def classify(output, status):
     return findings, advisories
 
 
-def command():
-    """Run the pinned scanner. uvx gives an exact version match; an installed
-    bandit must also match, or this is a different sensor than CI ran (L-005)."""
-    if shutil.which('uvx'):
-        return ['uvx', '--from', f'bandit=={PIN}', 'bandit', '-r', '-f', 'json', '-q', TARGET]
-    if shutil.which('bandit'):
-        probe = subprocess.run(['bandit', '--version'], cwd=ROOT, capture_output=True,
-                               text=True, timeout=30)
-        if probe.returncode != 0:
-            raise ValueError('bandit --version failed; the tool is broken')
-        first = probe.stdout.splitlines()[0] if probe.stdout else ''
-        if first != f'bandit {PIN}':
-            raise ValueError(f'installed {first!r} does not match the pinned bandit {PIN}')
-        return ['bandit', '-r', '-f', 'json', '-q', TARGET]
-    raise ValueError(f'bandit=={PIN} (or uvx) not found on PATH')
+def scan_via_uv():
+    """uvx resolves an exact bandit=={PIN} at run time; the CI-pinned path."""
+    return subprocess.run(['uvx', '--from', f'bandit=={PIN}', 'bandit',
+                           '-r', '-f', 'json', '-q', TARGET],
+                          cwd=ROOT, capture_output=True, text=True, timeout=300)
+
+
+def scan_via_installed():
+    """Trust an installed bandit only when its version matches the CI pin;
+    a stale 1.7 sensor reporting PASS is not CI's sensor (L-005, L-026)."""
+    probe = subprocess.run(['bandit', '--version'], cwd=ROOT,
+                           capture_output=True, text=True, timeout=30)
+    if probe.returncode != 0:
+        raise ValueError('bandit --version failed; the tool is broken')
+    first = probe.stdout.splitlines()[0] if probe.stdout else ''
+    if first != f'bandit {PIN}':
+        raise ValueError(f'installed {first!r} does not match the pinned bandit {PIN}')
+    return subprocess.run(['bandit', '-r', '-f', 'json', '-q', TARGET],
+                          cwd=ROOT, capture_output=True, text=True, timeout=300)
 
 
 def main():
     try:
-        argv = command()
-        result = subprocess.run(argv, cwd=ROOT, capture_output=True, text=True, timeout=300)
+        if shutil.which('uvx'):
+            result = scan_via_uv()
+        elif shutil.which('bandit'):
+            result = scan_via_installed()
+        else:
+            raise ValueError(f'bandit=={PIN} (or uvx) not found on PATH')
         findings, advisories = classify(result.stdout, result.returncode)
     except (OSError, subprocess.TimeoutExpired, ValueError) as error:
         print(f'[UNVERIFIED] bandit: {error}; install bandit=={PIN} (or uvx) and retry',
