@@ -7,7 +7,10 @@ import { defineConfig, devices } from '@playwright/test';
 // `strictPort`, see web/vite.config.ts) would then fail the run on a port it
 // does not need.
 const externalBaseUrl = process.env.BASE_URL;
-const localBaseUrl = 'http://127.0.0.1:3003';
+// Full/CI runs serve the built dist, while focused local runs retain Vite dev.
+// BASE_URL still bypasses both servers for deployment-preview/shadow checks.
+const production = process.env.PRODUCTION_E2E === '1';
+const localBaseUrl = production ? 'http://127.0.0.1:4173' : 'http://127.0.0.1:3003';
 
 export default defineConfig({
   testDir: './e2e',
@@ -29,14 +32,16 @@ export default defineConfig({
   webServer: externalBaseUrl
     ? undefined
     : {
-        command: 'pnpm run dev',
+        command: production
+          ? 'pnpm run preview --host 127.0.0.1 --port 4173 --strictPort'
+          : 'pnpm run dev',
         cwd: 'web',
         url: localBaseUrl,
         // Locally, reuse a server the developer already has running. In CI,
         // `false` makes Playwright *throw* if something already holds the port
         // instead of silently testing a stale server — which is what a leftover
         // `pnpm run dev` used to cause.
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: !production && !process.env.CI,
         // Vite's dev server is not fast on a cold WASM-less cache; the docs
         // default is 60s and the CI job previously allowed the same.
         timeout: 60_000,

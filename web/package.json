@@ -1,6 +1,7 @@
 {
   "name": "ascii-canvas",
   "version": "0.1.4",
+  "packageManager": "pnpm@10.34.5",
   "description": "A fast ASCII diagram editor built with Rust and WebAssembly",
   "type": "module",
   "scripts": {
