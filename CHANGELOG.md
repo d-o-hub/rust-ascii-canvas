@@ -10,7 +10,8 @@ All notable changes to this project will be documented in this file.
   cannot pass while a lockfile went unchecked, artifact validity required
   before size budgets, WASM binding freshness gates in local and CI checks,
   retained positive/negative sensor-CI-skill fixtures in both runners, pnpm
-  pin parity across workspaces and CI, and production-dist E2E in full/CI.
+  pin parity across workspaces and CI, a committed Cargo.lock behind the new
+  `--locked` steps, and production-dist E2E in full/CI.
   Adds the offline skill-manifest checker and the `repo-typescript` adapter.
 
 ### Fixed

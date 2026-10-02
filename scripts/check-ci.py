@@ -10,6 +10,7 @@ import fnmatch
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -100,6 +101,19 @@ def package_manager_version(root_package, web_package):
     return match[1]
 
 
+def lockfile_committed(text, is_tracked=None):
+    """A workflow that forbids fresh resolves needs a committed Cargo.lock."""
+    if '--locked' not in text and 'cargo audit --file Cargo.lock' not in text:
+        return
+    if is_tracked is None:
+        def is_tracked():
+            probe = subprocess.run(['git', '-C', str(ROOT), 'ls-files', '--error-unmatch', 'Cargo.lock'],
+                                   capture_output=True)
+            return probe.returncode == 0
+    require(is_tracked(), 'Cargo.lock is used by --locked/audit steps but is not committed '
+                          '(un-ignore and commit it, or drop --locked)')
+
+
 def check(text):
     manager = package_manager_version(json.loads((ROOT / 'package.json').read_text()),
                                       json.loads((ROOT / 'web/package.json').read_text()))
@@ -165,6 +179,7 @@ def check(text):
         for command in commands:
             require(command in executable, f'{job}: missing direct sensor {command}')
     require('cargo generate-lockfile' not in text, 'audit must inspect committed Cargo.lock')
+    lockfile_committed(text)
     require('include-hidden-files: true' in jobs['wasm'], 'WASM provenance must travel with artifact')
     return len(expected), len(fixtures)
 

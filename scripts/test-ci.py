@@ -84,6 +84,21 @@ class Coherence(unittest.TestCase):
     def test_ci_package_manager_cannot_drift(self):
         self.assert_rejected(self.workflow.replace('version: 10.34.5', 'version: 11.7.0', 1))
 
+    def test_locked_ci_requires_committed_cargo_lock(self):
+        with self.assertRaises(ValueError):
+            ci.lockfile_committed('cargo build --locked', is_tracked=lambda: False)
+        with self.assertRaises(ValueError):
+            ci.lockfile_committed('cargo audit --file Cargo.lock', is_tracked=lambda: False)
+        ci.lockfile_committed('cargo build --locked', is_tracked=lambda: True)
+
+    def test_unlocked_ci_needs_no_committed_lock(self):
+        ci.lockfile_committed('cargo build', is_tracked=lambda: False)
+
+    def test_real_workflow_lock_requirement_matches_repo_state(self):
+        # ci.check() runs the real `git ls-files` probe: an ignored/untracked
+        # Cargo.lock with --locked steps must fail here, not only on CI.
+        ci.check(self.workflow)
+
 
 if __name__ == '__main__':
     unittest.main()
