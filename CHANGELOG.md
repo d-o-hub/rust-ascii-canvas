@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Fail-closed quality harness (ADR-047): structured npm audit evidence that
+  cannot pass while a lockfile went unchecked, artifact validity required
+  before size budgets, WASM binding freshness gates in local and CI checks,
+  retained positive/negative sensor-CI-skill fixtures in both runners, pnpm
+  pin parity across workspaces and CI, a committed Cargo.lock behind the new
+  `--locked` steps, and production-dist E2E in full/CI.
+  Adds the offline skill-manifest checker and the `repo-typescript` adapter.
+
 ### Fixed
 
 - Text Space/Unicode and unknown browser keys no longer become panning/Delete.
@@ -25,6 +35,8 @@ All notable changes to this project will be documented in this file.
   Legacy autosave migration is non-destructive; storage denial, quota, corrupt
   shelves/documents and stale-tab conflicts preserve the live work instead of
   silently replacing or overwriting it. Local drafts are not durable backups.
+- Root `brace-expansion` resolution updated from 5.0.9 to 5.0.12 for two High
+  advisories, without overrides or advisory ignores.
 
 - **F-13 layer history: undo could rename the wrong layer.** The layer-history
   commands landed in #213 recorded a **positional index** and replayed it on

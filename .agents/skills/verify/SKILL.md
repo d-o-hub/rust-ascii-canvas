@@ -1,107 +1,122 @@
 ---
 name: verify
-description: >
-  Run tiered computational quality sensors and self-correct. Use after code changes,
-  before commits/PRs, when asked to "verify", "run gates", "quality check", or when
-  AGENTS.md requires verification. Prefer gate:fast during iteration, gate:full
-  before handoff, and gate:pr before merging.
+description: Run tiered computational quality sensors and self-correct. Use after changes, before commits/PRs, or for verify/gate/quality-check requests. Prefer fast while iterating, full before review, and the read-only PR gate before merging.
 ---
 
-# Verify (Computational Feedback)
+# Verify
 
-Part of the project **harness** ([agents-docs/harness.md](../../../agents-docs/harness.md)). Runs deterministic sensors and drives the agent self-correction loop.
+Read the [harness](../../../agents-docs/harness.md). The inventories below reflect
+`scripts/quality-gates.sh` and `.github/workflows/ci.yml`, not promises that every
+local check is a CI gate. CI invokes shared entrypoints directly; it does **not**
+run the convenience gate script.
 
-## When to Use
+## Tiers and procedure
 
-- After implementing or refactoring product code
-- Before opening a PR or asking for human review
-- When CI failed and you need the local equivalent
-- User says verify / gate / quality check / pre-commit
+| Tier | Command | When |
+|------|---------|------|
+| Focused | Relevant Rust/Vitest/Playwright file | Reproduce first and iterate tightly. |
+| Fast | `npm run gate:fast` | After meaningful edits. |
+| Full | `npm run gate:full` | Integrated candidate before review. |
+| PR | `npm run gate:pr` | Read-only merge contract, not product verification. |
+| Gate fixtures | `npm run gate:pr:test` | Changing merge predicates. |
+| Live ruleset | `npm run gate:ruleset` | Compare live contract to committed snapshot; requires access. |
 
-## Don't Invoke When
+1. Choose the smallest tier appropriate to the phase. Do not run full E2E after
+   every one-line fix. With concurrent workers, run focused checks; the integrating
+   parent runs fast/full on a coherent tree.
+2. Read `[FAIL]`, `[UNVERIFIED]` and `FIX:` output. Fix the root cause, rerun, and
+   record exact commands/results. Unavailable tooling/network is not a pass.
+3. Do not disable sensors, skip tests, weaken assertions, suppress findings or
+   grow LOC budgets to make green output.
+4. Input/tool changes also require [tool-validation](../tool-validation/SKILL.md).
+5. Before merge: full → `code-review` → clean `pr-roast` → `merge-gate`. Bots,
+   dependency updates and docs PRs have no roast exemption.
 
-- Pure documentation-only edits with no scripts/CI change (optional smoke only)
-- You only need a single focused unit test mid-TDD (run that test first, then verify)
-- You are asking whether a PR may merge → that is `merge-gate`, not `verify`
+## Fast inventory (local)
 
-## Tiers (keep quality left)
+- Shared LOC ratchet and fail-closed architecture scan.
+- CI path/applicability/aggregation coherence and retained CI, audit/artifact,
+  architecture/LOC and build-freshness/discovery fixtures.
+- Offline skill ownership/resources/commands/dependencies checks and fixtures:
+  `python3 scripts/check-skills.py` and `python3 scripts/test-skills.py`.
+- Version pins, wasm-bindgen schema pin parity, merge-gate predicate fixtures and
+  offline ruleset snapshot validation (not a live ruleset read).
+- rustfmt; locked clippy `-D warnings`, build and native `cargo test`.
+- **Fresh** WASM bindings: `python3 scripts/wasm-freshness.py --ensure` verifies
+  input/output fingerprints and rebuilds stale or missing `web/pkg` before types.
+  Mere file presence is insufficient. Never hand-edit generated bindings.
+- Web ESLint/types/Vitest, **root ESLint plus e2e TypeScript** using web's compiler.
+- Local privacy and secret scans. These scans are not direct CI jobs.
 
-| Tier | Command | Use |
-|------|---------|-----|
-| **fast** | `npm run gate:fast` | Default after edits |
-| **full** | `npm run gate:full` | Before PR |
-| **pr** | `npm run gate:pr` | Before merging (read-only merge contract) |
-| **merge-gate logic** | `npm run gate:pr:test` | After editing the merge gate itself |
-| **architecture only** | `./scripts/check-architecture.sh` | Layer/import changes |
-| **focused** | `cargo test …` / `cd web && pnpm test` / one Playwright file | Tight loop |
+Dependencies must already be installed from **both frozen lockfiles**. Missing
+root/web dependencies fail; the gate does not fall back to a mutable install.
+Use [repo-typescript](../repo-typescript/SKILL.md) for real frontend commands and
+for the uninstalled specialist names in the upstream TypeScript guide.
 
-## Procedure
+## Full additions (local)
 
-1. **Choose tier** — fast unless shipping or touching WASM/E2E behaviour → full.
-2. **Run sensor**:
-   ```bash
-   npm run gate:fast
-   # or
-   npm run gate:full
-   # or, once a PR exists
-   npm run gate:pr
-   ```
-3. **On failure** — read `[FAIL]` and `FIX:` lines. Fix root cause. Re-run the same tier.
-4. **Do not** disable sensors, add blanket `#[allow]`, skip tests, or expand `.loc-allowlist` without an ADR.
-5. **Behaviour changes** to tools — also run `tool-validation` skill / relevant E2E.
-6. **Before merge** — `code-review` after full gates, then `pr-roast`, then `merge-gate`.
+- `cargo audit --file Cargo.lock`, `cargo deny --locked check` and
+  `bash scripts/npm-audit.sh` for **both** npm lockfiles. Missing tools, malformed
+  results, registry errors or one unchecked lockfile are unverified/nonzero,
+  not clean. Do not regenerate a lockfile just to audit a different graph.
+- `bash scripts/test-wasm.sh`: explicit registered Node WASM suite with a
+  nonzero-passed-test requirement. Native zero-test output is not WASM evidence.
+- `npm run check-size`: present/readable/valid WASM before the 1.5 MiB budget.
+- Production web build, then **production-preview** Chromium E2E.
+- `npm run codacy:check`: local repository-level intake, **not a CI gate**. It
+  warns when absent/unauthenticated rather than pretending a clean scan. The
+  separate required Codacy PR check is diff-scoped; neither proves the other.
 
-## What fast covers
+## Actual CI parity map
 
-- rustfmt, clippy `-D warnings`, build, `cargo test`
-- architecture layer rules
-- LOC (non-allowlisted)
-- **ensures `web/pkg` exists** (builds WASM if missing — pkg is gitignored)
-- web ESLint, `tsc --noEmit`, Vitest
-- privacy / secret scan
+| CI job | Shared/local equivalent | Important distinction |
+|--------|-------------------------|-----------------------|
+| `fmt`, `clippy`, `rust` | Locked Rust commands; `bash scripts/test-wasm.sh` | WASM test runner needs the pinned toolchain/Node, not a browser. |
+| `architecture` | `bash scripts/check-architecture.sh`; `python3 scripts/check-ci.py`; all four Python fixture scripts below + skill checker; version parity | Harness paths and skill-lock changes must activate it. |
+| `loc` | `bash scripts/check-loc.sh` | Cross-cutting standalone job, not a step only in `web`. |
+| `security`, `security-npm`, `deny` | Cargo audit, both npm lockfile audits, cargo-deny | Required evidence fails closed; local offline fast excludes live audits. |
+| `wasm` | `npm run build:wasm` + `npm run check-size` | CI uploads provenance with the generated artifact. |
+| `web` | Freshness `--check`, web lint/types/Vitest, root ESLint, e2e types | CI downloads current pkg; web compiler owns both TypeScript scopes. |
+| `e2e` | Production build + `PRODUCTION_E2E=1 pnpm exec playwright test` | CI uses Chromium/Firefox/WebKit; local full uses Chromium. |
+| `pr-readiness` | `npm run gate:pr:test`; live ruleset check | Readiness report is advisory; server-side thread resolution remains enforced. |
 
-## What full adds
+Retained offline fixture commands (root):
 
-- cargo audit / deny (if installed)
-- `pnpm run build:wasm` + `check-size` (≤ 1.5MB) if not already built
-- Playwright Chromium E2E
+```bash
+python3 scripts/test-ci.py
+python3 scripts/test-sensors.py
+python3 scripts/test-build.py
+python3 scripts/test-skills.py
+```
 
-## What the pr tier covers
+## Playwright owns startup
 
-`npm run gate:pr` (`scripts/pr-merge-gate.sh`) checks the **merge contract**, not the code:
+Focused tests use the dev server via `webServer`; full/CI set `PRODUCTION_E2E=1`
+and use an optimized `web/dist` preview on loopback port 4173. Playwright starts,
+awaits and tears down the server. Production and CI refuse to reuse an existing
+server. Do not hand-roll `nohup`, curl readiness loops or an orphan preview.
 
-- not a draft, and mergeable (no conflicts)
-- every status check concluded `SUCCESS` (a running check is not a pass)
-- every review thread resolved, no outstanding `CHANGES_REQUESTED`
-- it is read-only: it never merges
+For a local production-shaped check, from the root:
 
-Server-side enforcement lives in the `main` ruleset (`CI Success` +
-`PR Readiness (merge gate)` are required checks; thread resolution is required).
-The script is the local mirror so the agent learns about a blocked merge
-*before* pushing. `npm run gate:pr:test` self-tests its predicates offline.
+```bash
+python3 scripts/wasm-freshness.py --ensure
+npm run build:web
+PRODUCTION_E2E=1 pnpm exec playwright test --project=chromium
+```
 
-## CI parity checks (do not skip)
+`BASE_URL` intentionally disables **all local startup** and targets an
+already-running deployment (for example a Netlify Deploy Preview). Record that
+URL and build identity; don't claim the local dist was exercised in that mode.
+Install the required Playwright browsers explicitly if missing.
 
-| CI job | Local equivalent | Gotcha |
-|--------|------------------|--------|
-| Web tsc | `cd web && pnpm exec tsc --noEmit` | Needs `web/pkg` (gitignored). Clean tree: `npm run build:wasm` first. See harness **L-001**. |
-| Architecture | `./scripts/check-architecture.sh` | Needs `rg` |
-| WASM size | `npm run check-size` | After `build:wasm` |
-| E2E | `npx playwright test --project=chromium` | Needs pkg + dev server |
+## PR contract and steering
 
-If CI fails but local gates passed, treat it as a **harness bug**: update sensors so local fails the same way (append to `agents-docs/harness.md` Learned failure modes).
+The mechanical PR gate checks draft/conflicts, **every** check's success, resolved
+threads and no outstanding changes request. It never merges and cannot certify
+a clean roast. See [merge-gate](../merge-gate/SKILL.md) for the complete procedure.
 
-## Steering loop
-
-If you hit the **same** failure class twice in a session (or it recurred from a past PR):
-
-1. Fix product / CI code.
-2. Strengthen harness: new test, clearer `AGENTS.md` rule, sensor message, or CI job dependency.
-3. Append a short entry under **Learned failure modes** in `agents-docs/harness.md`.
-4. Note in `plans/TECHNICAL_ANALYSIS.md` when non-obvious.
-
-## Integration
-
-- **Handoff from** `rust-engineer` / `typescript-expert` → verify
-- **Handoff to** `code-review` → `pr-roast` → `merge-gate` (auto-merge)
-- **Related** `tool-validation`, `dogfood`, `production-loop`
+If CI is red while local is green, compare artifacts, path filters, environment
+and credentials. Fix the shared sensor/fixture and its **direct CI wiring**, not
+just the symptom. Repeated failures need a harness learning and a regression.
+A local command succeeding does not prove CI ran or any working-tree change was
+merged. No live ruleset/credential mutations are part of verification.

@@ -21,8 +21,8 @@ references are preserved for provenance, not promises of available agents.
 | `typescript-type-expert` | Use `cd web && pnpm exec tsc --noEmit --extendedDiagnostics`; reduce the failing type case locally. |
 
 Do the work in the current agent. Escalate a genuinely unresolved design choice,
-not a request to invoke an unavailable skill. The aliases are mapped in the table
-above; they resolve to local procedures, not to agents that are not installed.
+not a request to invoke an unavailable skill. The aliases are explicitly mapped
+in `.agents/skill-manifest.json` and checked offline.
 
 ## Actual repository commands
 

@@ -70,7 +70,11 @@
 
 ## Guard rails (what blocks a bad release)
 
-- `Determine version` fails when `VERSION` is not valid semver, equals the latest GitHub Release, or is not a valid major/minor/patch increment over it.
+- `Determine version` accepts stable **`x.y.z` only** and fails for prereleases,
+  the latest GitHub Release version, or an invalid major/minor/patch increment.
+  **RC publication/promotion is unsupported**: both `release.yml` and
+  `scripts/release.sh` reject `-rc.N`. The ADR-044 RC concept needs a separately
+  reviewed implementation; do not manually tag/publish around these guards.
 - Version pins are checked twice: dev-time (`gate:fast` → `scripts/propagate-version.sh --check`) and release-time (`scripts/release.sh`).
 - `wasm-opt` is required in CI; the release build compiles its own optimized WASM (`wasm-pack` + `wasm-opt`), `web/pkg` is gitignored.
 - Version bumps land through PRs; the Release workflow only dispatches from `main`.
@@ -85,31 +89,44 @@
 
 ## Rollback
 
-Every release ships a **versioned** WASM asset (`ascii-canvas-X.Y.Z.wasm`), and
-`main` is auto-deployed by Netlify on merge. Both facts make rollback cheap.
+**Obtain explicit human authorization before any production rollback.** Prepare
+and verify the plan first; a safe-looking revert is not authorization to deploy it.
+
+The release workflow attaches a **versioned** WASM asset (`ascii-canvas-X.Y.Z.wasm`)
+for releases after v0.1.4 (which has no asset). `main` is auto-deployed by Netlify
+on merge, so rollback goes through a reviewed PR, not a direct push.
 
 | Situation | Action |
 |---|---|
-| Bad behaviour on `main` | Revert the merge commit → Netlify redeploys the prior state |
-| Bad behaviour in a release | Publish a new patch release (0.1.X → 0.1.X+1) — do not re-tag an existing version |
-| Consumer pinned to a bad RC | Point them at the last good release asset on the Releases page |
+| Bad behaviour on `main` | After authorization, revert the **squash commit** on a branch; normal PR checks/roast/merge precede Netlify deployment. A revert does not discard later unrelated fixes. |
+| Bad behaviour in a release | After authorization, publish a new patch through the normal release procedure — never move an existing tag. |
+| RC rollback | Unsupported: no RC release workflow exists. Use shadow previews until one is implemented. |
 | `.asc` / format incompatibility | **Escalate to a human.** Reverting code does not un-corrupt saved user files. |
 
 ```bash
-# 1. Identify the bad merge
+# 1. Identify the bad squash commit and get human rollback authorization
 gh pr list --state merged --limit 5
 
-# 2. Revert it (squash merges are single commits: no -m 1 needed)
+# 2. From a clean checkout, create a rollback branch from current main
 git checkout main && git pull --ff-only
-git revert <merge-sha>
-git push origin main          # Netlify redeploys automatically
+git switch -c rollback/<incident>
+git revert <squash-sha>       # squash commits are not merge commits: NO -m
+npm run gate:full
 
-# 3. Confirm the redeploy landed
-gh run list --limit 5         # CI re-runs full sensors on main
+# 3. Push ONLY the branch; open a PR, run pr-roast, resolve findings/threads
+git push -u origin HEAD
+gh pr create
+npm run gate:pr               # read-only; requires all checks green
+# Only after the current-head roast is clean and all merge conditions hold:
+gh pr merge <PR> --auto --squash
+
+# 4. Confirm the deployment and rerun the production reproduction
+gh run list --limit 5
 ```
 
 **Rollback must be cheaper than debugging.** If a change cannot be reverted
-cheaply, that is a reason to canary it longer, not to skip the rollback plan.
+cheaply, escalate the recovery plan and extend shadow verification; do not
+pretend an unsupported RC workflow supplies a safety net.
 
 ## Failure playbook
 

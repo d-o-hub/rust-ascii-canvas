@@ -1,5 +1,27 @@
 # ASCII Canvas Editor - Technical Analysis
 
+## 2026-09-30 — editing boundaries and truthful verification (working tree)
+
+Current implementation/test evidence and measured render baseline live in
+[the recommendations plan](recommendations-implementation-2026-09-30.md);
+[FOLLOW_UPS](FOLLOW_UPS.md#active-backlog) is the sole active-work list. Earlier
+counts and debt below are dated snapshots, not current verification.
+
+Key learning: safe components do not imply safe boundaries. Provisional stroke
+cells must never become a paste command's undo values; a gesture must retain its
+original cells once, and a cancelled gesture must not reappear through undo.
+Document replacement and viewport resize need separate ownership policies.
+The independent review caught the paste/stroke interaction after all initial
+suites passed; retained binding/browser regressions now cover it.
+
+Likewise, files present are not evidence of executed tests or fresh bindings,
+and an audit's warning prose does not change its successful exit status. Retained
+negative fixtures now guard these claims in both local runners and CI. See
+[harness L-022–L-025](../agents-docs/harness.md#l-022--warning-text-cannot-make-an-exit-zero-audit-unverified-2026-09-30)
+and ADR-046/047 (accepted by the user on 2026-09-30). 2026-10-02: the audit
+pieces shipped as #228–#233; the sensors + skills remainder is PR-gated, and no
+live ruleset mutation is claimed by either.
+
 ## Harness engineering (2026-07-16)
 
 Mapped the repo to [Harness engineering for coding agent users](https://martinfowler.com/articles/harness-engineering.html):

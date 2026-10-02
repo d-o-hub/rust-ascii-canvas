@@ -1,18 +1,59 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-09-29
+**Updated**: 2026-10-02 (reconciled against merged #228–#233).
+**Single source of truth for active next work.**
+Prior records below are dated history, not instructions to re-open shipped work.
+Remote issues/releases have not been re-queried in this documentation pass.
+
+## Active backlog
+
+| Priority / ID | State | Next evidence or decision |
+|---------------|-------|---------------------------|
+| P0 / 2026-09-30 audit | **Shipped as #228–#233; sensors remainder open** | [Implementation evidence](recommendations-implementation-2026-09-30.md): the audit's editor-safety, drafts, palette, npm and R-09 pieces merged as #229/#230/#231/#228/#233. Only the truthful-sensors row below remains. |
+| P0 / editing + local drafts | **Shipped: #229, #230, #231** | Keyboard/atomic-stroke/paste/session safety, clean PNG, accessible layers and bounded drafts merged with native/WASM/Vitest/browser regressions. No v1 format change, cloud accounts or collaboration; retain documented optimistic-conflict/storage/history limits. |
+| P0 / R-09 LOC debt | **Shipped: #233** | The events/ui split landed on main and `.loc-allowlist` carries no oversized entries. The former working-tree remainder (file/mobile extraction, helpers/ui/events sizes) merged with #229/#230/#233. |
+| P0 / truthful sensors + skills | **Ported onto `refactor/fail-closed-sensors`; PR pending** | Fail-closed sensors, nonzero WASM execution, production E2E, CI applicability/freshness/pnpm parity, and offline skill checks pass retained fixtures. Wiring is in both local runners and ci.yml; remote CI has not run this diff. ADR-047 accepted by the user on 2026-09-30; normal PR/remote gates remain required. |
+| P0 / root npm findings | **Shipped: #228** | Narrow root lockfile update `brace-expansion` 5.0.9 -> 5.0.12 fixed High GHSA-qhr7-859c-m2p7 / GHSA-6j4f-fj2g-mc7p; frozen install and both audits passed; no ignores/overrides. |
+| P1 / release | **Not dispatched** | Release the next stable version only after a reviewed version-bump PR and the normal runbook. v0.1.4 is already released; never repeat its bump/changelog work. |
+| P1 / release workflow validation | **Existing findings; separate reviewed change** | Unchanged `release.yml` fails actionlint: publish condition uses `needs.guard-rails` without that job in its dependencies; ShellCheck also reports quoting/unused-variable issues. Fix and validate without changing release pins casually. Edited `ci.yml` passes actionlint. |
+| P1 / RC workflow | **Unsupported / decision needed** | `release.yml` and `scripts/release.sh` accept only `x.y.z`. Implement/test prerelease policy separately before offering RC canary/promotion commands; use Deploy Preview shadow tests now. |
+| P1 / Codacy coverage + repo intake in CI | **Credential-blocked** | Obtain an authorized project-scoped token before wiring uploads/intake. The prior local account login is not a CI secret; `codacy:check` remains local procedure, not a gate. Re-read current repository issues before claiming today's backlog clean. |
+| P2 / dogfood + browser stability | **Queued** | Explore layers, SVG, themes and revised input/draft flows; record reproductions, mobile behavior and Firefox/WebKit flakes rather than relying on old counts. |
+| P2 / #199 do-harness | **Deferred** | Reassess only after upstream #235–#237 ship in a pinned release; start with a disposable-copy sensor audit. |
+| P3 / F-30 collaboration | **Decision deferred** | Spike is complete; a prototype needs fresh scope/issue/ADR, not implicit inclusion in local drafts. |
+| P3 / render performance | **Baseline measured; optimization deferred** | Production Chromium probe: one-cell 400×200 upload p95 15.6 ms / 51.2 MB submitted; 240×80 zoom still fully rerasterizes (Rust p95 18.5 ms). See the [implementation evidence](recommendations-implementation-2026-09-30.md#measured-render-baseline-not-a-performance-gate); benchmark same-machine before a separate dirty-upload/viewport change. No FPS improvement claimed. |
+
+### Already shipped — do not re-plan
+
+- **F-13 layer history**: #212 + #216 (ADR-043).
+- **R-06 loopback dev binding**: #224, commit `35726cb`.
+- **R-08 npm audit inventory**: #225, commit `6628c70`; both npm lockfiles have
+  a sensor. The fail-closed audit hardening ships with the sensors port.
+- **L-019 Playwright-owned startup**: #226, commit `3ec1d93`.
+- **L-020 shared LOC ratchet**: #227, commit `7e61d49`; CI has a dedicated `loc`
+  job (not the older web-job copy described in historical notes).
+- **2026-09-30 audit delivery**: #228 (npm), #229 (editor/document safety),
+  #230 (bounded local drafts), #231 (palette a11y + keyboard layer controls),
+  #232 (merge-gate commit scope, harness **L-021**), #233 (R-09 web split).
+- **R-05 dependency pruning** and **R-07/Codacy rule-family parity**: #218–#223.
+  These completions do not establish the current remote finding count.
+
+## Historical triage and completion records
+
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
-**Primary plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
-**Latest triage**: 2026-09-28 — R-07 is **done and closed in CI**: #219 added the `e2e/` lint + typecheck sensors locally, and the #220 follow-up (harness **L-016**) wired both into the blocking `web` CI job, so `e2e/` is now linted *and* gated. Cycle order now: (1) R-06 dev-server host binding, (2) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. F-13 layer-operation history already shipped (issue #207, ADR-043; #212 + #216). **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
+**Historical plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
+**Historical triage**: 2026-09-28 — R-07 is **done and closed in CI**: #219 added the `e2e/` lint + typecheck sensors locally, and the #220 follow-up (harness **L-016**) wired both into the blocking `web` CI job, so `e2e/` is now linted *and* gated. Cycle order now: (1) R-06 dev-server host binding, (2) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. F-13 layer-operation history already shipped (issue #207, ADR-043; #212 + #216). **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
 
 **2026-09-29 — Codacy parity landed.** The "11 open High issues" correction below is now closed: **#222** fixed every finding for real (one commit per finding, no suppressions — both patterns are locked to Codacy's *Default coding standard*), and one of them turned out to hide a **vacuous assertion** in `e2e/canvas.spec.ts` that had never evaluated its expectation. **#223** closed the two gaps that let them sit there: `eslint-plugin-security` now runs in both ESLint configs (**rule-family parity**), and `npm run codacy:check` reads the **repository-level** list, because Codacy's PR analysis is diff-scoped and a green check cannot see a backlog. A third gap: Codacy's Biome was running four `useQwik*` rules against a repo with no Qwik dependency, which blocked #222 with a High finding on a plain arrow function; `biome.json` fixes it. All recorded as harness **L-017** + **ADR-045**. `codacy:check` is an **agent procedure, not a gate** — it is not in `ci.yml`, because `gh secret list` is empty and a runner cannot see the machine-local `codacy login` credential. Repo-level backlog is now **0**. Codacy's coverage goal remains `None` and is **blocked pending a project-scoped `CODACY_PROJECT_TOKEN`**.
 
-Use this list for prioritization. Mark items done in-place and mirror major completions into `PROJECT_STATUS.md`.  
-**GitHub issues** track open work (numbers below).
+Use **Active backlog** above for prioritization. Keep these dated records for
+provenance; their issue counts, test totals and next-step predictions are not a
+fresh verification. Mirror major completions into `PROJECT_STATUS.md` only after
+actual merge evidence.
 
 ---
 
-## Next — release + new work (2026-09-28)
+## Completed release/security work (historical 2026-09-24–29)
 
 | ID | Status | Issue | Notes |
 |----|--------|-------|--------|
@@ -78,21 +119,13 @@ Use this list for prioritization. Mark items done in-place and mirror major comp
 
 ---
 
-## New work candidates (all implementation issues closed except #199)
+## Candidate-list reconciliation (2026-09-30)
 
-Open implementation issue: **#199** (do-harness adoption, deferred). Candidates for the cycle:
-
-| Candidate | Why | First step |
-|-----------|-----|------------|
-| R-06 dev-server host binding (**next**) | `web/vite.config.ts:16` binds `0.0.0.0`; only open task besides deferred #199 | Decide loopback default + document device-testing opt-in |
-| Layer-operation undo/history (**F-13**) | ✅ shipped (issue #207, ADR-043; #212 + #216) | Done — do not re-plan |
-| ~~`web/events.ts` 850 LOC + `web/ui.ts` 540 LOC~~ + LOC sensor gap | **Sensor closed 2026-09-29 (L-020):** `scripts/check-loc.sh` now scans `src/**/*.rs` **and** `web/*.ts`, and runs in **both** `quality-gates.sh` and the `web` CI job. The allowlist became a **ratchet** (`path=lines`, may shrink never grow) with stale-entry reporting, because the old one only *warned* "do not grow" and enforced nothing. Debt is now pinned at `web/events.ts=850`, `web/ui.ts=540`, `src/wasm/helpers.rs=948` | **Debt to pay:** `setupEventListeners` alone is 430 of `events.ts`'s 850 lines, and the touch/mobile handlers are a clean 105-line module. Extract both, then drop the allowlist entries |
-| **Skill length budget** — `skill-creator` (357), `typescript-expert` (432), `rust-wasm` (416) exceed the 300-line `SKILL.md` budget in `agents-md` | `agents-md` sets ≤300; these predate it | **Do NOT locally edit the two upstream-synced ones** — `typescript-expert` and `rust-wasm` are in `skills-lock.json`, so a sync silently overwrites the change. Either exempt upstream skills from the budget or split them at next sync. `skill-creator` is local and can be split any time (low value). |
-| Dogfood pass over "closed" features (layers, SVG fidelity, light theme) | Fastest way to catch regressions behind closed-issue claims | `dogfood` skill run; file findings |
-| F-30 prototype decision (collaborative editing) | Spike complete, no product decision | Open issue + ADR |
-| Render performance follow-ups (ADR-028 residual) | Dirty-rect shipped; measure and set budgets | Open perf issue with metric |
-| WebKit / Firefox flake watch | Multi-browser CI matrix is new | Track flake rate across releases |
-| do-harness adoption (**#199**) | XL / high risk; sensor mapping and migration hazards already captured | Defer until upstream #235–#237 ship in a pinned release; then phase 0 audit in a disposable copy |
+The former duplicate next-work table is consolidated into **Active backlog**.
+Its R-06-next and F-13-residual claims were stale: both shipped. The skill-budget
+work is now an unmerged ownership-aware checker/adapter candidate, not a license
+to edit locked upstream skills. Historical LOC pins describe pre-extraction debt,
+not current file sizes or permission to increase `.loc-allowlist` budgets.
 
 ---
 

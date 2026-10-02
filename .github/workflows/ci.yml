@@ -36,6 +36,8 @@ jobs:
         with:
           filters: |
             rust:
+              - '.cargo/**'
+              - 'mise.toml'
               - 'src/**'
               - 'tests/**'
               - 'benches/**'
@@ -46,19 +48,29 @@ jobs:
               - 'rustfmt.toml'
               - 'deny.toml'
             web:
+              - 'eslint.config.mjs'
+              - '.npmrc'
+              - '.pnpmfile.cjs'
+              - 'pnpm-workspace.yaml'
+              - 'netlify.toml'
               - 'web/**'
               - 'e2e/**'
               - 'playwright.config.ts'
               - 'package.json'
               - 'pnpm-lock.yaml'
             harness:
+              - '.gitignore'
+              - '.ignore'
+              - 'skills-lock.json'
+              - 'biome.json'
+              - '.codacy.yml'
               - 'scripts/**'
               - 'VERSION'
               - 'AGENTS.md'
               - 'agents-docs/**'
               - '.agents/**'
               - '.loc-allowlist'
-              - '.github/workflows/**'
+              - '.github/**'
               - 'plans/**'
             product:
               - 'src/**'
@@ -111,22 +123,34 @@ jobs:
           components: clippy
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
       - name: Clippy (all targets, all features)
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 
   architecture:
     name: Architecture Fitness
     needs: [changes]
+    # Shared sensor/skill fixtures also validate package scripts and web config.
     if: >
       github.event_name != 'pull_request' ||
       needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.web == 'true' ||
       needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+      - name: Setup Node for artifact fixtures
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
       - name: Layer import rules
         run: bash scripts/check-architecture.sh
+      - name: Harness coherence and retained offline fixtures
+        run: |
+          python3 scripts/check-ci.py
+          python3 scripts/test-ci.py
+          python3 scripts/test-sensors.py
+          python3 scripts/test-build.py
+          python3 scripts/check-skills.py
+          python3 scripts/test-skills.py
       # LOC used to be a second, inline implementation right here — a copy of the
       # loop that lived in quality-gates.sh, with its own hardcoded 500 and its
       # own allowlist lookup. It read `.loc-allowlist` with `grep -qxF "$rel"`,
@@ -163,12 +187,12 @@ jobs:
           workspaces: ./->target
 
       - name: Build
-        run: cargo build --all-targets
+        run: cargo build --locked --all-targets
 
       - name: Run tests (Native)
-        run: cargo test --all
+        run: cargo test --locked --all
 
-      - name: Run tests (WASM, nonzero Node execution required)
+      - name: Run tests (WASM, nonzero discovery required)
         run: bash scripts/test-wasm.sh
 
   security:
@@ -176,7 +200,8 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.rust == 'true'
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -188,10 +213,8 @@ jobs:
         uses: taiki-e/install-action@4cef1412cce204788f482e778a0b9187f9626a29 # v2
         with:
           tool: cargo-audit
-      - name: Generate lockfile
-        run: cargo generate-lockfile
-      - name: Run cargo audit
-        run: cargo audit
+      - name: Audit committed lockfile (no fresh resolve)
+        run: cargo audit --file Cargo.lock
 
   # LOC limits for src/**/*.rs AND web/*.ts.
   #
@@ -233,7 +256,8 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.web == 'true'
+      needs.changes.outputs.web == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -255,11 +279,14 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
-      needs.changes.outputs.rust == 'true'
+      needs.changes.outputs.rust == 'true' ||
+      needs.changes.outputs.harness == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
       - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2
+        with:
+          arguments: --locked
 
   # WASM first: web/pkg is gitignored; tsc and e2e both need generated bindings.
   wasm:
@@ -267,6 +294,7 @@ jobs:
     needs: [changes]
     if: >
       github.event_name != 'pull_request' ||
+      needs.changes.outputs.rust == 'true' ||
       needs.changes.outputs.product == 'true' ||
       needs.changes.outputs.web == 'true' ||
       needs.changes.outputs.harness == 'true'
@@ -290,7 +318,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
-          version: 10
+          version: 10.34.5
 
       - name: Build WASM
         run: |
@@ -305,14 +333,17 @@ jobs:
         with:
           name: wasm-pkg
           path: web/pkg
+          include-hidden-files: true
+          if-no-files-found: error
 
   web:
     name: Web (Lint + Types + Unit)
     needs: [changes, wasm]
-    # web/pkg is gitignored — TypeScript imports ./pkg/ascii_canvas.js and needs the WASM artifact.
+    # Rust API changes must regenerate AND typecheck the consuming web code.
     if: >
       always() &&
       (github.event_name != 'pull_request' ||
+       needs.changes.outputs.rust == 'true' ||
        needs.changes.outputs.web == 'true' ||
        needs.changes.outputs.harness == 'true') &&
       needs.wasm.result == 'success'
@@ -329,7 +360,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
-          version: 10
+          version: 10.34.5
 
       - name: Install web dependencies
         working-directory: web
@@ -347,6 +378,12 @@ jobs:
         with:
           name: wasm-pkg
           path: web/pkg
+
+      - name: Playwright production/shadow configuration fixtures
+        run: node --test scripts/test-playwright-config.mjs
+
+      - name: Verify downloaded binding fingerprint before typechecks
+        run: python3 scripts/wasm-freshness.py --check
 
       - name: ESLint
         working-directory: web
@@ -381,6 +418,7 @@ jobs:
     if: >
       always() &&
       (github.event_name != 'pull_request' ||
+       needs.changes.outputs.rust == 'true' ||
        needs.changes.outputs.product == 'true' ||
        needs.changes.outputs.web == 'true' ||
        needs.changes.outputs.harness == 'true') &&
@@ -403,7 +441,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6
         with:
-          version: 10
+          version: 10.34.5
 
       - name: Cache pnpm
         uses: actions/cache@v6
@@ -427,24 +465,19 @@ jobs:
           name: wasm-pkg
           path: web/pkg
 
-      # The dev server is started, awaited and torn down by Playwright's
-      # `webServer` in playwright.config.ts — the single source of truth, also
-      # used by `npm run gate:full`.
-      #
-      # This step used to hand-roll it: `nohup pnpm run dev` plus a
-      # `for i in {1..60}` readiness poll that `break`s when the server is ready
-      # but never `exit 1` when it is not. So a dev server that failed to boot
-      # produced a three-minute Playwright timeout pointing at the tests instead
-      # of at the cause. `webServer` fails at the point of failure, and
-      # `reuseExistingServer: false` (CI sets CI=true) makes it *throw* if
-      # something already holds the port, rather than testing a stale server.
-      #
-      # `web/pkg` must exist before this point: the WASM bindings are gitignored
-      # (harness L-001) and the job downloads the artifact above.
-      - name: Run E2E tests
-        run: npx playwright test --project=${{ matrix.project }} --timeout=120000
+      # Production parity: build dist, then Playwright owns a strict Vite
+      # preview server lifecycle (never reuse a running dev server). BASE_URL
+      # remains available for external deployment-preview/shadow runs.
+      - name: Verify WASM provenance and build production dist
+        run: |
+          python3 scripts/wasm-freshness.py --check
+          pnpm run build:web
+
+      - name: Run E2E tests against production dist
+        run: pnpm exec playwright test --project=${{ matrix.project }} --timeout=120000
         env:
           CI: true
+          PRODUCTION_E2E: 1
 
   pr-readiness:
     name: PR Readiness (merge gate)
