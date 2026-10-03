@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- actionlint parity for GitHub Actions workflows (harness **L-027**): a new
+  `scripts/actionlint-check.py` sensor mirrors the fail-closed contract
+  (`npm-audit.py` / `bandit-check.py`) with exit 0 clean / 1 findings /
+  2 unverified, pins actionlint to 1.6.26 and refuses a stale local install,
+  runs in the full tier and the CI `architecture` job, and closes the same
+  L-017 rule-family gap for `.github/workflows/**`. Catches the class of bug
+  #243 removed by hand.
 - Bandit parity for the required Codacy check (harness **L-026**): a new
   `scripts/bandit-check.py` sensor mirrors `npm-audit.py`'s fail-closed
   contract (0 clean / 1 findings ≥ HIGH / 2 unverified), runs the full tier

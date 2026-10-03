@@ -30,8 +30,9 @@ Do **not** run the full E2E suite after every one-line fix. Use tiers:
   Rebuilds `web/pkg` when its source/output fingerprint is stale; CI verifies
   the downloaded fingerprint before typechecking (L-001, ADR-047).
 - **full** — adds committed-lockfile Rust/npm audits, Bandit parity for the
-  Python sensors, cargo-deny, nonzero Node WASM tests, artifact
-  validity/size, and production-dist Chromium E2E.
+  Python sensors, actionlint parity for `.github/workflows/**`, cargo-deny,
+  nonzero Node WASM tests, artifact validity/size, and production-dist
+  Chromium E2E.
 - **pr** — the merge contract only; see *Merge & ship* below.
 
 ### The gate script is not a gate (learned)
