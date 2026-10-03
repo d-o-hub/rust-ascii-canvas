@@ -122,6 +122,7 @@ if ! $FAST; then
   run 'Security audit (committed Cargo.lock)' 'Install cargo-audit explicitly or fix reported advisories/tool errors.' cargo audit --file Cargo.lock
   run 'Security audit (both npm lockfiles)' 'Restore pnpm/registry access or fix the findings; partial is unverified.' bash scripts/npm-audit.sh
   run 'Security audit (Python sensors)' 'Install bandit==1.9.4 or uvx; a scanner error is not a clean tree.' python3 scripts/bandit-check.py
+  run 'GitHub Actions workflow lint' 'Install actionlint==1.6.26; a broken or stale linter is not a clean tree.' python3 scripts/actionlint-check.py
   run 'Dependency policy' 'Install cargo-deny explicitly; align locked dependencies with deny.toml.' cargo deny --locked check
   # Account credentials are not CI sensors: this intake is intentionally local.
   run 'Codacy repo intake (local only, not a CI gate)' 'Read/fix findings; never remove required Codacy checks.' bash scripts/codacy-check.sh

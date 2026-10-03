@@ -60,6 +60,34 @@ sys.exit(int((cwd / 'bandit-status').read_text()))
         return subprocess.run(['python3', 'scripts/bandit-check.py'],
                               cwd=self.root, env=self.env, text=True, capture_output=True)
 
+    def actionlint(self, payload, status=0, version='1.6.26'):
+        (self.root / 'actionlint-payload').write_text(payload)
+        (self.root / 'actionlint-status').write_text(str(status))
+        (self.root / 'actionlint-version').write_text(version)
+        executable = self.root / 'bin/actionlint'
+        executable.write_text('''#!/usr/bin/python3
+import pathlib, sys
+cwd = pathlib.Path.cwd()
+if '--version' in sys.argv:
+    sys.stdout.write((cwd / 'actionlint-version').read_text() + '\\n')
+    sys.exit(0)
+with (cwd / 'actionlint-calls').open('a') as log:
+    log.write(' '.join(sys.argv[1:]) + '\\n')
+sys.stdout.write((cwd / 'actionlint-payload').read_text())
+sys.exit(int((cwd / 'actionlint-status').read_text()))
+''')
+        executable.chmod(0o755)
+
+    def run_actionlint(self):
+        return subprocess.run(['python3', 'scripts/actionlint-check.py'],
+                              cwd=self.root, env=self.env, text=True, capture_output=True)
+
+    @staticmethod
+    def actionlint_finding(kind='shellcheck', filepath='.github/workflows/x.yml',
+                           line=1, column=1, message='finding'):
+        return {'message': message, 'filepath': filepath, 'line': line,
+                'column': column, 'kind': kind, 'snippet': 'x', 'end_column': column + 1}
+
     @staticmethod
     def bandit_report(*severities, errors=()):
         results = [{'filename': 'scripts/x.py', 'line_number': index + 1,
@@ -258,6 +286,66 @@ sys.exit(status)
             with self.subTest(severities=severities, status=status):
                 self.bandit(json.dumps(self.bandit_report(*severities)), status=status)
                 self.assert_status(self.run_bandit(), 2)
+
+    def test_actionlint_clean_requires_json_and_format_flag(self):
+        self.actionlint('[]')
+        result = self.run_actionlint()
+        self.assert_status(result, 0)
+        self.assertIn('[PASS]', result.stdout)
+        calls = (self.root / 'actionlint-calls').read_text()
+        self.assertIn('-format', calls)
+        self.assertIn('{{ json . }}', calls)
+
+    def test_actionlint_findings_fail(self):
+        finding = {'message': 'bad', 'filepath': 'x.yml', 'line': 1, 'column': 1,
+                   'kind': 'shellcheck', 'snippet': 'x'}
+        self.actionlint(json.dumps([finding]), status=1)
+        result = self.run_actionlint()
+        self.assert_status(result, 1)
+        self.assertIn('1 finding(s)', result.stdout)
+        self.assertIn('x.yml:1:1', result.stdout)
+
+    def test_actionlint_missing_tool_is_unverified(self):
+        result = self.run_actionlint()
+        self.assert_status(result, 2)
+        self.assertIn('not found on PATH', result.stderr)
+
+    def test_actionlint_stale_version_is_unverified(self):
+        # A different actionlint than CI ran is a different sensor (L-005/L-027).
+        self.actionlint('[]', version='1.7.7')
+        result = self.run_actionlint()
+        self.assert_status(result, 2)
+        self.assertIn('does not match the pinned actionlint', result.stderr)
+
+    def test_actionlint_prose_output_is_unverified(self):
+        self.actionlint('Traceback (most recent call last): ...', status=1)
+        self.assert_status(self.run_actionlint(), 2)
+
+    def test_actionlint_non_array_payload_is_unverified(self):
+        # Real actionlint emits `[]` or an array; an object proves a fork.
+        self.actionlint(json.dumps({'findings': []}), status=0)
+        self.assert_status(self.run_actionlint(), 2)
+
+    def test_actionlint_finding_missing_field_is_unverified(self):
+        bad = {'message': 'oops', 'filepath': 'x.yml'}
+        self.actionlint(json.dumps([bad]), status=1)
+        result = self.run_actionlint()
+        self.assert_status(result, 2)
+        self.assertIn('missing', result.stderr)
+
+    def test_actionlint_malformed_finding_entry_is_unverified(self):
+        self.actionlint(json.dumps(['not-a-dict']), status=1)
+        self.assert_status(self.run_actionlint(), 2)
+
+    def test_actionlint_status_findings_mismatch_is_unverified(self):
+        # Both directions: findings without the expected non-zero exit, or a
+        # clean-looking payload accompanying a failed run.
+        finding = {'message': 'bad', 'filepath': 'x.yml', 'line': 1, 'column': 1,
+                   'kind': 'shellcheck', 'snippet': 'x'}
+        for payload, status in ((json.dumps([finding]), 0), ('[]', 1)):
+            with self.subTest(status=status):
+                self.actionlint(payload, status=status)
+                self.assert_status(self.run_actionlint(), 2)
 
 
 if __name__ == '__main__':

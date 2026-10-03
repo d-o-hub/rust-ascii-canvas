@@ -508,3 +508,50 @@ Append here when the same class of failure hits CI or agents twice (or once with
   A green Codacy PR check on `main` still means nothing for regressions in
   a rule family nothing local invokes — L-017's "green check ≠ clear backlog"
   lesson extended to a new scanner.
+
+
+### L-027 — GitHub Actions workflows had no local sensor (2026-10-03, PR #243 follow-up)
+
+- **Observed:** The `pr-roast` on PR #243 (the two-commit `release.yml`
+  actionlint fix) surfaced a `grep -RIn actionlint scripts/ .github/workflows/
+  package.json` returning empty. Nothing local or in CI invokes `actionlint`,
+  so today's green state on `ci.yml` / `release.yml` / `issue-closer.yml` can
+  silently regress the next time a `needs:` reference, an expression type,
+  or a `run:` block changes. Same shape as L-013 (audit covering only Rust),
+  L-014 (lint missing `e2e/`), L-017 (rule families a required check enforces
+  but nothing local does) and L-026 (Python sensors had no Bandit parity):
+  the ecosystem-level gap is now closed for GitHub Actions workflow files.
+- **Prevention:** `scripts/actionlint-check.py` mirrors `npm-audit.py` and
+  `bandit-check.py`'s contract (0 clean / 1 findings / 2 unverified). Missing
+  `actionlint` on PATH, an installed version whose `--version` first line does
+  not exactly equal `1.6.26`, a non-array JSON payload, a finding missing any
+  of `message`/`filepath`/`line`/`column`/`kind`, a malformed (non-object)
+  finding entry, a prose payload, or a findings/exit-code cross-check mismatch
+  in either direction are all UNVERIFIED rather than pass. Retained fixtures
+  in `test-sensors.py` cover every one of these cases (9 new tests, suite now
+  39 total).
+- **Threshold:** **all** findings — unlike Bandit, actionlint does not carry a
+  severity field that maps cleanly onto Codacy's Critical/High band, and every
+  finding class (parser, expression, shellcheck, schedule, property) has
+  caused a real regression here (`release.yml:310` expression error shipped
+  broken across multiple PRs before #243). A strict "any finding fails" sensor
+  is the honest contract; future tuning would need an explicit allowlist
+  fixture rather than a severity-band heuristic.
+- **Version drift:** the sensor checks `actionlint --version`'s first line
+  against `PIN = '1.6.26'` exactly. A dev with `1.7.x` on PATH is a different
+  sensor than CI's and cannot report PASS for the required check — same L-005
+  shape applied to the harness itself.
+- **Where it runs:** **both** runners — `scripts/quality-gates.sh` full tier
+  and a `Workflow lint parity (L-027)` step in the `architecture` CI job,
+  immediately after an `Install actionlint (pinned)` step that downloads
+  `actionlint_1.6.26_linux_amd64.tar.gz` and its `checksums.txt` from the
+  release, verifies the SHA-256 with `sha256sum -c`, extracts and installs to
+  `/usr/local/bin/actionlint`. `check-ci.py` `DIRECT['architecture']` requires
+  the sensor invocation; `ci-paths.json` records
+  `scripts/actionlint-check.py → architecture`.
+- **Guidance:** when adding a required third-party check, enumerate every
+  rule family it runs **and** every file type it analyses, and ask which of
+  those has no local sensor. L-017 already said this for rule families; L-027
+  is the same lesson applied to *file types*: Rust, JS/TS, Python and now
+  YAML/GHA each need a local sensor to reach parity.
+
