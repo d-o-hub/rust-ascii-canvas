@@ -47,6 +47,10 @@ export default tseslint.config(
       'test-results/**',
       'playwright-report/**',
       '.agents/**',
+      // `dogfood/` output is QA evidence — throwaway probe scripts that mix Node
+      // and in-page browser globals, so `no-undef` reports 100+ errors on code
+      // that is not part of the product and is never shipped.
+      'dogfood-output/**',
     ],
   },
   eslint.configs.recommended,
