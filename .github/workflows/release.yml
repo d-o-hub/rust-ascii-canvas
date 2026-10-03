@@ -305,7 +305,7 @@ jobs:
             --target "$BRANCH_NAME"
   publish-wasm:
     name: Publish WASM
-    needs: create-release
+    needs: [guard-rails, create-release]
     runs-on: ubuntu-latest
     if: needs.guard-rails.outputs.is_dry_run != 'true'
     env:
