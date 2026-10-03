@@ -42,7 +42,7 @@ Remote issues/releases have not been re-queried in this documentation pass.
   `scripts/bandit-check.py` closes the last rule-family gap Codacy enforced
   and nothing local did. Runs in the full tier and in the CI `architecture`
   job; fail-closed (missing bandit/uvx → 2). Threshold HIGH matches
-  `codacy:check`; LOW/MEDIUM findings print as advisory so the 35 current
+  `codacy:check`; LOW/MEDIUM findings print as advisory so the 47 current
   subprocess/argv patterns the sensors structurally require do not need
   per-line suppressions.
 - **Release-workflow lint fix**: #243, commit `768cea0`. `release.yml`
