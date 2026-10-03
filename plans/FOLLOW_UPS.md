@@ -168,6 +168,6 @@ not current file sizes or permission to increase `.loc-allowlist` budgets.
 - [RELEASING.md](RELEASING.md)
 - [goal-state.md](goal-state.md)
 - Implementation issues: #207 (F-13 layer history — **shipped** #212 + #216, closed 2026-09-28), #199 (do-harness adoption — open, deferred)
-- [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) (L-004/L-005/L-006/L-007, **L-008/L-009/L-010, L-014/L-015/L-016**)
-- ADR-044 (merge automation + delivery loop), ADR-042 (wasm-bindgen pin parity), ADR-041 (clipboard export modes), ADR-036 (clipboard fidelity + product features)
+- [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) — the log itself (L-001…L-027 as of 2026-10-03) is the SSOT; this row intentionally does not enumerate a subset, because every prior attempt to keep a subset in sync drifted (L-011's own rule).
+- ADR-047 (fail-closed sensors + retained coherence fixtures), ADR-046 (editing safety + named local drafts), ADR-045 (local sensor parity with required checks), ADR-044 (merge automation + delivery loop), ADR-043 (layer command history), ADR-042 (wasm-bindgen pin parity), ADR-041 (clipboard export modes), ADR-036 (clipboard fidelity + product features)
 - Issues: [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108)–[#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) (all closed)
