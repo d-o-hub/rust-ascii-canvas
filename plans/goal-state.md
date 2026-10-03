@@ -82,7 +82,7 @@ harness:                           # ADR-044
 
 ```yaml
 features:
-  layer_history: true              # F-13 — shipped in #212, hardened in #216
+  layer_history: true              # F-13 — shipped in #213, hardened in #216
   collaborative_prototype: decided # F-30 spike -> ADR
 
 process:

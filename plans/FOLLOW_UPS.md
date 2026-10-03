@@ -26,7 +26,9 @@ Remote issues/releases have not been re-queried in this documentation pass.
 
 ### Already shipped — do not re-plan
 
-- **F-13 layer history**: #212 + #216 (ADR-043).
+- **F-13 layer history**: #213, commit `1e639c9` + #216, commit `1d54c9b`
+  (ADR-043). Not #212 — that PR closed **unmerged**; the layer code landed inside
+  #213's `chore:` titled commit, which is L-011's own recorded failure.
 - **R-06 loopback dev binding**: #224, commit `35726cb`.
 - **R-08 npm audit inventory**: #225, commit `6628c70`; both npm lockfiles have
   a sensor. The fail-closed audit hardening ships with the sensors port.
@@ -64,7 +66,7 @@ Remote issues/releases have not been re-queried in this documentation pass.
 
 **Source**: Full recommendations bundle (issue #21 + post-merge analysis)
 **Historical plan**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)
-**Historical triage**: 2026-09-28 — R-07 is **done and closed in CI**: #219 added the `e2e/` lint + typecheck sensors locally, and the #220 follow-up (harness **L-016**) wired both into the blocking `web` CI job, so `e2e/` is now linted *and* gated. Cycle order now: (1) R-06 dev-server host binding, (2) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. F-13 layer-operation history already shipped (issue #207, ADR-043; #212 + #216). **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
+**Historical triage**: 2026-09-28 — R-07 is **done and closed in CI**: #219 added the `e2e/` lint + typecheck sensors locally, and the #220 follow-up (harness **L-016**) wired both into the blocking `web` CI job, so `e2e/` is now linted *and* gated. Cycle order now: (1) R-06 dev-server host binding, (2) #199 do-harness adoption deferred until upstream #235–#237 ship in a pinned release. F-13 layer-operation history already shipped (issue #207, ADR-043; #213 + #216). **R-03 was re-scoped after a verification swarm disproved the pin-by-override plan** (Vite pulls esbuild as an unused optional peer; the advisory is unreachable here) — see the R-03 row, R-05, and the corrected L-006. This pass also reconciled the planning docs against reality (test counts, issue states, release state, toolchain pin).
 
 **2026-09-29 — Codacy parity landed.** The "11 open High issues" correction below is now closed: **#222** fixed every finding for real (one commit per finding, no suppressions — both patterns are locked to Codacy's *Default coding standard*), and one of them turned out to hide a **vacuous assertion** in `e2e/canvas.spec.ts` that had never evaluated its expectation. **#223** closed the two gaps that let them sit there: `eslint-plugin-security` now runs in both ESLint configs (**rule-family parity**), and `npm run codacy:check` reads the **repository-level** list, because Codacy's PR analysis is diff-scoped and a green check cannot see a backlog. A third gap: Codacy's Biome was running four `useQwik*` rules against a repo with no Qwik dependency, which blocked #222 with a High finding on a plain arrow function; `biome.json` fixes it. All recorded as harness **L-017** + **ADR-045**. `codacy:check` is an **agent procedure, not a gate** — it is not in `ci.yml`, because `gh secret list` is empty and a runner cannot see the machine-local `codacy login` credential. Repo-level backlog is now **0**. Codacy's coverage goal remains `None` and is **blocked pending a project-scoped `CODACY_PROJECT_TOKEN`**.
 
@@ -106,7 +108,7 @@ actual merge evidence.
 | **F-10** | ✅ | [#110](https://github.com/d-o-hub/rust-ascii-canvas/issues/110) | SVG export: `web/exportSvg.ts`, `src/wasm/render_api.rs` `export_svg`, unit + UI wiring |
 | **F-11** | ✅ | [#111](https://github.com/d-o-hub/rust-ascii-canvas/issues/111) | Layer editor: rename, visible, lock, reorder (`moveLayer`), delete, merge (`mergeLayerDown`); UI in `web/ui.ts` |
 | **F-12** | ✅ | — | Composite pixel render + export (#107) |
-| **F-13** | ✅ | [#207](https://github.com/d-o-hub/rust-ascii-canvas/issues/207) | **Shipped** — layer ops recorded in `History` per [ADR-043](ADRs/043-layer-command-history.md) (merged in #212, hardened in #216 to address layers by stable id rather than position). Covered by `e2e/layers.spec.ts`; issue closed 2026-09-28 |
+| **F-13** | ✅ | [#207](https://github.com/d-o-hub/rust-ascii-canvas/issues/207) | **Shipped** — layer ops recorded in `History` per [ADR-043](ADRs/043-layer-command-history.md) (merged in #213, hardened in #216 to address layers by stable id rather than position). Covered by `e2e/layers.spec.ts`; issue closed 2026-09-28 |
 | **F-14** | ✅ | [#112](https://github.com/d-o-hub/rust-ascii-canvas/issues/112) | Enhanced text tool — cursor indicator (`web/render.ts:updateCursorIndicator`), multi-line polish (ADR-010) |
 | **F-15** | ✅ | [#113](https://github.com/d-o-hub/rust-ascii-canvas/issues/113) | Preview rendering style (ADR-011; `preview_ops` in `render_api.rs`) |
 | **F-16** | ✅ | [#114](https://github.com/d-o-hub/rust-ascii-canvas/issues/114) | Eraser radius 1/3/5 (`events.ts` + e2e) |
@@ -167,7 +169,7 @@ not current file sizes or permission to increase `.loc-allowlist` budgets.
 - [PROJECT_STATUS.md](PROJECT_STATUS.md)
 - [RELEASING.md](RELEASING.md)
 - [goal-state.md](goal-state.md)
-- Implementation issues: #207 (F-13 layer history — **shipped** #212 + #216, closed 2026-09-28), #199 (do-harness adoption — open, deferred)
+- Implementation issues: #207 (F-13 layer history — **shipped** #213 + #216, closed 2026-09-28), #199 (do-harness adoption — open, deferred)
 - [Harness steering log](../agents-docs/harness.md#learned-failure-modes-steering-log) — the log itself (L-001…L-027 as of 2026-10-03) is the SSOT; this row intentionally does not enumerate a subset, because every prior attempt to keep a subset in sync drifted (L-011's own rule).
 - ADR-047 (fail-closed sensors + retained coherence fixtures), ADR-046 (editing safety + named local drafts), ADR-045 (local sensor parity with required checks), ADR-044 (merge automation + delivery loop), ADR-043 (layer command history), ADR-042 (wasm-bindgen pin parity), ADR-041 (clipboard export modes), ADR-036 (clipboard fidelity + product features)
 - Issues: [#108](https://github.com/d-o-hub/rust-ascii-canvas/issues/108)–[#127](https://github.com/d-o-hub/rust-ascii-canvas/issues/127) (all closed)
