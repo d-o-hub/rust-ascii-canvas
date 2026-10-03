@@ -1,6 +1,6 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-10-02 (reconciled against merged #228–#233).
+**Updated**: 2026-10-03 (reconciled against merged #241–#244).
 **Single source of truth for active next work.**
 Prior records below are dated history, not instructions to re-open shipped work.
 Remote issues/releases have not been re-queried in this documentation pass.
@@ -15,8 +15,8 @@ Remote issues/releases have not been re-queried in this documentation pass.
 | P0 / truthful sensors + skills | **Shipped: #241** | Fail-closed sensors, nonzero WASM execution, production E2E, CI applicability/freshness/pnpm parity, and offline skill checks pass retained fixtures. Wiring is in both local runners and ci.yml. ADR-047 accepted; merge contract + pr-roast + Codacy all green on the final head. |
 | P0 / root npm findings | **Shipped: #228** | Narrow root lockfile update `brace-expansion` 5.0.9 -> 5.0.12 fixed High GHSA-qhr7-859c-m2p7 / GHSA-6j4f-fj2g-mc7p; frozen install and both audits passed; no ignores/overrides. |
 | P1 / release | **Not dispatched** | Release the next stable version only after a reviewed version-bump PR and the normal runbook. v0.1.4 is already released; never repeat its bump/changelog work. |
-| P1 / release workflow validation | **Code fix in #243 (pending merge)** | `release.yml` now passes `actionlint` cleanly: `publish-wasm` gained `guard-rails` in its `needs:` (the dry-run guard was reading an output that was never in the direct needs list), and the five ShellCheck findings (`SC2002` useless cat, `SC2086` unquoted `$GITHUB_OUTPUT` / `$GITHUB_PATH` / `$FIRST_VERSION_LINE`, `SC2034` dead `TAG_NAME`) are fixed. No release pin, toolchain SHA or version-validation logic changed. The **sensor** gap this surfaced is now a new row below. |
-| P1 / actionlint local sensor | **Shipped in PR (pending merge)** | `scripts/actionlint-check.py` closes the L-027 gap: fail-closed 0/1/2, pinned to 1.6.26 with a `--version` drift check, retained fixtures in `test-sensors.py` (clean, findings, missing tool, stale version, prose, non-array, missing field, malformed entry, bidirectional status/findings mismatch). Wired into `quality-gates.sh` full tier and a `Workflow lint parity (L-027)` step in the `architecture` CI job, with a checksum-verified pinned release download as the install step. `check-ci.py DIRECT['architecture']` and `ci-paths.json` updated; recorded as harness **L-027**. |
+| P1 / release workflow validation | **Shipped: #243, commit `768cea0`** | `release.yml` passes `actionlint` cleanly: `publish-wasm` gained `guard-rails` in its `needs:` (the dry-run guard was reading an output that was never in the direct needs list), and the five ShellCheck findings (`SC2002` useless cat, `SC2086` unquoted `$GITHUB_OUTPUT` / `$GITHUB_PATH` / `$FIRST_VERSION_LINE`, `SC2034` dead `TAG_NAME`) are fixed. No release pin, toolchain SHA or version-validation logic changed. The **sensor** gap this surfaced is closed by the row below. |
+| P1 / actionlint local sensor | **Shipped: #244, commit `2ab846e`** | `scripts/actionlint-check.py` closes the L-027 gap: fail-closed 0/1/2, pinned to 1.6.26 with a `--version` drift check, retained fixtures in `test-sensors.py` (9 new tests, suite now 39). Wired into `quality-gates.sh` full tier and a `Workflow lint parity (L-027)` step in the `architecture` CI job, with a checksum-verified pinned release download as the install step. `check-ci.py DIRECT['architecture']` and `ci-paths.json` updated; recorded as harness **L-027**. |
 | P1 / RC workflow | **Unsupported / decision needed** | `release.yml` and `scripts/release.sh` accept only `x.y.z`. Implement/test prerelease policy separately before offering RC canary/promotion commands; use Deploy Preview shadow tests now. |
 | P1 / Codacy coverage + repo intake in CI | **Credential-blocked** | Obtain an authorized project-scoped token before wiring uploads/intake. The prior local account login is not a CI secret; `codacy:check` remains local procedure, not a gate. Re-read current repository issues before claiming today's backlog clean. |
 | P2 / dogfood + browser stability | **Queued** | Explore layers, SVG, themes and revised input/draft flows; record reproductions, mobile behavior and Firefox/WebKit flakes rather than relying on old counts. |
@@ -38,12 +38,27 @@ Remote issues/releases have not been re-queried in this documentation pass.
   #232 (merge-gate commit scope, harness **L-021**), #233 (R-09 web split).
 - **R-05 dependency pruning** and **R-07/Codacy rule-family parity**: #218–#223.
   These completions do not establish the current remote finding count.
-- **L-026 Bandit parity for the Python sensors**: `scripts/bandit-check.py`
-  closes the last rule-family gap Codacy enforced and nothing local did. Runs
-  in the full tier and in the CI `architecture` job; fail-closed (missing
-  bandit/uvx → 2). Threshold HIGH matches `codacy:check`; LOW/MEDIUM findings
-  print as advisory so the 33 current subprocess/argv patterns the sensors
-  structurally require do not need per-line suppressions.
+- **L-026 Bandit parity for the Python sensors**: #242, commit `9efce87`.
+  `scripts/bandit-check.py` closes the last rule-family gap Codacy enforced
+  and nothing local did. Runs in the full tier and in the CI `architecture`
+  job; fail-closed (missing bandit/uvx → 2). Threshold HIGH matches
+  `codacy:check`; LOW/MEDIUM findings print as advisory so the 35 current
+  subprocess/argv patterns the sensors structurally require do not need
+  per-line suppressions.
+- **Release-workflow lint fix**: #243, commit `768cea0`. `release.yml`
+  actionlint-clean: `publish-wasm` gained the direct `guard-rails` needs
+  edge (its dry-run `if:` was reading an output that GitHub does not
+  expose transitively) and five ShellCheck findings fixed. No release pin,
+  toolchain SHA, action version or version-validation logic touched.
+- **L-027 actionlint parity for `.github/workflows/**`**: #244, commit
+  `2ab846e`. `scripts/actionlint-check.py` mirrors `npm-audit.py` /
+  `bandit-check.py`'s fail-closed contract (0/1/2), pinned to actionlint
+  1.6.26 with a `--version` drift check. Every finding blocks — actionlint
+  has no severity band mapping to Codacy's Critical/High, and the class it
+  catches (needs-graph expression errors) shipped broken across several PRs
+  before #243 caught `release.yml:310` by hand. Install step verifies the
+  release tarball against `checksums.txt` via SHA-256 before extraction.
+  Closes the L-017 rule-family gap for YAML/GHA.
 
 ## Historical triage and completion records
 
