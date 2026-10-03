@@ -165,6 +165,24 @@ jobs:
         run: python3 -m pip install --break-system-packages "bandit==1.9.4"
       - name: Bandit parity for the required Codacy check
         run: python3 scripts/bandit-check.py
+      # actionlint is the only sensor for GitHub Actions workflow correctness
+      # (expression types, needs-graph shape, shellcheck inside `run:` blocks).
+      # Today a broken ci.yml or release.yml merges silently; the release.yml
+      # dry-run guard sat broken across several PRs before #243 caught it by
+      # hand. Installing here closes that L-017 gap (harness L-027).
+      - name: Install actionlint (pinned)
+        run: |
+          VERSION=1.6.26
+          curl -sSL -o /tmp/actionlint.tar.gz \
+            "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz"
+          curl -sSL -o /tmp/actionlint_checksums.txt \
+            "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_checksums.txt"
+          cd /tmp && grep "actionlint_${VERSION}_linux_amd64.tar.gz" actionlint_checksums.txt | sha256sum -c -
+          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+          install -m 0755 /tmp/actionlint /usr/local/bin/actionlint
+          actionlint --version
+      - name: Workflow lint parity (L-027)
+        run: python3 scripts/actionlint-check.py
       - name: Version pin parity
         run: bash scripts/propagate-version.sh --check
 
