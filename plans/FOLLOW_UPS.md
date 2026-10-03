@@ -9,7 +9,7 @@ Remote issues/releases have not been re-queried in this documentation pass.
 
 | Priority / ID | State | Next evidence or decision |
 |---------------|-------|---------------------------|
-| P0 / 2026-09-30 audit | **Shipped as #228–#233; sensors remainder open** | [Implementation evidence](recommendations-implementation-2026-09-30.md): the audit's editor-safety, drafts, palette, npm and R-09 pieces merged as #229/#230/#231/#228/#233. Only the truthful-sensors row below remains. |
+| P0 / 2026-09-30 audit | **Shipped: #228–#233 + #241** | [Implementation evidence](recommendations-implementation-2026-09-30.md): the audit's editor-safety, drafts, palette, npm, R-09 and truthful-sensors pieces merged as #229/#230/#231/#228/#233/#241. Nothing in the audit row remains. |
 | P0 / editing + local drafts | **Shipped: #229, #230, #231** | Keyboard/atomic-stroke/paste/session safety, clean PNG, accessible layers and bounded drafts merged with native/WASM/Vitest/browser regressions. No v1 format change, cloud accounts or collaboration; retain documented optimistic-conflict/storage/history limits. |
 | P0 / R-09 LOC debt | **Shipped: #233** | The events/ui split landed on main and `.loc-allowlist` carries no oversized entries. The former working-tree remainder (file/mobile extraction, helpers/ui/events sizes) merged with #229/#230/#233. |
 | P0 / truthful sensors + skills | **Shipped: #241** | Fail-closed sensors, nonzero WASM execution, production E2E, CI applicability/freshness/pnpm parity, and offline skill checks pass retained fixtures. Wiring is in both local runners and ci.yml. ADR-047 accepted; merge contract + pr-roast + Codacy all green on the final head. |
