@@ -173,12 +173,13 @@ jobs:
       - name: Install actionlint (pinned)
         run: |
           VERSION=1.6.26
-          curl -sSL -o /tmp/actionlint.tar.gz \
-            "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_linux_amd64.tar.gz"
-          curl -sSL -o /tmp/actionlint_checksums.txt \
-            "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_checksums.txt"
-          cd /tmp && grep "actionlint_${VERSION}_linux_amd64.tar.gz" actionlint_checksums.txt | sha256sum -c -
-          tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
+          ASSET="actionlint_${VERSION}_linux_amd64.tar.gz"
+          cd /tmp
+          curl -sSL -O "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/${ASSET}"
+          curl -sSL -O "https://github.com/rhysd/actionlint/releases/download/v${VERSION}/actionlint_${VERSION}_checksums.txt"
+          grep "${ASSET}\$" "actionlint_${VERSION}_checksums.txt" > selected.sum
+          sha256sum --check selected.sum
+          tar -xzf "${ASSET}" actionlint
           install -m 0755 /tmp/actionlint /usr/local/bin/actionlint
           actionlint --version
       - name: Workflow lint parity (L-027)
