@@ -35,10 +35,12 @@ and no font guarantees box-drawing glyphs whose strokes meet at cell boundaries.
 ## Decision
 
 - **A single geometry table in Rust** — `src/render/box_drawing.rs` — defines the
-  22 Unicode box-drawing glyphs the drawing tools can emit (light, double, heavy
-  and rounded lines, corners and joins) as axis-aligned rectangles in an 8×20
-  cell. Both renderers consume it. Two hand-written geometry tables is how this
-  bug would get fixed in one path and stay broken in the other.
+  22 Unicode box-drawing glyphs the border styles are built from as
+  axis-aligned rectangles in an 8×20 cell: the light, double and heavy weights
+  each contribute two strokes and four corners (18), and `Rounded` contributes
+  four corners drawn on the light stems (4). Both renderers consume it.
+  Two hand-written geometry tables is how this bug would get fixed in one path
+  and stay broken in the other.
 - **The canvas path synthesizes, and refuses to be overridden.** `FontAtlas`
   fills those codepoints from the table at construction *and* in `update_glyph`,
   which ignores the browser's raster for a box-drawing codepoint. The atlas is
@@ -87,8 +89,19 @@ Stroke weight fidelity is bounded by the cell: a heavy line is two adjacent
 pixels, not a true 2px-heavy stroke, and the rounded family is a chamfer. The
 atlas now has a documented exception list, so a future "why doesn't my glyph
 upload stick?" question has an answer in the module rather than in git history.
-Both renderers inherit one table, so extending the covered set (e.g. the `┬ ┴
-├ ┤ ┼` joins if a tool starts emitting them) is a single edit.
+Both renderers inherit one table, so extending the covered set is a single edit.
+
+**What is still not covered, and why it stayed out.** The junction glyphs —
+`├ ┤ ┬ ┴ ┼` and the mixed-weight tees — are not in the table, so a document that
+contains one dashes vertically in the SVG exactly as ISSUE-001 did. Adding them
+would fix only one of the two paths: the atlas indexes ASCII 32..127 plus a
+fixed box-and-symbol list (`src/render/font_renderer.rs:80-89`) that contains no
+junction, so a pasted `┼` renders as `?` on the canvas
+(`font_renderer.rs:112` falls back to `'?'` for any glyph missing from the
+atlas) whatever the geometry table says. The honest fix is one change to the
+atlas glyph set plus the table entries, which is a wider artifact-visible change
+than a border-continuity fix and is recorded as a follow-up rather than folded
+into this PR.
 
 ## Verification
 
@@ -108,6 +121,12 @@ Both renderers inherit one table, so extending the covered set (e.g. the `┬ �
   rendered border is one unbroken line) by sampling the canvas, with the
   horizontal edge as the control. 18/18 across Chromium, Firefox, WebKit,
   Pixel 5, iPhone 12 and iPad Air.
-- Mutation evidence: with only the atlas's synthesis override removed, the
-  vertical edge reads `gaps: 13, longestGap: 5` on Chromium while the horizontal
-  control still passes — the original defect, reproduced from the test.
+- Mutation evidence, one per renderer:
+  - *Canvas* — with only the atlas's synthesis override removed, the vertical
+    edge reads `gaps: 13, longestGap: 5` on Chromium while the horizontal
+    control still passes — the original defect, reproduced from the test.
+  - *SVG* — reverting `export_svg` to its pre-fix `<text>`-only branch turns
+    `test_export_svg_draws_the_box_as_geometry` red while
+    `test_export_svg_keeps_text_for_ordinary_glyphs` stays green, and the
+    failure message prints the defect verbatim: `<text x="0" y="0" …>┌</text>`,
+    `<text x="8.4" y="0" …>─</text>` … at `font-size="14px"` on a 20px pitch.

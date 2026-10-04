@@ -14,11 +14,14 @@
 //! hand-written geometry tables is how this bug got fixed once and stayed
 //! broken in the other path.
 //!
-//! Only the 22 Unicode box-drawing codepoints are synthesized. `-`, `|`, `+` and
-//! `*` — the `ascii` and `dotted` border styles in
-//! [`crate::core::tools::BorderStyle`] — deliberately keep their font glyphs:
-//! `dotted` is *meant* to break, and `|` is an ordinary character a user can
-//! type in text, so making it a full-height bar would change what they wrote.
+//! Only the 22 Unicode box-drawing codepoints are synthesized — the lines and
+//! corners the border styles are built from. `-`, `|`, `+` and `*`, the `ascii`
+//! and `dotted` styles, deliberately keep their font glyphs: `dotted` is *meant*
+//! to break, and `|` is an ordinary character a user can type in text, so making
+//! it a full-height bar would change what they wrote. Junctions (`├ ┤ ┬ ┴ ┼` and
+//! the mixed-weight tees) are not in the table either: no tool draws them, and
+//! they are not in the [`crate::render::FontAtlas`] glyph set, so synthesizing
+//! them here would fix the SVG export while the canvas still cannot display them.
 
 /// Cell width in device pixels, matching `GLYPH_WIDTH` in `web/constants.ts`.
 pub const CELL_W: i32 = 8;
