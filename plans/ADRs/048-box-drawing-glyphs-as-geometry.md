@@ -53,9 +53,16 @@ and no font guarantees box-drawing glyphs whose strokes meet at cell boundaries.
   `<text>`.
 - **The stem axes are the measured font axes** — column 3 of 8, row 7 of 20 — so
   fixing continuity does not slide existing diagrams sideways.
-- **`- | + *` are excluded.** The ASCII and dotted border styles are the user's
-  choice of a broken or literal line; `|` is also typed text. Only glyphs the
-  tools use to *draw* a border are synthesized.
+- **`- | + *` are excluded.** `dotted` is the user's choice of a broken line, and
+  `|` is also typed text: the atlas is keyed per codepoint, so synthesizing it
+  would turn every pipe a user types into a full-height bar. The cost of that
+  decision is measured, not assumed — an `ascii`-style rectangle renders
+  `gaps: 14, longestGap: 8` on its vertical edge and `gaps: 19, longestGap: 4` on
+  its horizontal one (Chromium, `devicePixelRatio: 1`, `maxBrightness: 199`, so
+  real ink, not a mis-placed probe). The `ascii` border style therefore stays
+  dashed on *both* axes after this change. That is a narrower defect than
+  ISSUE-001 (which broke the default style) and it needs a different fix — see
+  Consequences.
 - **Rounded corners get a one-pixel chamfer.** 8×20 px cannot express an arc, and
   a faux curve reads as noise; the chamfer is what a box-drawing font manages at
   this size. `Rounded` must stay distinguishable from `Single`, which is asserted
@@ -91,17 +98,29 @@ atlas now has a documented exception list, so a future "why doesn't my glyph
 upload stick?" question has an answer in the module rather than in git history.
 Both renderers inherit one table, so extending the covered set is a single edit.
 
-**What is still not covered, and why it stayed out.** The junction glyphs —
-`├ ┤ ┬ ┴ ┼` and the mixed-weight tees — are not in the table, so a document that
-contains one dashes vertically in the SVG exactly as ISSUE-001 did. Adding them
-would fix only one of the two paths: the atlas indexes ASCII 32..127 plus a
-fixed box-and-symbol list (`src/render/font_renderer.rs:80-89`) that contains no
-junction, so a pasted `┼` renders as `?` on the canvas
-(`font_renderer.rs:112` falls back to `'?'` for any glyph missing from the
-atlas) whatever the geometry table says. The honest fix is one change to the
-atlas glyph set plus the table entries, which is a wider artifact-visible change
-than a border-continuity fix and is recorded as a follow-up rather than folded
-into this PR.
+**What is still not covered, and why it stayed out.** Two classes, both
+pre-existing and both narrower than ISSUE-001:
+
+- The junction glyphs — `├ ┤ ┬ ┴ ┼` and the mixed-weight tees — are not in the
+  table, so a document that contains one dashes vertically in the SVG exactly as
+  ISSUE-001 did. Adding them would fix only one of the two paths: the atlas
+  indexes ASCII 32..127 plus a fixed box-and-symbol list
+  (`src/render/font_renderer.rs:80-89`) that contains no junction, and
+  `render_glyph` falls back to `'?'` for any glyph missing from the atlas
+  (`font_renderer.rs:109-112`), so a pasted `┼` renders as `?` on the canvas
+  whatever the geometry table says. The honest fix changes **both** sets in one
+  commit.
+- The `ascii` border style, per the measurement above. A per-codepoint atlas
+  cannot make `|` a border in one cell and typed text in another, so this one
+  needs a border-aware render path, not a table entry.
+
+Neither is folded into this PR, because each is a wider artifact-visible change
+than border continuity. Both are recorded as follow-ups in
+[FOLLOW_UPS.md](../FOLLOW_UPS.md). Note also why neither was caught earlier:
+`e2e/tools-drawing.spec.ts:399` "All border styles draw correctly" **asserts
+nothing** — it selects all six styles, draws a rectangle for each and
+screenshots. A test named as coverage for the thing that broke cannot be the
+reason it went unnoticed.
 
 ## Verification
 
