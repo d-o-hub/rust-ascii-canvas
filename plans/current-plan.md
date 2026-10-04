@@ -69,7 +69,7 @@ This is not the active queue; any residual requires fresh code verification.
 | 1 Code quality & maintainability | HIGH | ✅ Done | Clippy/fmt clean; `main.ts` 230 LOC; architecture + LOC sensors in gate |
 | 2 Test reliability & coverage | HIGH | ✅ Done | waitForTimeout gone; vitest 29; chromium 79 (local list) + firefox/webkit CI matrix; POM |
 | 3 Robustness & error handling | HIGH | 🟡 Partial | Clipboard hardened; more unwrap audit optional |
-| 4 Layer system | MEDIUM | ✅ Shipped | F-11 editor and F-13 history shipped (#212 + #216, ADR-043); no residual feature issue. |
+| 4 Layer system | MEDIUM | ✅ Shipped | F-11 editor and F-13 history shipped (#213 + #216, ADR-043); no residual feature issue. |
 | 5 File persistence | MEDIUM | ✅ Done | ADR-027 |
 | 6 Collaborative editing | LOW | 🔵 Spike done | Prototype decision pending = new work |
 | 7 Performance optimization | MEDIUM | ✅ Done | Dirty-rect pixel buffer (ADR-028 / F-28) |
