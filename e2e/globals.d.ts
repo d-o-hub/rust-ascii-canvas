@@ -47,9 +47,6 @@ declare global {
              */
             readonly zoom: number;
             readonly pan: Float64Array;
-            setZoom(zoom: number): void;
-            setPan(x: number, y: number): void;
-            requestRedraw(): void;
             readonly width: number;
             readonly height: number;
             readonly has_selection: boolean;
