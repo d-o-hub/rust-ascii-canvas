@@ -2,10 +2,15 @@
 //!
 //! Provides a precomputed font atlas for common ASCII characters
 //! and methods to render them into a raw RGBA buffer.
+//!
+//! Box-drawing glyphs are the exception: they are synthesized from the geometry
+//! in [`crate::render::box_drawing`] rather than taken from a font, at build
+//! time *and* whenever the browser re-uploads a raster. See that module for why.
 
+use super::box_drawing;
 use std::collections::HashMap;
 
-/// A simple 8x14 monospace bitmap font.
+/// An 8x20 monospace bitmap font.
 pub struct FontAtlas {
     /// Glyph width in pixels
     pub glyph_width: usize,
@@ -24,11 +29,18 @@ impl FontAtlas {
     }
 
     /// Update a specific glyph's bitmap data.
+    ///
+    /// A box-drawing codepoint ignores the bytes it is given and re-synthesizes
+    /// from geometry: the browser rasterizes its font at 13px into a 20px cell,
+    /// so accepting that raster is how `│` came to render as a dashed line
+    /// (dogfood ISSUE-001).
     pub fn update_glyph(&mut self, ch: char, glyph_data: &[u8]) {
         if let Some(&idx) = self.glyph_indices.get(&ch) {
+            let synthesized = box_drawing::rasterize(ch);
+            let bytes = synthesized.as_deref().unwrap_or(glyph_data);
             let offset = idx * self.glyph_width * self.glyph_height;
-            if offset + glyph_data.len() <= self.data.len() {
-                self.data[offset..offset + glyph_data.len()].copy_from_slice(glyph_data);
+            if offset + bytes.len() <= self.data.len() {
+                self.data[offset..offset + bytes.len()].copy_from_slice(bytes);
             }
         }
     }
@@ -52,7 +64,10 @@ impl FontAtlas {
             let idx = indices.len();
             indices.insert(ch, idx);
             let mut glyph_data = vec![0u8; glyph_width * glyph_height];
-            Self::render_glyph_placeholder(&mut glyph_data, ch);
+            match box_drawing::rasterize(ch) {
+                Some(synthesized) => glyph_data.copy_from_slice(&synthesized),
+                None => Self::render_glyph_placeholder(&mut glyph_data, ch),
+            }
             data.extend(glyph_data);
         };
 
@@ -134,15 +149,20 @@ impl FontAtlas {
         }
     }
 
+    /// Draw `ch` into an 8x20 alpha buffer.
+    ///
+    /// Box-drawing glyphs are absent by design: they are synthesized by
+    /// [`super::box_drawing`] and never reach here. The `|`, `-` and `+` arms are
+    /// the ASCII and dotted border styles, which stay font glyphs.
     fn render_glyph_placeholder(glyph_data: &mut [u8], ch: char) {
         match ch {
             ' ' => {}
-            '|' | '│' | '┃' | '║' => {
+            '|' => {
                 for y in 0..20 {
                     glyph_data[y * 8 + 4] = 255;
                 }
             }
-            '-' | '─' | '━' | '═' => {
+            '-' => {
                 glyph_data[10 * 8..10 * 8 + 8].fill(255);
             }
             '+' => {
@@ -150,30 +170,6 @@ impl FontAtlas {
                     glyph_data[y * 8 + 4] = 255;
                 }
                 glyph_data[10 * 8..10 * 8 + 8].fill(255);
-            }
-            '┌' | '┏' | '╔' | '╭' => {
-                glyph_data[10 * 8 + 4..10 * 8 + 8].fill(255);
-                for y in 10..20 {
-                    glyph_data[y * 8 + 4] = 255;
-                }
-            }
-            '┐' | '┓' | '╗' | '╮' => {
-                glyph_data[10 * 8..10 * 8 + 4].fill(255);
-                for y in 10..20 {
-                    glyph_data[y * 8 + 4] = 255;
-                }
-            }
-            '└' | '┗' | '╚' | '╰' => {
-                glyph_data[10 * 8 + 4..10 * 8 + 8].fill(255);
-                for y in 0..10 {
-                    glyph_data[y * 8 + 4] = 255;
-                }
-            }
-            '┘' | '┛' | '╝' | '╯' => {
-                glyph_data[10 * 8..10 * 8 + 4].fill(255);
-                for y in 0..10 {
-                    glyph_data[y * 8 + 4] = 255;
-                }
             }
             '#' => {
                 for y in 4..16 {
@@ -275,6 +271,16 @@ impl FontAtlas {
 mod tests {
     use super::*;
 
+    /// The alpha mask the atlas would actually blit for `ch`.
+    fn glyph(atlas: &FontAtlas, ch: char) -> Vec<u8> {
+        let idx = *atlas
+            .glyph_indices
+            .get(&ch)
+            .unwrap_or_else(|| panic!("{ch} is missing from the atlas"));
+        let start = idx * atlas.glyph_width * atlas.glyph_height;
+        atlas.data[start..start + atlas.glyph_width * atlas.glyph_height].to_vec()
+    }
+
     #[test]
     fn test_font_atlas_new() {
         let atlas = FontAtlas::new();
@@ -282,6 +288,56 @@ mod tests {
         assert_eq!(atlas.glyph_height, 20);
         assert!(atlas.glyph_indices.contains_key(&'A'));
         assert!(atlas.glyph_indices.contains_key(&'┌'));
+    }
+
+    /// `new()` blits the synthesized buffer with `copy_from_slice`, which panics
+    /// on a length mismatch. Pin the two constants together before it does.
+    #[test]
+    fn atlas_cell_matches_the_box_drawing_geometry() {
+        let atlas = FontAtlas::new();
+        assert_eq!(atlas.glyph_width, box_drawing::CELL_W as usize);
+        assert_eq!(atlas.glyph_height, box_drawing::CELL_H as usize);
+    }
+
+    /// ISSUE-001 at the atlas boundary: a vertical border glyph must ink every
+    /// row, because the blit starts a fresh glyph at each row boundary.
+    #[test]
+    fn synthesized_vertical_glyphs_cover_the_full_cell_height() {
+        let atlas = FontAtlas::new();
+        for ch in ['│', '║', '┃'] {
+            let mask = glyph(&atlas, ch);
+            for y in 0..20 {
+                assert!(
+                    mask.iter().skip(y * 8).take(8).any(|&a| a > 0),
+                    "{ch} leaves atlas row {y} blank, so a stacked border dashes there"
+                );
+            }
+        }
+    }
+
+    /// The regression the browser used to reintroduce: `uploadFontAtlas()` sends
+    /// a 13px raster whose ink stops short of the cell. The atlas must ignore it.
+    #[test]
+    fn uploading_a_font_raster_cannot_break_a_box_drawing_glyph() {
+        let mut atlas = FontAtlas::new();
+        // Exactly what a font gives at 13px in a 20px cell: rows 2..17 only.
+        let mut dashed = vec![0u8; 8 * 20];
+        for y in 2..17 {
+            dashed[y * 8 + 2] = 255;
+        }
+        atlas.update_glyph('│', &dashed);
+
+        assert_eq!(glyph(&atlas, '│'), glyph(&FontAtlas::new(), '│'));
+    }
+
+    /// …while an ordinary glyph still takes the uploaded bytes verbatim, or the
+    /// fix would have replaced the whole font instead of one class of glyph.
+    #[test]
+    fn non_box_drawing_uploads_still_land() {
+        let mut atlas = FontAtlas::new();
+        let custom = vec![7u8; 8 * 20];
+        atlas.update_glyph('A', &custom);
+        assert_eq!(glyph(&atlas, 'A'), custom);
     }
 
     #[test]

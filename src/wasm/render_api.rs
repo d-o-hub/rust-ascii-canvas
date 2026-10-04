@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 
 use super::bindings::AsciiEditor;
 use crate::core::ascii_export::ExportOptions;
+use crate::render::box_drawing;
 use crate::wasm::render_bridge::{
     export_ascii, get_dirty_render_commands, get_render_commands, get_render_commands_full,
     needs_redraw, request_full_redraw,
@@ -55,10 +56,18 @@ impl AsciiEditor {
                     if cell.is_visible() {
                         let px = x as f64 * char_width;
                         let py = y as f64 * line_height;
-                        let escaped = escape_xml_char(cell.ch);
-                        svg.push_str(&format!(
-                            r##"<text x="{px}" y="{py}" dominant-baseline="hanging">{escaped}</text>"##
-                        ));
+                        // Box-drawing glyphs are primitives, not text: no font
+                        // size is both tall enough to bridge a row and narrow
+                        // enough to stay on its stem axis. Dogfood ISSUE-001.
+                        match box_drawing::svg_rects_for(cell.ch, px, py, char_width, line_height) {
+                            Some(rects) => svg.push_str(&rects),
+                            None => {
+                                let escaped = escape_xml_char(cell.ch);
+                                svg.push_str(&format!(
+                                    r##"<text x="{px}" y="{py}" dominant-baseline="hanging">{escaped}</text>"##
+                                ));
+                            }
+                        }
                     }
                 }
             }

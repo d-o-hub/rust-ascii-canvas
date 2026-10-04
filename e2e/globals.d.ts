@@ -39,6 +39,17 @@ declare global {
             onPointerMove(screenX: number, screenY: number): unknown;
             pasteText(text: string): boolean;
             exportPixelBuffer(): Uint8Array;
+            /**
+             * Viewport transform the pixel buffer is blitted through
+             * (`web/render.ts:142-148`): `drawImage(offscreen, panX, panY,
+             * bufferWidth * zoom, ...)`. A test that samples device pixels has to
+             * account for both, or it measures the blit instead of the glyphs.
+             */
+            readonly zoom: number;
+            readonly pan: Float64Array;
+            setZoom(zoom: number): void;
+            setPan(x: number, y: number): void;
+            requestRedraw(): void;
             readonly width: number;
             readonly height: number;
             readonly has_selection: boolean;
@@ -48,5 +59,18 @@ declare global {
             setTool?(tool: string): void;
             getTool?(): string;
         } | null;
+        /**
+         * Cell metrics the renderer publishes after `measureFont()`
+         * (`web/render.ts:65-66`), so a test can read the pitch the app actually
+         * laid out with instead of hardcoding `8 x 20`.
+         *
+         * `web/state.ts` seeds `charWidth` at `8.4`, but with `USE_PIXEL_BUFFER`
+         * on, `measureFont()` overwrites both values with `GLYPH_WIDTH` /
+         * `GLYPH_HEIGHT` from `web/constants.ts`, so the published pair is the
+         * integer 8 x 20. Optional because the assignment happens after the
+         * first render.
+         */
+        charWidth?: number;
+        lineHeight?: number;
     }
 }

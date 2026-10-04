@@ -1,5 +1,9 @@
 //! Render module - canvas rendering and metrics.
+//!
+//! `box_drawing` is public rather than re-exported because the WASM export layer
+//! consumes it directly; the others stay curated behind single-item re-exports.
 
+pub mod box_drawing;
 mod canvas_renderer;
 mod dirty_rect;
 mod font_renderer;
