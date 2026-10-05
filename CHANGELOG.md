@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- actionlint parity for GitHub Actions workflows (harness **L-027**): a new
+  `scripts/actionlint-check.py` sensor mirrors the fail-closed contract
+  (`npm-audit.py` / `bandit-check.py`) with exit 0 clean / 1 findings /
+  2 unverified, pins actionlint to 1.6.26 and refuses a stale local install,
+  runs in the full tier and the CI `architecture` job, and closes the same
+  L-017 rule-family gap for `.github/workflows/**`. Catches the class of bug
+  #243 removed by hand.
+- Bandit parity for the required Codacy check (harness **L-026**): a new
+  `scripts/bandit-check.py` sensor mirrors `npm-audit.py`'s fail-closed
+  contract (0 clean / 1 findings ≥ HIGH / 2 unverified), runs the full tier
+  locally and a `Bandit parity for the required Codacy check` step in the CI
+  `architecture` job, and closes the L-017 rule-family gap for Python.
+- Fail-closed quality harness (ADR-047): structured npm audit evidence that
+  cannot pass while a lockfile went unchecked, artifact validity required
+  before size budgets, WASM binding freshness gates in local and CI checks,
+  retained positive/negative sensor-CI-skill fixtures in both runners, pnpm
+  pin parity across workspaces and CI, a committed Cargo.lock behind the new
+  `--locked` steps, and production-dist E2E in full/CI.
+  Adds the offline skill-manifest checker and the `repo-typescript` adapter.
+
 ### Fixed
 
 - Text Space/Unicode and unknown browser keys no longer become panning/Delete.
@@ -25,6 +47,8 @@ All notable changes to this project will be documented in this file.
   Legacy autosave migration is non-destructive; storage denial, quota, corrupt
   shelves/documents and stale-tab conflicts preserve the live work instead of
   silently replacing or overwriting it. Local drafts are not durable backups.
+- Root `brace-expansion` resolution updated from 5.0.9 to 5.0.12 for two High
+  advisories, without overrides or advisory ignores.
 
 - **F-13 layer history: undo could rename the wrong layer.** The layer-history
   commands landed in #213 recorded a **positional index** and replayed it on

@@ -1,7 +1,6 @@
 # Rust
 /target/
 **/*.rs.bk
-Cargo.lock
 
 # WASM
 /pkg/
@@ -42,6 +41,10 @@ coverage/
 # Playwright
 playwright-report/
 test-results/
+
+# Dogfood QA evidence — screenshots and one-off probe scripts (~MB of PNGs).
+# Reproducible, so it is regenerated rather than versioned.
+dogfood-output/
 
 # Blackbox
 .blackbox/

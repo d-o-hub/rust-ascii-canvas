@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "local_max_lines": 300,
+  "skills": {
+    "agent-browser": {"owner": "local", "metadata": ["name", "description", "allowed-tools"], "requires": []},
+    "agents-md": {"owner": "local", "metadata": ["name", "description"], "requires": ["rust-engineer", "skill-creator"]},
+    "codacy": {"owner": "local", "metadata": ["name", "description"], "requires": ["codacy-cloud-cli", "codacy-code-review", "configure-codacy", "configure-codacy-cloud"]},
+    "codacy-analysis-cli": {
+      "owner": "upstream", "metadata": ["name", "description", "license", "metadata"], "requires": [],
+      "lock": {"source": "github/codacy/codacy-skills", "sourceType": "github", "computedHash": "d7cc9122416838a205c8bc4b37a66b65ec5ef883d7f116ef021a3234061e359c"},
+      "sha256": "1c40764666e61746e46d37ec2c7fd6d47d33e8b75c7da3c41174273f18299dba"
+    },
+    "codacy-cloud-cli": {
+      "owner": "upstream", "metadata": ["name", "description", "license", "metadata"], "requires": [],
+      "lock": {"source": "github/codacy/codacy-skills", "sourceType": "github", "computedHash": "9bf9440394b8375f4a5330a075d71193915853791f147d31f58c73731556c7d1"},
+      "sha256": "9bf9440394b8375f4a5330a075d71193915853791f147d31f58c73731556c7d1"
+    },
+    "codacy-code-review": {
+      "owner": "upstream", "metadata": ["name", "description", "license", "metadata"], "requires": ["codacy-cloud-cli", "codacy-analysis-cli"],
+      "lock": {"source": "github/codacy/codacy-skills", "sourceType": "github", "computedHash": "3c35c6a0df7443f57e2849924a153c92027dac9cba587a1bf1ed0d5809c917b1"},
+      "sha256": "3c35c6a0df7443f57e2849924a153c92027dac9cba587a1bf1ed0d5809c917b1"
+    },
+    "code-review": {"owner": "local", "metadata": ["name", "description"], "requires": ["verify", "pr-roast", "tool-validation"]},
+    "configure-codacy": {
+      "owner": "upstream", "metadata": ["name", "description", "license", "metadata"], "requires": ["codacy-analysis-cli", "codacy-cloud-cli"],
+      "lock": {"source": "github/codacy/codacy-skills", "sourceType": "github", "computedHash": "a8aadb16082fe66e730e4a80a8a6fee951bd977873c5ab4a398b499037f8efec"},
+      "sha256": "a8aadb16082fe66e730e4a80a8a6fee951bd977873c5ab4a398b499037f8efec"
+    },
+    "configure-codacy-cloud": {
+      "owner": "upstream", "metadata": ["name", "description", "license", "metadata"], "requires": ["codacy-analysis-cli", "codacy-cloud-cli"],
+      "lock": {"source": "github/codacy/codacy-skills", "sourceType": "github", "computedHash": "46f558ffa4bb6412df66fe819032c5475eceefaa1d84f482b979c684f4347e41"},
+      "sha256": "46f558ffa4bb6412df66fe819032c5475eceefaa1d84f482b979c684f4347e41"
+    },
+    "dogfood": {"owner": "local", "metadata": ["name", "description", "allowed-tools"], "requires": ["agent-browser"]},
+    "goap-adr-planner": {"owner": "local", "metadata": ["name", "description"], "requires": ["rust-engineer", "dogfood", "agents-md"]},
+    "merge-gate": {"owner": "local", "metadata": ["name", "description"], "requires": ["verify", "code-review", "pr-roast", "production-loop", "goap-adr-planner"]},
+    "pr-roast": {"owner": "local", "metadata": ["name", "description"], "requires": ["verify", "code-review", "codacy", "merge-gate"]},
+    "production-loop": {"owner": "local", "metadata": ["name", "description"], "requires": ["verify", "pr-roast", "merge-gate", "dogfood", "goap-adr-planner"]},
+    "repo-typescript": {"owner": "local", "metadata": ["name", "description"], "requires": ["typescript-expert", "vite", "verify"]},
+    "rust-best-practices": {"owner": "local", "metadata": ["name", "description", "license", "compatibility", "metadata", "allowed-tools"], "requires": []},
+    "rust-engineer": {"owner": "local", "metadata": ["name", "description"], "requires": []},
+    "rust-wasm": {
+      "owner": "upstream", "metadata": ["name", "description"], "requires": [],
+      "lock": {"source": "pluginagentmarketplace/custom-plugin-rust", "sourceType": "github", "computedHash": "cc1d37d632641d8cd05b8405c2fb522d6bbd46330745ef5fb03234b16609d444"},
+      "sha256": "6ff543bc1404b2aeebe54f56ca6eaf614ea1c2a2f6a243cd65698c3708cec093"
+    },
+    "setup-coverage": {
+      "owner": "upstream", "metadata": ["name", "description", "license", "metadata"], "requires": ["codacy-cloud-cli"],
+      "lock": {"source": "github/codacy/codacy-skills", "sourceType": "github", "computedHash": "90046e9c7784f17416b21450d95cacc03eefd00a3528b3ed169abdd52ea7ec37"},
+      "sha256": "6f4e6ae8a79ea0a0acc326c367371708a2e99f4c73a21768e9050f51dba199d6"
+    },
+    "skill-creator": {"owner": "local", "metadata": ["name", "description", "license"], "requires": []},
+    "technical-writing": {
+      "owner": "upstream", "metadata": ["name", "description"], "requires": [],
+      "lock": {"source": "supercent-io/skills-template", "sourceType": "github", "computedHash": "0245935fbcc7aa2952b8b9799559a7bf9623c097e722124fb501fe1794f9caa6"},
+      "sha256": "10a7b626e620fc8cce19c6898bb0b19f85402170dcdd2e3b8d48dbce49e1725b"
+    },
+    "tool-validation": {"owner": "local", "metadata": ["name", "description"], "requires": ["verify"]},
+    "typescript-expert": {
+      "owner": "upstream", "metadata": ["name", "description", "category", "bundle", "displayName", "color", "risk", "source"],
+      "requires": ["typescript-build-expert", "typescript-module-expert", "typescript-type-expert"],
+      "lock": {"source": "sickn33/antigravity-awesome-skills", "sourceType": "github", "computedHash": "7d7786559f73afe2e383506724440a5a72d717134943be138d80d2ec3609930f"},
+      "sha256": "ac096ddea1e4078d17a8fd4244ce1a1f44eae553e61b6de249338ccf27845f6f"
+    },
+    "verify": {"owner": "local", "metadata": ["name", "description"], "requires": ["merge-gate", "tool-validation", "code-review", "pr-roast", "repo-typescript"]},
+    "vite": {"owner": "local", "metadata": ["name", "description"], "requires": []}
+  },
+  "commands": [
+    {"skill": "verify", "text": "npm run gate:fast", "cwd": ".", "kind": "package", "target": "gate:fast"},
+    {"skill": "verify", "text": "npm run gate:full", "cwd": ".", "kind": "package", "target": "gate:full"},
+    {"skill": "verify", "text": "npm run gate:pr:test", "cwd": ".", "kind": "package", "target": "gate:pr:test"},
+    {"skill": "verify", "text": "npm run check-size", "cwd": ".", "kind": "package", "target": "check-size"},
+    {"skill": "verify", "text": "npm run build:web", "cwd": ".", "kind": "package", "target": "build:web"},
+    {"skill": "verify", "text": "npm run codacy:check", "cwd": ".", "kind": "package", "target": "codacy:check"},
+    {"skill": "verify", "text": "python3 scripts/wasm-freshness.py --ensure", "cwd": ".", "kind": "file", "target": "scripts/wasm-freshness.py"},
+    {"skill": "verify", "text": "python3 scripts/check-ci.py", "cwd": ".", "kind": "file", "target": "scripts/check-ci.py"},
+    {"skill": "verify", "text": "python3 scripts/test-ci.py", "cwd": ".", "kind": "file", "target": "scripts/test-ci.py"},
+    {"skill": "verify", "text": "python3 scripts/test-sensors.py", "cwd": ".", "kind": "file", "target": "scripts/test-sensors.py"},
+    {"skill": "verify", "text": "python3 scripts/test-build.py", "cwd": ".", "kind": "file", "target": "scripts/test-build.py"},
+    {"skill": "verify", "text": "bash scripts/test-wasm.sh", "cwd": ".", "kind": "file", "target": "scripts/test-wasm.sh"},
+    {"skill": "verify", "text": "bash scripts/npm-audit.sh", "cwd": ".", "kind": "file", "target": "scripts/npm-audit.sh"},
+    {"skill": "verify", "text": "bash scripts/check-architecture.sh", "cwd": ".", "kind": "file", "target": "scripts/check-architecture.sh"},
+    {"skill": "verify", "text": "bash scripts/check-loc.sh", "cwd": ".", "kind": "file", "target": "scripts/check-loc.sh"},
+    {"skill": "verify", "text": "python3 scripts/check-skills.py", "cwd": ".", "kind": "file", "target": "scripts/check-skills.py"},
+    {"skill": "verify", "text": "python3 scripts/test-skills.py", "cwd": ".", "kind": "file", "target": "scripts/test-skills.py"},
+    {"skill": "merge-gate", "text": "npm run gate:pr", "cwd": ".", "kind": "package", "target": "gate:pr"},
+    {"skill": "merge-gate", "text": "npm run gate:ruleset", "cwd": ".", "kind": "package", "target": "gate:ruleset"},
+    {"skill": "repo-typescript", "text": "npm run build:wasm", "cwd": ".", "kind": "package", "target": "build:wasm"},
+    {"skill": "repo-typescript", "text": "pnpm run lint", "cwd": "web", "kind": "package", "target": "lint"},
+    {"skill": "repo-typescript", "text": "pnpm test", "cwd": "web", "kind": "package", "target": "test"},
+    {"skill": "repo-typescript", "text": "pnpm run build", "cwd": "web", "kind": "package", "target": "build"}
+  ],
+  "adapters": {
+    "typescript-build-expert": {"skill": "repo-typescript", "reason": "Upstream referral is not installed; use the local Vite/command adapter."},
+    "typescript-module-expert": {"skill": "repo-typescript", "reason": "Upstream referral is not installed; use local compiler diagnostics, not a nonexistent agent."},
+    "typescript-type-expert": {"skill": "repo-typescript", "reason": "Upstream referral is not installed; use local compiler diagnostics, not a nonexistent agent."}
+  },
+  "exceptions": [
+    {"skill": "rust-wasm", "kind": "resource", "file": ".agents/skills/rust-wasm/references/GUIDE.md", "target": "assets/config.yaml", "replacement": ".agents/skills/rust-wasm/assets/config.yaml", "source": "pluginagentmarketplace/custom-plugin-rust", "reason": "Locked upstream prose uses skill-root-relative bundle paths, not reference-document-relative paths. Resolve to the existing bundled file; do not patch upstream."},
+    {"skill": "rust-wasm", "kind": "resource", "file": ".agents/skills/rust-wasm/references/GUIDE.md", "target": "scripts/validate.py", "replacement": ".agents/skills/rust-wasm/scripts/validate.py", "source": "pluginagentmarketplace/custom-plugin-rust", "reason": "Locked upstream prose uses skill-root-relative bundle paths; resolve to this existing helper."},
+    {"skill": "rust-wasm", "kind": "resource", "file": ".agents/skills/rust-wasm/references/PATTERNS.md", "target": "references/GUIDE.md", "replacement": ".agents/skills/rust-wasm/references/GUIDE.md", "source": "pluginagentmarketplace/custom-plugin-rust", "reason": "Locked upstream prose uses skill-root-relative bundle paths; resolve to this existing guide."},
+    {"skill": "rust-wasm", "kind": "resource", "file": ".agents/skills/rust-wasm/references/PATTERNS.md", "target": "assets/config.yaml", "replacement": ".agents/skills/rust-wasm/assets/config.yaml", "source": "pluginagentmarketplace/custom-plugin-rust", "reason": "Locked upstream prose uses skill-root-relative bundle paths; resolve to this existing asset."},
+    {"skill": "rust-wasm", "kind": "resource", "file": ".agents/skills/rust-wasm/references/PATTERNS.md", "target": "scripts/validate.py", "replacement": ".agents/skills/rust-wasm/scripts/validate.py", "source": "pluginagentmarketplace/custom-plugin-rust", "reason": "Locked upstream prose uses skill-root-relative bundle paths; resolve to this existing helper."},
+    {"skill": "codacy-analysis-cli", "kind": "length", "target": "484", "source": "github/codacy/codacy-skills", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."},
+    {"skill": "codacy-cloud-cli", "kind": "length", "target": "309", "source": "github/codacy/codacy-skills", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."},
+    {"skill": "configure-codacy", "kind": "length", "target": "831", "source": "github/codacy/codacy-skills", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."},
+    {"skill": "configure-codacy-cloud", "kind": "length", "target": "356", "source": "github/codacy/codacy-skills", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."},
+    {"skill": "rust-wasm", "kind": "length", "target": "415", "source": "pluginagentmarketplace/custom-plugin-rust", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."},
+    {"skill": "setup-coverage", "kind": "length", "target": "344", "source": "github/codacy/codacy-skills", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."},
+    {"skill": "typescript-expert", "kind": "length", "target": "431", "source": "sickn33/antigravity-awesome-skills", "reason": "Pinned upstream guide; exact imported length only, split on reviewed upstream re-import."}
+  ]
+}

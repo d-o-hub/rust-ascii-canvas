@@ -7,17 +7,27 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-echo "Building WASM target..."
-cargo build --target wasm32-unknown-unknown --release
+INPUT_DIGEST="$(python3 scripts/wasm-freshness.py --print)"
+# A failed build must not leave a successful provenance claim behind.
+rm -f web/pkg/.build-fingerprint.json
+
+echo "Building WASM target from committed lockfile..."
+cargo build --locked --target wasm32-unknown-unknown --release
 
 echo "Generating WASM bindings..."
 wasm-bindgen target/wasm32-unknown-unknown/release/ascii_canvas.wasm --out-dir web/pkg --target web
 
 WASM_FILE="web/pkg/ascii_canvas_bg.wasm"
 
-if command -v wasm-opt >/dev/null; then
+# Prefer the frozen root dependency; direct bash invocation must not require a
+# globally installed npm binary that pnpm run happens to put on PATH.
+WASM_OPT="$(command -v wasm-opt || true)"
+if [[ -x "$REPO_ROOT/node_modules/.bin/wasm-opt" ]]; then
+  WASM_OPT="$REPO_ROOT/node_modules/.bin/wasm-opt"
+fi
+if [[ -n "$WASM_OPT" ]]; then
   echo "Optimizing WASM binary with wasm-opt..."
-  wasm-opt --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext -O3 "$WASM_FILE" -o "$WASM_FILE"
+  "$WASM_OPT" --enable-simd --enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext -O3 "$WASM_FILE" -o "$WASM_FILE"
   echo "WASM optimization complete."
 else
   # If GITHUB_ACTIONS is "true" or CI is "true"
@@ -38,7 +48,7 @@ else
     echo " ERROR: wasm-opt (binaryen) is not installed." >&2
     echo " To ensure size and performance parity with CI, install wasm-opt." >&2
     echo "   - Via mise (recommended): run 'mise install'" >&2
-    echo "   - Via npm: run 'npm install -g binaryen'" >&2
+    echo "   - Frozen local dependency: pnpm install --frozen-lockfile" >&2
     echo "   - Via package manager: e.g. 'brew install binaryen' or 'apt install binaryen'" >&2
     echo "" >&2
     echo " If you must build without wasm-opt, run with SKIP_WASM_OPT=1:" >&2
@@ -47,3 +57,6 @@ else
     exit 1
   fi
 fi
+
+node scripts/check-artifact.mjs
+printf '%s\n' "$INPUT_DIGEST" | python3 scripts/wasm-freshness.py --record

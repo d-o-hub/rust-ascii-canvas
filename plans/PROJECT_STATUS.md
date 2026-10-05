@@ -1,5 +1,16 @@
 # ASCII Canvas Editor - Project Status
 
+## 2026-09-30 audit: shipped as #228–#233
+
+The recommendations candidate merged as #228–#233 (npm, editor/document safety,
+drafts, palette a11y, merge-gate scope, R-09 web split); integrated fast/full
+verification and independent review follow-up are recorded in
+[the implementation evidence](recommendations-implementation-2026-09-30.md).
+The user accepted ADR-046/047 on 2026-09-30. The truthful-sensors + skills
+remainder is ported onto `refactor/fail-closed-sensors`; its PR gates remain open.
+Use [the active backlog](FOLLOW_UPS.md#active-backlog) for next work, not the
+historical release/test counts below.
+
 ## Overview
 
 A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like UI.
@@ -10,7 +21,15 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
 **Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
-**Next** (updated 2026-09-28): F-13 layer history is **shipped** (issue #207, ADR-043; #212 + hardened in #216), R-05 **dependency refresh is done** — the unused optional peers (esbuild, jsdom) are pruned, closing Dependabot alert #11 and dissolving L-006's trigger — and R-07 **Codacy backlog is done and gated in CI** (#219 sensors + #220 L-016 wiring). R-06 (dev-server host binding) is next; #199 (do-harness adoption) stays deferred until the upstream fixes ship pinned.
+**Next** (2026-09-30): see the sole [active backlog](FOLLOW_UPS.md#active-backlog).
+F-13 (#213/#216), R-06 (#224) and npm-audit inventory (#225) already shipped.
+The [audit implementation](recommendations-implementation-2026-09-30.md)
+shipped as #228–#233; ADR-046/047 were accepted by the user
+on 2026-09-30. The sensors + skills remainder is an open PR candidate on
+`refactor/fail-closed-sensors`.
+The historical test and remote-status snapshots below have not been re-verified
+by this documentation update. Codacy repository intake is local procedure;
+required PR analysis is distinct from a current repository-wide backlog read.
 
 **Harness (2026-09-27, ADR-044 / #213)**: green CI is now a real merge precondition. The `main` ruleset previously required only `Codacy Static Code Analysis` — every product sensor was advisory and a PR could merge with red E2E. It now requires `CI Success` + `PR Readiness (merge gate)` and requires review-thread resolution, with `required_approving_review_count: 0` (gates decide, not a human click). Backed by `scripts/pr-merge-gate.sh` (local mirror, read-only), `scripts/ruleset-check.sh` (the ruleset is repo state, so its drift is now a required check against a committed snapshot), and a documented delivery loop in `agents-docs/delivery.md`. See harness L-008/L-009.
 
@@ -52,7 +71,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 | PNG export | ✅ |
 | SVG export | ✅ `web/exportSvg.ts` (F-10) |
 | Grid size UI + responsive defaults | ✅ |
-| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) + undoable layer ops (F-13, ADR-043; #212 + #216) |
+| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) + undoable layer ops (F-13, ADR-043; #213 + #216) |
 | Light theme + switcher | ✅ (F-31) |
 | Preview rendering style | ✅ ADR-011 (F-15) |
 | Enhanced text tool (caret, multi-line) | ✅ ADR-010 (F-14) |
@@ -108,16 +127,12 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 
 ---
 
-## Immediate next steps (updated 2026-09-28)
+## Next work
 
-1. **F-13 — layer-operation undo** ✅ **shipped** (issue #207, [ADR-043](ADRs/043-layer-command-history.md)): merged in #212, hardened in #216 to address layers by stable id rather than position. Layer ops are undoable and covered by `e2e/layers.spec.ts`.
-2. **R-05 — dependency refresh** ✅ **done**: re-resolved `web/pnpm-lock.yaml` (pnpm 10.34.5) and dropped `pnpm.ignoredBuiltDependencies`; the unused optional peers esbuild and jsdom are pruned from the installed tree, closing Dependabot alert #11 and dissolving the L-006 trigger. Verified on both pnpm majors with `gate:full` green and chromium E2E 91/91. See [FOLLOW_UPS.md](FOLLOW_UPS.md) for the reviewed bump list.
-3. **R-07 — Codacy backlog** ✅ **done and gated in CI**: #219 cleared the 41 repo-level findings (action SHA pins + L-015, `e2e/` lint/typecheck sensors + L-014, vendored-skill exclusion, `TOOL_INFO` closed record); #220 wired both `e2e/` sensors into the blocking `web` CI job (L-016 — the gate script alone gates nothing).
-4. **R-06 — dev-server host binding**: `web/vite.config.ts:16` sets `server.host: true` (LAN-visible `0.0.0.0`); decide the loopback default and document the device-testing opt-in.
-5. **#199 — do-harness adoption**: deferred until upstream #235/#236/#237 ship in a pinned release; sensor mapping and migration hazards already captured.
-6. **Harness** — ADR-037 contract stands; ADR-043 shipped with F-13, and this cycle adds steering entries **L-014** (`e2e/` unlinted), **L-015** (annotated-tag SHAs), **L-016** (gate script is not a gate).
-
-Full backlog: [FOLLOW_UPS.md](FOLLOW_UPS.md)
+Use [FOLLOW_UPS.md — Active backlog](FOLLOW_UPS.md#active-backlog), not a second
+list here. Dated completion/verification records remain there, including the
+correction to the original R-07 "41 → 0" claim: PR-scoped analysis missed the
+11 High findings later fixed in #222, with local parity added in #223.
 
 ### Agent harness (2026-07-16)
 
@@ -177,4 +192,5 @@ Reviewed all 3 open PRs with an agent swarm (a11y deep-review + local Codacy rul
 - **Hardening**: `change` handler guards against no-op renames so Escape-cancel can't re-commit restored names.
 - Learnings documented in ADR-040 (Follow-up 3).
 
-*Last updated: 2026-09-28 — R-07 done and gated in CI (#219 + #220/L-016); next is R-06.*
+*Last updated: 2026-10-02 — audit shipped as #228–#233; sensors port open;
+the older test snapshots remain historical.*

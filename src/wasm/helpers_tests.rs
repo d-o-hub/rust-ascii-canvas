@@ -34,19 +34,38 @@ mod clipboard_tests {
         assert!(lines[2].ends_with('┘'));
     }
 
+    /// ISSUE-001: box-drawing glyphs leave the text stream entirely. A `<text>`
+    /// element is a font glyph, and no font size both bridges a 20px row and
+    /// stays on the stem axis, so any text here would dash again.
     #[test]
-    fn test_export_svg() {
+    fn test_export_svg_draws_the_box_as_geometry() {
         let canvas = make_canvas_with_box();
         let svg = canvas.export_svg();
         assert!(svg.starts_with("<svg"));
-        assert!(svg.contains("<rect"));
         assert!(svg.contains("<g fill="));
-        assert!(svg.contains("dominant-baseline=\"hanging\""));
-        assert!(svg.contains("┌"));
-        assert!(svg.contains("┐"));
-        assert!(svg.contains("┘"));
-        assert!(svg.contains("└"));
         assert!(svg.ends_with("</g></svg>"));
+        assert!(!svg.contains("<text"), "{svg}");
+        assert!(!svg.contains("dominant-baseline"), "{svg}");
+        for ch in ['┌', '┐', '└', '┘', '─', '│'] {
+            assert!(!svg.contains(ch), "{ch} is still exported as text");
+        }
+        // The fixture has 12 box glyphs and each needs at least one rect, on top
+        // of the background rect.
+        assert!(
+            svg.matches("<rect ").count() > 13,
+            "expected one rect per box glyph: {svg}"
+        );
+    }
+
+    /// …and ordinary glyphs still go through `<text>`, or the exporter would have
+    /// stopped being a text renderer rather than fixing one class of character.
+    #[test]
+    fn test_export_svg_keeps_text_for_ordinary_glyphs() {
+        let mut canvas = make_canvas_with_box();
+        canvas.state.grid.set_char(2, 1, 'A');
+        let svg = canvas.export_svg();
+        assert!(svg.contains(">A</text>"), "{svg}");
+        assert!(svg.contains("dominant-baseline=\"hanging\""), "{svg}");
     }
 
     #[test]

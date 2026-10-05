@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — explicitly approved by the user on 2026-09-30. **PARTIAL implementation in the editor-safety slice:** register `tests/wasm`, execute library and public binding tests in Node, require nonzero passing tests per target, and invoke that shared runner from the existing CI `rust` job and local full gate. All other decisions below remain accepted but are outside this delivery. The implementation is a delivery candidate, not merged or released; normal PR/remote gates still apply. No live ruleset change is authorized or performed.
+Accepted — explicitly approved by the user on 2026-09-30. **Implementation:** the editor-safety slice — register `tests/wasm`, execute library and public binding tests in Node, require nonzero passing tests per target, invoke that shared runner from the CI `rust` job and local full gate — shipped in #229. The remaining decisions (fail-closed audit/artifact sensors with retained fixtures, WASM binding freshness, pnpm pin parity, the offline skill-manifest checker, production-dist E2E and CI wiring) ship with the fail-closed sensors + skills change on `refactor/fail-closed-sensors` (2026-10-02); its PR and remote gates remain outstanding. No live ruleset change is authorized or performed.
 
 ## Context
 
@@ -35,3 +35,5 @@ Offline full verification may now fail as unverified instead of appearing green;
 ## Verification
 
 See the [editor-safety delivery plan](../editor-safety-delivery-2026-09-30.md) for this slice's narrow test wiring and isolated-tree evidence. The full harness, skill/coherence fixtures, fail-closed audit/artifact checks and production-build gate rewrite are not shipped here. No claim that repository state, third-party checks or remote CI have been verified by local tests.
+
+2026-10-02 update: those pieces ship with the fail-closed sensors + skills change; see [harness L-022–L-025](../../agents-docs/harness.md).
