@@ -21,6 +21,8 @@
   "playwright.config.ts": ["web", "wasm", "e2e"],
   "e2e/tsconfig.json": ["web", "e2e"],
   "scripts/npm-audit.py": ["architecture", "security-npm"],
+  "scripts/bandit-check.py": ["architecture"],
+  "scripts/actionlint-check.py": ["architecture"],
   "scripts/build-wasm.sh": ["architecture", "wasm", "web", "e2e"],
   ".github/workflows/ci.yml": ["architecture", "security", "security-npm", "deny", "rust", "web", "wasm", "e2e"],
   ".github/ruleset-main.json": ["architecture"],

@@ -22,7 +22,7 @@ A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like U
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
 **Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
 **Next** (2026-09-30): see the sole [active backlog](FOLLOW_UPS.md#active-backlog).
-F-13 (#212/#216), R-06 (#224) and npm-audit inventory (#225) already shipped.
+F-13 (#213/#216), R-06 (#224) and npm-audit inventory (#225) already shipped.
 The [audit implementation](recommendations-implementation-2026-09-30.md)
 shipped as #228–#233; ADR-046/047 were accepted by the user
 on 2026-09-30. The sensors + skills remainder is an open PR candidate on
@@ -71,7 +71,7 @@ required PR analysis is distinct from a current repository-wide backlog read.
 | PNG export | ✅ |
 | SVG export | ✅ `web/exportSvg.ts` (F-10) |
 | Grid size UI + responsive defaults | ✅ |
-| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) + undoable layer ops (F-13, ADR-043; #212 + #216) |
+| Full layer editor (add/switch/rename/visible/lock/reorder/delete/merge) | ✅ (F-11) + undoable layer ops (F-13, ADR-043; #213 + #216) |
 | Light theme + switcher | ✅ (F-31) |
 | Preview rendering style | ✅ ADR-011 (F-15) |
 | Enhanced text tool (caret, multi-line) | ✅ ADR-010 (F-14) |
