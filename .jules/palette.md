@@ -1,3 +1,7 @@
+## 2026-08-25 - [Local Draft Actions Accessibility and Visual Feedback]
+**Learning:** Local draft management actions (save, create, delete) often lack immediate feedback or clear reasons when disabled (e.g. attempting to delete when only 1 draft remains or create when the 20-draft limit is hit). Combining dynamic `aria-label` / `title` state descriptions with contextual toast notifications (`showToast`) creates an intuitive, accessible feedback loop for local session state.
+**Action:** Always explain why draft/session actions are disabled via dynamic `aria-label` and `title` attributes, and emit visual toast notifications when actions complete.
+
 ## 2026-08-20 - [Secondary Option Accessibility and Contextual Status Toasts]
 **Learning:** Secondary tool options (such as line direction toggles or eraser radius dropdowns) often rely on ambiguous icon-only labels or silent selection changes. Expanding `aria-label` and `title` attributes with full domain context (e.g. 'Horizontal line direction') and firing contextual status toast notifications upon option changes ensures visual and screen-reader interaction parity across all toolbar controls.
 **Action:** Always give icon-only sub-option buttons explicit, domain-scoped ARIA names and ensure option selection changes emit clear status toast messages.

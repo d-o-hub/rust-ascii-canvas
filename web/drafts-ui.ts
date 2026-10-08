@@ -4,7 +4,7 @@ import { DraftSession, DRAFTS_KEY, MAX_DRAFTS, type PreparedDocument } from './d
 import { state } from './state.js';
 import { BORDER_STYLES, FONT_SIZE } from './constants.js';
 import { requestRender, uploadFontAtlas } from './render.js';
-import { syncGridInputs, updateUI } from './ui.js';
+import { syncGridInputs, updateUI, showToast } from './ui.js';
 
 let session: DraftSession | null = null;
 
@@ -73,9 +73,19 @@ function refresh(): void {
         name.value = session.list().find(draft => draft.id === session?.selectedId)?.name ?? '';
     }
     const remove = document.querySelector<HTMLButtonElement>('#draft-delete');
-    if (remove) remove.disabled = session.list().length <= 1;
+    if (remove) {
+        const canDelete = session.list().length > 1;
+        remove.disabled = !canDelete;
+        remove.title = canDelete ? 'Delete current draft' : 'Cannot delete the only remaining draft';
+        remove.setAttribute('aria-label', canDelete ? 'Delete draft' : 'Cannot delete the only remaining draft');
+    }
     const create = document.querySelector<HTMLButtonElement>('#draft-new');
-    if (create) create.disabled = session.list().length >= MAX_DRAFTS;
+    if (create) {
+        const canCreate = session.list().length < MAX_DRAFTS;
+        create.disabled = !canCreate;
+        create.title = canCreate ? 'Create new draft' : `Maximum limit of ${MAX_DRAFTS} drafts reached`;
+        create.setAttribute('aria-label', canCreate ? 'Create new draft' : `Create new draft (disabled: limit of ${MAX_DRAFTS} drafts reached)`);
+    }
 }
 
 export function initializeDrafts(): void {
@@ -107,14 +117,24 @@ export function initializeDrafts(): void {
         const name = prompt('Name the new local draft', 'Untitled');
         if (name === null) return;
         const blank = new AsciiEditor(state.editor.width, state.editor.height);
-        try { session?.create(name, blank.serializeDocument()); } finally { blank.free(); }
+        try {
+            session?.create(name, blank.serializeDocument());
+            showToast('Created new draft');
+        } finally {
+            blank.free();
+        }
     });
     document.getElementById('draft-delete')?.addEventListener('click', () => {
         if (confirm('Delete this local draft? Download a backup first. This cannot be undone.')) {
             session?.deleteSelected();
+            showToast('Draft deleted');
         }
     });
-    document.getElementById('draft-save')?.addEventListener('click', () => { session?.save(); });
+    document.getElementById('draft-save')?.addEventListener('click', () => {
+        if (session?.save()) {
+            showToast('Draft saved locally');
+        }
+    });
 }
 
 export function saveDraft(): boolean { return session?.save() ?? false; }
