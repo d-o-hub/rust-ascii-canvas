@@ -51,6 +51,11 @@
     "precommit": "bash scripts/pre-commit-fast.sh",
     "audit:npm": "bash scripts/npm-audit.sh"
   },
+  "pnpm": {
+    "overrides": {
+      "source-map-js": "^1.2.2"
+    }
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
