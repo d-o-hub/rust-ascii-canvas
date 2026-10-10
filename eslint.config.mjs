@@ -86,6 +86,20 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-unnecessary-condition': 'error',
+      // Codacy's ESLint runs `no-confusing-void-expression` and it put a *required
+      // check* into `fail` on #250 for `requestAnimationFrame(() => requestAnimationFrame(() => resolve()))`
+      // while `gate:fast` stayed green — harness L-017 for the third time, after
+      // `security/*` (#223) and `no-inner-declarations` (#233). The pattern is
+      // `enabledBy: Default coding standard` (id 155121), the same lock as both
+      // `security/detect-*` rules, so there is no config to change and the code has
+      // to satisfy it permanently — which makes a local sensor the only way to see
+      // it before the push does. Measured baseline when it was added: 0 findings.
+      //
+      // It lives in this block on purpose. The rule requires type information;
+      // running it on a file with no `parserOptions.project` makes ESLint abort, not
+      // pass — so `playwright.config.ts`, the only root `.ts` outside `e2e/`, is
+      // outside its reach until a root tsconfig exists. Covered set: `e2e/**/*.ts`.
+      '@typescript-eslint/no-confusing-void-expression': 'error',
     },
   }
 );
