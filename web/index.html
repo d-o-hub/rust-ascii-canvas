@@ -215,13 +215,13 @@
                 <section class="panel-section draft-controls" aria-labelledby="drafts-title">
                     <h3 class="section-title" id="drafts-title">Local drafts</h3>
                     <label for="draft-select">Open draft</label>
-                    <select id="draft-select" class="select-input" aria-label="Open local draft"></select>
+                    <select id="draft-select" class="select-input" title="Open local draft" aria-label="Open local draft"></select>
                     <label for="draft-name">Name</label>
-                    <input id="draft-name" class="select-input" maxlength="80" aria-label="Draft name" />
+                    <input id="draft-name" class="select-input" maxlength="80" title="Draft name" aria-label="Draft name" />
                     <div class="draft-actions">
-                        <button id="draft-new" class="zoom-btn" type="button">New draft</button>
-                        <button id="draft-save" class="zoom-btn" type="button">Save locally</button>
-                        <button id="draft-delete" class="zoom-btn" type="button">Delete draft</button>
+                        <button id="draft-new" class="zoom-btn" type="button" title="Create new draft" aria-label="Create new draft">New draft</button>
+                        <button id="draft-save" class="zoom-btn" type="button" title="Save draft locally" aria-label="Save draft locally">Save locally</button>
+                        <button id="draft-delete" class="zoom-btn" type="button" title="Delete current draft" aria-label="Delete draft">Delete draft</button>
                     </div>
                     <p>Only in this browser, up to 20 drafts. Not a backup. Import opens a new draft.</p>
                 </section>
@@ -369,7 +369,7 @@
 
         <div class="save-status-bar">
             <span id="save-status" role="status" aria-live="polite">Not saved yet</span>
-            <button id="draft-download" class="zoom-btn" type="button">Download .asc backup</button>
+            <button id="draft-download" class="zoom-btn" type="button" title="Download .asc backup file" aria-label="Download .asc backup file">Download .asc backup</button>
         </div>
 
         <!-- Status Bar -->

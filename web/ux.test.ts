@@ -3,6 +3,7 @@ import { TOOL_INFO, updateToolButtons, setTool } from './main';
 import { state } from './state';
 import { setupEventListeners } from './events';
 import { refreshLayerList, toggleTheme, setZoom } from './ui';
+import { initializeDrafts } from './drafts-ui';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -447,6 +448,36 @@ describe('UX Improvements', () => {
 
         borderSelect.remove();
         autoBtn.remove();
+    });
+
+    it('should set dynamic titles and accessibility attributes on draft action controls', () => {
+        const deleteBtnNode = document.createElement('button');
+        deleteBtnNode.id = 'draft-delete';
+        const newBtnNode = document.createElement('button');
+        newBtnNode.id = 'draft-new';
+        document.body.appendChild(deleteBtnNode);
+        document.body.appendChild(newBtnNode);
+
+        state.statusToast = document.getElementById('status-toast');
+
+        state.editor = {
+            width: 80,
+            height: 40,
+            serializeDocument: vi.fn().mockReturnValue('{}'),
+        } as unknown as typeof state.editor;
+
+        initializeDrafts();
+
+        expect(deleteBtnNode.disabled).toBe(true);
+        expect(deleteBtnNode.title).toBe('Cannot delete the only remaining draft');
+        expect(deleteBtnNode.getAttribute('aria-label')).toBe('Cannot delete the only remaining draft');
+
+        expect(newBtnNode.disabled).toBe(false);
+        expect(newBtnNode.title).toBe('Create new draft');
+        expect(newBtnNode.getAttribute('aria-label')).toBe('Create new draft');
+
+        deleteBtnNode.remove();
+        newBtnNode.remove();
     });
 });
 
