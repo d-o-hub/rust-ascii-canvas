@@ -56,6 +56,15 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'error',
       '@typescript-eslint/no-unnecessary-condition': 'error',
+      // Codacy's ESLint runs `no-confusing-void-expression` and it failed the
+      // required check on #250 while `gate:fast` was green — harness L-017, third
+      // instance after `security/*` (#223) and `no-inner-declarations` (#233).
+      // `enabledBy: Default coding standard` (id 155121) means it cannot be
+      // disabled or configured, so the code must satisfy it always and the sensor
+      // has to see it first. Measured baseline when added: 0 findings.
+      // Requires type information, which is why it sits in this type-aware block
+      // rather than the plain-rules block above.
+      '@typescript-eslint/no-confusing-void-expression': 'error',
     },
   }
 );
