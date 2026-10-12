@@ -10,7 +10,7 @@
 #   `web` CI job, so the two cannot drift.
 #
 # SCOPE
-#   `src/**/*.rs` (all of it) and `web/*.ts` **excluding** `*.test.ts`. The web
+#   `src/**/*.rs` (all of it) and `web/**/*.ts` **excluding** `*.test.ts`. The web
 #   side was previously unchecked entirely, which is how `web/events.ts` reached
 #   850 lines and `web/ui.ts` 540 while `gate:fast` reported "LOC: no new
 #   oversized files" — the sensor existed and was green and did not look at
@@ -115,7 +115,7 @@ done < <(find ./src -name '*.rs' -type f 2>/dev/null | sort)
 while IFS= read -r file; do
   [[ -z "$file" ]] && continue
   check_file "$file"
-done < <(find ./web -maxdepth 1 -name '*.ts' -not -name '*.test.ts' -type f 2>/dev/null | sort)
+done < <(find ./web -name '*.ts' -not -name '*.test.ts' -not -path '*/node_modules/*' -not -path '*/pkg/*' -type f 2>/dev/null | sort)
 
 # Allowlist entries that point at nothing. An allowlist nobody prunes stops
 # being a record of debt and becomes a list of exemptions.

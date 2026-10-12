@@ -1,0 +1,248 @@
+# do-harness.toml — harness configuration for rust-ascii-canvas
+# Map quality gates and computational sensors to do-harness CLI.
+language = "rust"
+
+[hooks]
+pre-commit = ["fmt", "clippy", "web-lint", "web-tsc"]
+pre-push = []
+
+[signal-sets]
+feedback = [
+  "fmt",
+  "clippy",
+  "check",
+  "loc",
+  "architecture",
+  "wasm-freshness",
+  "web-lint",
+  "web-tsc",
+  "e2e-tsc",
+  "eslint-root",
+  "vitest"
+]
+verification = [
+  "fmt",
+  "clippy",
+  "check",
+  "test-rust",
+  "loc",
+  "architecture",
+  "ci-coherence",
+  "ci-fixtures",
+  "sensor-fixtures",
+  "build-fixtures",
+  "skill-check",
+  "skill-fixtures",
+  "version-pin-parity",
+  "pr-merge-gate-selftest",
+  "ruleset-snapshot",
+  "wasm-freshness",
+  "web-lint",
+  "web-tsc",
+  "e2e-tsc",
+  "playwright-config-fixtures",
+  "vitest",
+  "eslint-root",
+  "privacy-secrets",
+  "audit-cargo",
+  "audit-npm",
+  "bandit",
+  "actionlint",
+  "cargo-deny",
+  "codacy-check",
+  "wasm-test",
+  "wasm-size",
+  "e2e-chromium"
+]
+release = [
+  "fmt",
+  "clippy",
+  "check",
+  "test-rust",
+  "loc",
+  "architecture",
+  "ci-coherence",
+  "ci-fixtures",
+  "sensor-fixtures",
+  "build-fixtures",
+  "skill-check",
+  "skill-fixtures",
+  "version-pin-parity",
+  "pr-merge-gate-selftest",
+  "ruleset-snapshot",
+  "wasm-freshness",
+  "web-lint",
+  "web-tsc",
+  "e2e-tsc",
+  "playwright-config-fixtures",
+  "vitest",
+  "eslint-root",
+  "privacy-secrets",
+  "audit-cargo",
+  "audit-npm",
+  "bandit",
+  "actionlint",
+  "cargo-deny",
+  "codacy-check",
+  "wasm-test",
+  "wasm-size",
+  "e2e-chromium"
+]
+
+[[sensors]]
+name = "fmt"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "cargo", "fmt", "--all", "--", "--check"]
+when-changed = ["**/*.rs", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml"]
+
+[[sensors]]
+name = "clippy"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "cargo", "clippy", "--locked", "--all-targets", "--all-features", "--", "-D", "warnings"]
+when-changed = ["**/*.rs", "Cargo.toml", "Cargo.lock", "clippy.toml"]
+
+[[sensors]]
+name = "check"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "cargo", "check", "--locked", "--all-targets"]
+when-changed = ["**/*.rs", "Cargo.toml", "Cargo.lock"]
+
+[[sensors]]
+name = "test-rust"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "cargo", "test", "--locked", "--all"]
+when-changed = ["**/*.rs", "Cargo.toml", "Cargo.lock"]
+
+[[sensors]]
+name = "loc"
+argv = ["bash", "scripts/check-loc.sh"]
+when-changed = ["src/**/*.rs", "web/**/*.ts", ".loc-allowlist"]
+
+[[sensors]]
+name = "architecture"
+argv = ["bash", "scripts/check-architecture.sh"]
+when-changed = ["src/**/*.rs"]
+
+[[sensors]]
+name = "ci-coherence"
+argv = ["python3", "scripts/check-ci.py"]
+when-changed = [".github/workflows/**", "scripts/**"]
+
+[[sensors]]
+name = "ci-fixtures"
+argv = ["python3", "scripts/test-ci.py"]
+when-changed = ["scripts/**"]
+
+[[sensors]]
+name = "sensor-fixtures"
+argv = ["python3", "scripts/test-sensors.py"]
+when-changed = ["scripts/**"]
+
+[[sensors]]
+name = "build-fixtures"
+argv = ["python3", "scripts/test-build.py"]
+when-changed = ["scripts/**"]
+
+[[sensors]]
+name = "skill-check"
+argv = ["python3", "scripts/check-skills.py"]
+when-changed = [".agents/skills/**"]
+
+[[sensors]]
+name = "skill-fixtures"
+argv = ["python3", "scripts/test-skills.py"]
+when-changed = [".agents/skills/**"]
+
+[[sensors]]
+name = "version-pin-parity"
+argv = ["bash", "scripts/propagate-version.sh", "--check"]
+when-changed = ["VERSION", "Cargo.toml", "package.json", "web/package.json", "mise.toml"]
+
+[[sensors]]
+name = "pr-merge-gate-selftest"
+argv = ["bash", "scripts/pr-merge-gate.sh", "--self-test"]
+when-changed = ["scripts/pr-merge-gate.sh"]
+
+[[sensors]]
+name = "ruleset-snapshot"
+argv = ["jq", "-e", "(.requiredStatusChecks | index(\"CI Success\") != null and index(\"PR Readiness (merge gate)\") != null) and .requiredReviewThreadResolution == true", ".github/ruleset-main.json"]
+when-changed = [".github/ruleset-main.json"]
+
+[[sensors]]
+name = "wasm-freshness"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "python3", "scripts/wasm-freshness.py", "--ensure"]
+when-changed = ["src/**/*.rs", "Cargo.toml", "Cargo.lock"]
+
+[[sensors]]
+name = "web-lint"
+argv = ["bash", "-c", "cd web && pnpm run lint"]
+when-changed = ["web/**/*.ts", "web/**/*.js", "web/package.json", "biome.json"]
+
+[[sensors]]
+name = "web-tsc"
+argv = ["bash", "-c", "cd web && pnpm exec tsc --noEmit"]
+when-changed = ["web/**/*.ts", "web/tsconfig.json", "web/pkg/**"]
+
+[[sensors]]
+name = "e2e-tsc"
+argv = ["web/node_modules/.bin/tsc", "--noEmit", "-p", "e2e/tsconfig.json"]
+when-changed = ["e2e/**/*.ts", "e2e/tsconfig.json"]
+
+[[sensors]]
+name = "playwright-config-fixtures"
+argv = ["node", "--test", "scripts/test-playwright-config.mjs"]
+when-changed = ["playwright.config.ts", "scripts/test-playwright-config.mjs"]
+
+[[sensors]]
+name = "vitest"
+argv = ["bash", "-c", "cd web && pnpm test"]
+when-changed = ["web/**/*.ts", "web/package.json"]
+
+[[sensors]]
+name = "eslint-root"
+argv = ["./node_modules/.bin/eslint", "."]
+when-changed = ["e2e/**/*.ts", "eslint.config.mjs", "package.json"]
+
+[[sensors]]
+name = "privacy-secrets"
+argv = ["bash", "scripts/check-privacy-secrets.sh"]
+
+[[sensors]]
+name = "audit-cargo"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "cargo", "audit", "--file", "Cargo.lock"]
+when-changed = ["Cargo.lock"]
+
+[[sensors]]
+name = "audit-npm"
+argv = ["bash", "scripts/npm-audit.sh"]
+when-changed = ["pnpm-lock.yaml", "web/pnpm-lock.yaml", "package.json", "web/package.json"]
+
+[[sensors]]
+name = "bandit"
+argv = ["python3", "scripts/bandit-check.py"]
+when-changed = ["scripts/**/*.py"]
+
+[[sensors]]
+name = "actionlint"
+argv = ["python3", "scripts/actionlint-check.py"]
+when-changed = [".github/workflows/**"]
+
+[[sensors]]
+name = "cargo-deny"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "cargo", "deny", "--locked", "check"]
+when-changed = ["Cargo.lock", "deny.toml"]
+
+[[sensors]]
+name = "codacy-check"
+argv = ["bash", "scripts/codacy-check.sh"]
+
+[[sensors]]
+name = "wasm-test"
+argv = ["env", "RUSTUP_TOOLCHAIN=1.94.0", "bash", "scripts/test-wasm.sh"]
+when-changed = ["src/**/*.rs", "tests/**/*.rs"]
+
+[[sensors]]
+name = "wasm-size"
+argv = ["node", "scripts/check-artifact.mjs"]
+when-changed = ["web/pkg/**"]
+
+[[sensors]]
+name = "e2e-chromium"
+argv = ["bash", "-c", "env RUSTUP_TOOLCHAIN=1.94.0 pnpm run build:web && env PRODUCTION_E2E=1 pnpm exec playwright test --project=chromium --timeout=120000"]
+when-changed = ["web/**/*.ts", "e2e/**/*.ts", "src/**/*.rs", "playwright.config.ts"]
