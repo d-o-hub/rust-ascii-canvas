@@ -114,6 +114,37 @@ test('undo starts disabled and enables after a layer change', async ({ page }) =
     await expect(page.locator('#undo-btn')).toBeDisabled();
 });
 
+test('layer names remain usable in the mobile drawer', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await openEditor(page);
+    await page.locator('#mobile-menu-btn').click();
+    await expect(page.locator('#side-panel')).toHaveClass(/open/);
+
+    await page.locator('#add-layer-btn').click();
+    const inputs = page.locator('.layer-name-input');
+    await expect(inputs).toHaveCount(2);
+
+    for (let index = 0; index < 2; index++) {
+        const input = inputs.nth(index);
+        await expect(input).toBeVisible();
+        const box = await input.boundingBox();
+        expect(box, `layer name ${index + 1} has no layout box`).not.toBeNull();
+        expect(box?.width, `layer name ${index + 1} is too narrow`).toBeGreaterThanOrEqual(96);
+    }
+    expect(await page.locator('#layer-list').evaluate(list => list.scrollWidth <= list.clientWidth)).toBe(true);
+});
+
+test('layer names retain a readable width in the desktop panel', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openEditor(page);
+
+    const input = page.locator('.layer-name-input').first();
+    await expect(input).toBeVisible();
+    const box = await input.boundingBox();
+    expect(box, 'desktop layer name has no layout box').not.toBeNull();
+    expect(box?.width, 'desktop layer name is too narrow').toBeGreaterThanOrEqual(96);
+});
+
 test('a new layer starts with no history of its own', async ({ page }) => {
     // Adding is recorded on the layer the user was on, so the new empty layer has
     // nothing to undo: the step lives where the work was, and undo brings focus
