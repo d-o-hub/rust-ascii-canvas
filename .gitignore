@@ -10,6 +10,9 @@
 /node_modules/
 /web/node_modules/
 
+# Harness evidence and local DB
+.do-harness/
+
 # Build output
 /dist/
 /web/dist/
