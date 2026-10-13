@@ -103,12 +103,16 @@ if ! $FAST; then
   run 'Codacy repo intake (local only, not a CI gate)' 'Read/fix findings; never remove required Codacy checks.' bash scripts/codacy-check.sh
   run 'WASM tests (nonzero Node execution)' 'Restore test discovery/runner and fix behavior regressions.' env RUSTUP_TOOLCHAIN=1.94.0 bash scripts/test-wasm.sh
   run 'WASM artifact validity + size' 'Build valid WASM and reduce size if over budget.' node scripts/check-artifact.mjs
-  if OUTPUT=$(env RUSTUP_TOOLCHAIN=1.94.0 pnpm run build:web 2>&1); then
+  output=""
+  if output=$(env RUSTUP_TOOLCHAIN=1.94.0 pnpm run build:web 2>&1); then
     pass 'Production web build'
+    [[ -z "$output" ]] || printf '%s\n' "$output"
     run 'Production E2E (Chromium)' 'Inspect Playwright failures; do not substitute a stale dev server.' \
       env PRODUCTION_E2E=1 pnpm exec playwright test --project=chromium --timeout=120000
   else
     fail 'Production web build'
+    printf '%s\n' "$output"
+    echo '  FIX: repair production bundling before running deployment-shaped E2E.'
   fi
 fi
 
