@@ -5,6 +5,13 @@
 
 import { test, expect, type Page } from '@playwright/test';
 import { openEditor, getAsciiContent, requireAsciiContent } from './helpers';
+import {
+    borderProfile,
+    cellCentre,
+    expectContinuous,
+    RECT,
+    waitForPaint,
+} from './border-profile';
 
 
 async function waitForRender(page: Page): Promise<void> {
@@ -396,25 +403,41 @@ test.describe('Edge Cases', () => {
         await page.screenshot({ path: 'test-results/edge-undo.png' });
     });
 
-    test('All border styles draw correctly', async ({ page }) => {
-        const borderStyles = ['single', 'double', 'heavy', 'rounded', 'ascii', 'dotted'];
-        
-        // `.entries()` rather than an index counter: the loop reads the value
-        // it needs from the iterator instead of computing a member access,
-        // which is the sink Codacy's object-injection rule flags.
-        for (const [i, style] of borderStyles.entries()) {
-            const offsetY = i * 60;
-            
+    // Continuity is asserted per style and taken from ADR-048's measured
+    // behaviour, not assumed uniform: `dotted` is the user's choice of a broken
+    // line, and `ascii` keeps `-`/`|` on font glyphs (the atlas is keyed per
+    // codepoint, so synthesizing `|` would restyle every typed pipe). The
+    // `gaps > 0` pin below means a future change that makes either continuous
+    // must be a deliberate edit to this test.
+    for (const [style, mustBeContinuous] of [
+        ['single', true],
+        ['double', true],
+        ['heavy', true],
+        ['rounded', true],
+        ['ascii', false],
+        ['dotted', false],
+    ] as const) {
+        test(`${style} border style renders with its documented continuity`, async ({ page }) => {
             await page.locator('#border-style').selectOption(style);
             await page.click('[data-tool="rectangle"]');
-            await waitForRender(page);
-            
-            await drawOnCanvas(page, 50, offsetY + 20, 250, offsetY + 50);
-            await waitForRender(page);
-        }
-        
-        await page.screenshot({ path: 'test-results/edge-all-border-styles.png' });
-    });
+
+            const from = await cellCentre(page, RECT.left, RECT.top);
+            const to = await cellCentre(page, RECT.right, RECT.bottom);
+            await page.mouse.move(from.x, from.y);
+            await page.mouse.down();
+            await page.mouse.move(to.x, to.y, { steps: 10 });
+            await page.mouse.up();
+            await waitForPaint(page);
+
+            const horizontal = await borderProfile(page, 'h');
+            const vertical = await borderProfile(page, 'v');
+            for (const [axis, profile] of [['h', horizontal], ['v', vertical]] as const) {
+                expect(profile.edgeMaxBrightness, `${style} ${axis} edge has no ink`).toBeGreaterThan(120);
+                if (mustBeContinuous) expectContinuous(profile, axis);
+                else expect(profile.gaps, `${style} ${axis} edge should show its raster gaps`).toBeGreaterThan(0);
+            }
+        });
+    }
 
     test('Small single-point shape', async ({ page }) => {
         await page.click('[data-tool="rectangle"]');

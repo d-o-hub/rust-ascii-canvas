@@ -117,10 +117,12 @@ pre-existing and both narrower than ISSUE-001:
 Neither is folded into this PR, because each is a wider artifact-visible change
 than border continuity. Both are recorded as follow-ups in
 [FOLLOW_UPS.md](../FOLLOW_UPS.md). Note also why neither was caught earlier:
-`e2e/tools-drawing.spec.ts:399` "All border styles draw correctly" **asserts
-nothing** — it selects all six styles, draws a rectangle for each and
-screenshots. A test named as coverage for the thing that broke cannot be the
-reason it went unnoticed.
+`e2e/tools-drawing.spec.ts:399` "All border styles draw correctly" **asserted
+nothing** — it selected all six styles, drew a rectangle for each and
+screenshotted. A test named as coverage for the thing that broke cannot be the
+reason it went unnoticed. (That sensor gap was closed in #262: the test is now
+six per-style assertions on `e2e/border-profile.ts`, including the `ascii`
+dashing measured above.)
 
 ## Verification
 
