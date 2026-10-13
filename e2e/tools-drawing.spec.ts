@@ -403,6 +403,12 @@ test.describe('Edge Cases', () => {
         await page.screenshot({ path: 'test-results/edge-undo.png' });
     });
 
+    // Continuity is asserted per style and taken from ADR-048's measured
+    // behaviour, not assumed uniform: `dotted` is the user's choice of a broken
+    // line, and `ascii` keeps `-`/`|` on font glyphs (the atlas is keyed per
+    // codepoint, so synthesizing `|` would restyle every typed pipe). The
+    // `gaps > 0` pin below means a future change that makes either continuous
+    // must be a deliberate edit to this test.
     for (const [style, mustBeContinuous] of [
         ['single', true],
         ['double', true],
