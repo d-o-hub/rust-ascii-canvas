@@ -15,13 +15,18 @@ historical release/test counts below.
 
 A production-grade Rust/WASM ASCII diagram editor with a dark/light Figma-like UI.
 
-## Current Status: **v0.1.4 released (2026-09-24)** ✅
+## Current Status: **v0.1.5 released (2026-10-15)** ✅
+
+**v0.1.5** was released through the reviewed version-bump PR #267 and the
+normal dry-run/real release workflow. It includes the grid-input synchronization
+fix from #265 and the first versioned optimized WASM asset:
+`ascii-canvas-0.1.5.wasm`.
 
 **Shipped in v0.1.4** (28 commits since v0.1.3): clipboard export fidelity (#176/#177), coordinated wasm-bindgen 0.2.128 + pin-parity sensor (ADR-042, #192), zoom shortcuts (#194) and zoom-boundary a11y (#201), mobile drawer Escape dismissal + focus restore (#195), docs/harness reconciliation (#196), version single-source + release preflight/runbook (#200).
 
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
-**Released**: **v0.1.4** on 2026-09-24 — dry run and real run green after the L-007 fix; release notes now anchored to the previous release tag (R-02).  
-**Next** (2026-09-30): see the sole [active backlog](FOLLOW_UPS.md#active-backlog).
+**Released**: **v0.1.5** on 2026-10-15 — dry run and real run green; release notes target the generated changelog branch and the versioned WASM asset uploaded successfully.
+**Next**: see the sole [active backlog](FOLLOW_UPS.md#active-backlog); recorded P2 items require an explicit scope decision before implementation.
 F-13 (#213/#216), R-06 (#224) and npm-audit inventory (#225) already shipped.
 The [audit implementation](recommendations-implementation-2026-09-30.md)
 shipped as #228–#233; ADR-046/047 were accepted by the user
@@ -39,7 +44,7 @@ required PR analysis is distinct from a current repository-wide backlog read.
 
 | Item | Value |
 |------|--------|
-| Version | **0.1.4** (released 2026-09-24) |
+| Version | **0.1.5** (released 2026-10-15) |
 | WASM toolchain | cargo + wasm-bindgen **0.2.128** (dep + CLI pins enforced by `quality-gates.sh` §2b, ADR-042) |
 | Target | `wasm32-unknown-unknown` / ES modules |
 | Rust | stable (`rust-toolchain.toml`) |

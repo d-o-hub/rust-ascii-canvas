@@ -57,11 +57,11 @@ features:
 
 documentation:
   adr_count: 44                     # 46 files, but 005 and 040 are each duplicated
-  plans_refreshed: 2026-09-28       # R-07 closed in CI (#220/L-016)
+  plans_refreshed: 2026-10-15       # v0.1.5 release + #265 reconciliation
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
   open_issues: 1                    # #199 (deferred)
   open_prs: 0
-  release: v0.1.4 (2026-09-24)      # R-01/R-02/R-04 done
+  release: v0.1.5 (2026-10-15)      # R-01/R-02/R-04 done; versioned WASM asset shipped
   dependabot_alerts: 0              # R-05 pruned esbuild; #11 was the last open alert
 
 harness:                           # ADR-044
