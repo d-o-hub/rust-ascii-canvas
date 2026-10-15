@@ -33,9 +33,10 @@ shipped as #228–#233; ADR-046/047 were accepted by the user
 on 2026-09-30. The sensors + skills remainder shipped as #241; immutable CI
 action pins shipped as #270. No open PR candidate remains.
 The dated test snapshots below are historical, not a fresh test inventory. The
-2026-10-15 remote snapshot is current: origin/main is `6b1c646`, open issues and
+2026-10-15 remote snapshot is current: origin/main is `0c2f0f3`, open issues and
 PRs are `0 / 0`, open Dependabot alerts are `0`, and the current main CI/CodeQL/
-Codacy analyses are green. Codacy repository intake remains an agent procedure;
+Codacy analyses are green. Workflow token permissions were least-privilege
+hardened by #273 without changing release behavior. Codacy repository intake remains an agent procedure;
 coverage is still `None` and project-scoped CI credentials are absent.
 
 **Harness (2026-09-27, ADR-044 / #213)**: green CI is now a real merge precondition. The `main` ruleset previously required only `Codacy Static Code Analysis` — every product sensor was advisory and a PR could merge with red E2E. It now requires `CI Success` + `PR Readiness (merge gate)` and requires review-thread resolution, with `required_approving_review_count: 0` (gates decide, not a human click). Backed by `scripts/pr-merge-gate.sh` (local mirror, read-only), `scripts/ruleset-check.sh` (the ruleset is repo state, so its drift is now a required check against a committed snapshot), and a documented delivery loop in `agents-docs/delivery.md`. See harness L-008/L-009.

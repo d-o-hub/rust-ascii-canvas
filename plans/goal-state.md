@@ -58,10 +58,10 @@ features:
 
 documentation:
   adr_count: 49                     # 51 files; duplicate-number variants exist for ADR-005 and ADR-040
-  plans_refreshed: 2026-10-15       # v0.1.5 + #265/#270 reconciliation
+  plans_refreshed: 2026-10-15       # v0.1.5 + #265/#270/#273 reconciliation
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
   open_issues: 0                    # #199 and #263 are closed
-  open_prs: 0                       # #270 merged
+  open_prs: 0                       # #273 merged
   release: v0.1.5 (2026-10-15)      # R-01/R-02/R-04 done; versioned WASM asset shipped
   dependabot_alerts: 0              # R-05 pruned esbuild; #11 was the last open alert
 
@@ -76,6 +76,7 @@ harness:                           # ADR-044
   e2e_sensors_gated_in_ci: true     # L-016 — ESLint (root) + TypeScript (e2e) in web job (#220)
   codacy_backlog_readable: true      # L-017 — npm run codacy:check (agent procedure, not a gate)
   local_rule_family_parity: true     # L-017 — eslint-plugin-security in both ESLint configs
+  workflow_token_permissions: least_privilege # #273 — job-scoped release/issues access
   codacy_backlog: 0                  # 11 High findings fixed in #222; verified repo-level
 ```
 
