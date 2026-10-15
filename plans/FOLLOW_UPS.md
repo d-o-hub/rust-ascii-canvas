@@ -1,9 +1,9 @@
 # Follow-ups Backlog
 
-**Updated**: 2026-10-15 (v0.1.5 released with versioned WASM asset; grid-control resize fix shipped as #265; layer-name collapse shipped as #260; border-style continuity sensor shipped as #262; ISSUE-001 fixed by #250 / ADR-048; P2 dogfood pass recorded; #241–#248 merged).
+**Updated**: 2026-10-15 (v0.1.5 released with versioned WASM asset; grid-control resize fix shipped as #265; layer-name collapse shipped as #260; border-style continuity sensor shipped as #262; ISSUE-001 fixed by #250 / ADR-048; P2 dogfood pass recorded; #241–#248 merged; current remote work is issue #263 with draft PR #266).
 **Single source of truth for active next work.**
 Prior records below are dated history, not instructions to re-open shipped work.
-Remote issues/releases have not been re-queried in this documentation pass.
+Remote issues/releases were re-queried on 2026-10-15: issue #263 remains open with draft PR #266; the release is v0.1.5.
 
 ## Active backlog
 
@@ -15,6 +15,7 @@ Remote issues/releases have not been re-queried in this documentation pass.
 | P0 / truthful sensors + skills | **Shipped: #241** | Fail-closed sensors, nonzero WASM execution, production E2E, CI applicability/freshness/pnpm parity, and offline skill checks pass retained fixtures. Wiring is in both local runners and ci.yml. ADR-047 accepted; merge contract + pr-roast + Codacy all green on the final head. |
 | P0 / root npm findings | **Shipped: #228** | Narrow root lockfile update `brace-expansion` 5.0.9 -> 5.0.12 fixed High GHSA-qhr7-859c-m2p7 / GHSA-6j4f-fj2g-mc7p; frozen install and both audits passed; no ignores/overrides. |
 | P1 / release | **Shipped: v0.1.5** | Release-prep PR #267 merged; dry run and real workflow passed on 2026-10-15. GitHub Release [v0.1.5](https://github.com/d-o-hub/rust-ascii-canvas/releases/tag/v0.1.5) includes `ascii-canvas-0.1.5.wasm`. |
+| P1 / immutable CI action pins | **Open: #263 / draft #266** | Pin external actions in `ci.yml`, `release.yml`, and `issue-closer.yml` to exact dereferenced commit SHAs with provenance comments; preserve existing inputs and action versions. |
 | P1 / release workflow validation | **Shipped: #243, commit `768cea0`** | `release.yml` passes `actionlint` cleanly: `publish-wasm` gained `guard-rails` in its `needs:` (the dry-run guard was reading an output that was never in the direct needs list), and the five ShellCheck findings (`SC2002` useless cat, `SC2086` unquoted `$GITHUB_OUTPUT` / `$GITHUB_PATH` / `$FIRST_VERSION_LINE`, `SC2034` dead `TAG_NAME`) are fixed. No release pin, toolchain SHA or version-validation logic changed. The **sensor** gap this surfaced is closed by the row below. |
 | P1 / actionlint local sensor | **Shipped: #244, commit `2ab846e`** | `scripts/actionlint-check.py` closes the L-027 gap: fail-closed 0/1/2, pinned to 1.6.26 with a `--version` drift check, retained fixtures in `test-sensors.py` (9 new tests, suite now 39). Wired into `quality-gates.sh` full tier and a `Workflow lint parity (L-027)` step in the `architecture` CI job, with a checksum-verified pinned release download as the install step. `check-ci.py DIRECT['architecture']` and `ci-paths.json` updated; recorded as harness **L-027**. |
 | P1 / RC workflow | **Unsupported / decision needed** | `release.yml` and `scripts/release.sh` accept only `x.y.z`. Implement/test prerelease policy separately before offering RC canary/promotion commands; use Deploy Preview shadow tests now. |
