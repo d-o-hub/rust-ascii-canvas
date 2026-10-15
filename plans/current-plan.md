@@ -36,7 +36,7 @@ This is not the active queue; any residual requires fresh code verification.
 
 ## Current remote/release state (verified 2026-10-15)
 
-- `origin/main`: `2e739bf` (#271)
+- `origin/main`: `6b1c646` (#272)
 - Latest release: v0.1.5, published 2026-10-15, with the versioned WASM asset
 - Open issues / PRs: 0 / 0
 - Open Dependabot alerts: 0

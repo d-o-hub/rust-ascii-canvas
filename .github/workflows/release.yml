@@ -10,12 +10,14 @@ on:
         type: string
 
 permissions:
-  contents: write
+  {}
 
 jobs:
   guard-rails:
     name: Guard Rails
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
       is_dry_run: ${{ inputs.dry_run }}
@@ -126,6 +128,8 @@ jobs:
     name: Build WASM
     needs: guard-rails
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -166,6 +170,8 @@ jobs:
     name: Create Release
     needs: [guard-rails, build-wasm]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       version: ${{ needs.guard-rails.outputs.version }}
     steps:
@@ -306,6 +312,8 @@ jobs:
     name: Publish WASM
     needs: [guard-rails, create-release]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     if: needs.guard-rails.outputs.is_dry_run != 'true'
     env:
       GH_TOKEN: ${{ github.token }}
@@ -342,6 +350,7 @@ jobs:
     name: Dry Run
     needs: guard-rails
     runs-on: ubuntu-latest
+    permissions: {}
     if: needs.guard-rails.outputs.is_dry_run == 'true'
     steps:
       - name: Summary
