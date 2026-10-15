@@ -60,7 +60,7 @@ documentation:
   plans_refreshed: 2026-10-15       # v0.1.5 release + #265 reconciliation
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
   open_issues: 1                    # #263 action pins; #199 is closed
-  open_prs: 1                       # #266 draft action-pin PR; this PR excluded
+  open_prs: 1                       # #270 action-pin PR; this PR excluded
   release: v0.1.5 (2026-10-15)      # R-01/R-02/R-04 done; versioned WASM asset shipped
   dependabot_alerts: 0              # R-05 pruned esbuild; #11 was the last open alert
 
