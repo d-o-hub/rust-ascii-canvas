@@ -108,6 +108,18 @@ npm run gate:pr            # the merge contract (read-only, never merges)
 gh pr merge <PR> --auto --squash   # CI performs the merge when it goes green
 ```
 
+### Default delivery behavior
+
+For routine, authorized repository work, use the applicable skills automatically
+without asking for routine permission or skill-selection confirmation. Work on a
+branch from the base branch, **always create or update a pull request**, and
+after `gate:pr` plus the adversarial `pr-roast` are clean, arm
+`gh pr merge <PR> --auto --squash` without asking for a second merge
+confirmation. The merge contract, not a conversational approval, decides when
+the PR is ready. Stop and ask only for the human-judgment cases listed below:
+scope/spec decisions, ADR decisions, disputed roast blockers, required
+credentials or authority, and production rollback.
+
 **Do not** use `--admin` to force past a red check, and do not treat
 "could not verify" as "verified" — `pr-merge-gate.sh` errors rather than
 assumes. Squash is required: the repo enforces linear history.
