@@ -26,6 +26,17 @@ describe('document safety at browser boundaries', () => {
         expect(document.querySelector<HTMLInputElement>('#grid-height')?.value).toBe('50');
     });
 
+    it('does not overwrite edited inputs when a repeated layout resize keeps presentation dimensions unchanged', () => {
+        if (!state.canvas) throw new Error('Canvas missing');
+        state.canvas.style.width = '0px';
+        state.canvas.style.height = '0px';
+
+        resizeCanvas();
+
+        expect(document.querySelector<HTMLInputElement>('#grid-width')?.value).toBe('40');
+        expect(document.querySelector<HTMLInputElement>('#grid-height')?.value).toBe('20');
+    });
+
     it('cancelling a destructive crop leaves dimensions, caches, history and save state untouched', () => {
         vi.stubGlobal('confirm', vi.fn().mockReturnValue(false));
         const cache = document.createElement('canvas');
