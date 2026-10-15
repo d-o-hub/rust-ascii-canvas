@@ -4,6 +4,7 @@ import { state } from './state';
 import { setupEventListeners } from './events';
 import { refreshLayerList, toggleTheme, setZoom } from './ui';
 import { initializeDrafts } from './drafts-ui';
+import { wireFileEvents } from './events-file';
 
 describe('UX Improvements', () => {
     beforeEach(() => {
@@ -478,6 +479,40 @@ describe('UX Improvements', () => {
 
         deleteBtnNode.remove();
         newBtnNode.remove();
+    });
+
+    it('should show toast status feedback when changing copy format options', () => {
+        state.statusToast = document.getElementById('status-toast');
+
+        const formatSelect = document.createElement('select');
+        formatSelect.id = 'copy-format';
+        const unicodeOpt = document.createElement('option');
+        unicodeOpt.value = 'unicode';
+        const asciiOpt = document.createElement('option');
+        asciiOpt.value = 'ascii';
+        formatSelect.appendChild(unicodeOpt);
+        formatSelect.appendChild(asciiOpt);
+
+        const boxCheckbox = document.createElement('input');
+        boxCheckbox.id = 'copy-bounding-box';
+        boxCheckbox.type = 'checkbox';
+        boxCheckbox.checked = true;
+
+        document.body.appendChild(formatSelect);
+        document.body.appendChild(boxCheckbox);
+
+        wireFileEvents();
+
+        formatSelect.value = 'ascii';
+        formatSelect.dispatchEvent(new Event('change'));
+        expect(state.statusToast?.textContent).toBe('Copy format: Pure ASCII');
+
+        boxCheckbox.checked = false;
+        boxCheckbox.dispatchEvent(new Event('change'));
+        expect(state.statusToast?.textContent).toBe('Preserve rectangular width: Disabled');
+
+        formatSelect.remove();
+        boxCheckbox.remove();
     });
 });
 

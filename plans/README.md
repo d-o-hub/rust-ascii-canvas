@@ -42,7 +42,7 @@ Living project planning for the ASCII Canvas editor (GOAP + ADRs).
 ## Status quick links
 
 - **Shipped**: all roadmap issues #110–#127 closed (F-10–F-33); code verified in the 2026-09-23 reconciliation pass
-- **Next**: [active backlog](FOLLOW_UPS.md#active-backlog). v0.1.4, F-13, R-06
+- **Next**: [active backlog](FOLLOW_UPS.md#active-backlog). v0.1.5, F-13, R-06
   and npm-audit inventory already shipped; current audit candidates have not.
 - **Release procedure**: [RELEASING.md](RELEASING.md); RC workflow is unsupported
   until a reviewed implementation changes the stable-only version policy.

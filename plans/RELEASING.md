@@ -79,12 +79,12 @@
 - `wasm-opt` is required in CI; the release build compiles its own optimized WASM (`wasm-pack` + `wasm-opt`), `web/pkg` is gitignored.
 - Version bumps land through PRs; the Release workflow only dispatches from `main`.
 
-## Known state (2026-09-24)
+## Known state (2026-10-15)
 
-- Latest release: **v0.1.4** (2026-09-24) — dry run and real run both green. The L-007 guard-rail now has a version that actually passes.
-- `VERSION` on `main` is `0.1.4` and matches the published release, so the **next** release needs a fresh bump PR (0.1.5) before any dispatch.
-- Notes anchoring is live: the generated `[0.1.4]` entry lists the 28 commits since `v0.1.3` (the old `git describe` fallback would have re-listed 217).
-- `CHANGELOG.md` on `main` is coherent again: `[0.1.4]` (generated, synced back from the tag) -> `[0.1.3]` / `[0.1.2]` (curated) -> `[0.1.1]`.
+- Latest release: **v0.1.5** (2026-10-15) — dry run and real run both green. The release includes the first versioned WASM asset.
+- `VERSION` on `main` is `0.1.5` and matches the published release. The next release needs a fresh bump PR before any dispatch.
+- Notes anchoring is live: the generated `[0.1.5]` entry lists the commits since `v0.1.4`; the old `git describe` fallback would have re-listed older released work.
+- The v0.1.5 release targets the generated `release/v0.1.5-changelog` branch, whose `[0.1.5]` entry is anchored to `v0.1.4`; `CHANGELOG.md` on `main` remains the unreleased working document.
 - **R-04 resolved**: the `Publish WASM` job now attaches `ascii-canvas-<version>.wasm` to the release (`--clobber`, copy-then-upload). v0.1.4 has no asset because it shipped before the change.
 
 ## Rollback

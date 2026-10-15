@@ -110,6 +110,23 @@ export function wireFileEvents(): void {
     if (gridHeightHtmlElement) {
         gridHeightHtmlElement.addEventListener('keydown', handleGridKeyDown as EventListener);
     }
+
+    const copyFormatSelect = document.querySelector<HTMLSelectElement>('#copy-format');
+    const copyBoundingBoxCheckbox = document.querySelector<HTMLInputElement>('#copy-bounding-box');
+
+    if (copyFormatSelect) {
+        copyFormatSelect.addEventListener('change', () => {
+            const label = copyFormatSelect.value === 'ascii' ? 'Pure ASCII' : 'Unicode UTF-8';
+            showToast(`Copy format: ${label}`);
+        });
+    }
+
+    if (copyBoundingBoxCheckbox) {
+        copyBoundingBoxCheckbox.addEventListener('change', () => {
+            const enabled = copyBoundingBoxCheckbox.checked;
+            showToast(`Preserve rectangular width: ${enabled ? 'Enabled' : 'Disabled'}`);
+        });
+    }
 }
 
 /** Shared desktop/mobile paths: export never redraws or mutates selection. */
