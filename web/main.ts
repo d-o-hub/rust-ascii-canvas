@@ -188,8 +188,11 @@ async function initialize() {
         // Set up event listeners
         setupEventListeners();
 
-        // Bind callback for grid resize UI update to avoid circular dependency
-        state.onGridResize = updateUI;
+        // Keep the editable dimensions aligned with the document while
+        // avoiding a render -> UI module import cycle. The size display is
+        // already derived from the editor in updateUI; viewport changes do
+        // not change the document dimensions.
+        state.onGridResize = syncGridInputs;
 
         // Update UI
         updateUI();

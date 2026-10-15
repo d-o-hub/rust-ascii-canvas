@@ -85,6 +85,7 @@ export function resizeCanvas(): void {
     if (state.editor) {
         // Only main.ts sizes a newly created document from the viewport.
         // A viewport/layout/keyboard change is presentation, never a crop.
+        state.onGridResize?.();
         requestRender();
     }
 }

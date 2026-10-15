@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { state } from './state.js';
 import { resizeCanvas } from './render.js';
 import { applyCustomGridSize, handlePasteEvent } from './document-events.js';
+import { syncGridInputs } from './ui.js';
 
 beforeEach(() => {
     document.body.innerHTML = '<canvas id="canvas"></canvas><div id="container"></div><input id="grid-width" value="40"><input id="grid-height" value="20">';
@@ -14,12 +15,15 @@ beforeEach(() => {
     } as unknown as typeof state.editor;
     state.gridSizeLocked = false;
     state.animationFrameId = 1;
+    state.onGridResize = syncGridInputs;
 });
 
 describe('document safety at browser boundaries', () => {
     it('never resizes an existing document with the viewport, even if unlocked', () => {
         resizeCanvas();
         expect(state.editor?.resize).not.toHaveBeenCalled();
+        expect(document.querySelector<HTMLInputElement>('#grid-width')?.value).toBe('100');
+        expect(document.querySelector<HTMLInputElement>('#grid-height')?.value).toBe('50');
     });
 
     it('cancelling a destructive crop leaves dimensions, caches, history and save state untouched', () => {
