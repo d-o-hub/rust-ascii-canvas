@@ -4,12 +4,12 @@
 
 Use [the active backlog](FOLLOW_UPS.md#active-backlog) and
 [the 2026-09-30 implementation plan](recommendations-implementation-2026-09-30.md).
-The 2026-09-30 audit shipped as #228–#233; the remaining truthful-sensors +
-skills candidate is ported onto `refactor/fail-closed-sensors` (PR pending).
+The 2026-09-30 audit shipped as #228–#233; the truthful-sensors + skills
+remainder shipped as #241. Immutable CI action pins shipped as #270.
 F-13, R-06 and the R-08 npm audit inventory already shipped; do not re-plan them.
 
 **Created**: 2026-03-03  
-**Last updated**: 2026-10-15 (v0.1.5 released; grid-control resize fix shipped as #265; release-prep #267 merged)
+**Last updated**: 2026-10-15 (v0.1.5 released; grid-control resize fix shipped as #265; immutable CI action pins shipped as #270; release-prep #267 merged)
 **Supersedes (partially)**: Production-readiness-only focus; March 2026 world-state snapshot  
 **Methodology**: Goal-Oriented Action Planning (GOAP) with ADRs  
 **Latest execution**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
@@ -57,7 +57,7 @@ This is not the active queue; any residual requires fresh code verification.
 | main.ts modules | ✅ split; `main.ts` 230 LOC (F-20) |
 | package_metadata | ✅ d-o-hub URLs |
 | release | **v0.1.5** released 2026-10-15 with versioned WASM asset; R-01/R-02/R-04 done; R-07 Codacy backlog done and gated in CI (#219 + #220/L-016) ([RELEASING.md](RELEASING.md)) |
-| open_issues / PRs | 1 (#263 action pins) / 1 (#270; excluding this PR) |
+| open_issues / PRs | 0 / 0 |
 | open_dependabot | 0 (alert #11 closed by R-05 prune) |
 
 ---

@@ -57,10 +57,10 @@ features:
 
 documentation:
   adr_count: 44                     # 46 files, but 005 and 040 are each duplicated
-  plans_refreshed: 2026-10-15       # v0.1.5 release + #265 reconciliation
+  plans_refreshed: 2026-10-15       # v0.1.5 + #265/#270 reconciliation
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
-  open_issues: 1                    # #263 action pins; #199 is closed
-  open_prs: 1                       # #270 action-pin PR; this PR excluded
+  open_issues: 0                    # #199 and #263 are closed
+  open_prs: 0                       # #270 merged
   release: v0.1.5 (2026-10-15)      # R-01/R-02/R-04 done; versioned WASM asset shipped
   dependabot_alerts: 0              # R-05 pruned esbuild; #11 was the last open alert
 
@@ -86,7 +86,7 @@ features:
   collaborative_prototype: decided # F-30 spike -> ADR
 
 process:
-  release_0_1_4: published         # R-01
+  release_0_1_5: published         # R-01
   changelog_backfill: curated      # R-01
   esbuild_advisory: closed         # R-05 prune landed 2026-09-28 (alert #11)
   codacy_backlog_gated: done       # R-07 — #219 sensors + #220 L-016 CI wiring
