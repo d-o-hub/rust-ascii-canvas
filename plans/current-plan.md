@@ -57,7 +57,7 @@ This is not the active queue; any residual requires fresh code verification.
 | main.ts modules | ✅ split; `main.ts` 230 LOC (F-20) |
 | package_metadata | ✅ d-o-hub URLs |
 | release | **v0.1.5** released 2026-10-15 with versioned WASM asset; R-01/R-02/R-04 done; R-07 Codacy backlog done and gated in CI (#219 + #220/L-016) ([RELEASING.md](RELEASING.md)) |
-| open_issues / PRs | 1 (#263 action pins) / 1 (#266 draft; excluding this PR) |
+| open_issues / PRs | 1 (#263 action pins) / 1 (#270; excluding this PR) |
 | open_dependabot | 0 (alert #11 closed by R-05 prune) |
 
 ---
