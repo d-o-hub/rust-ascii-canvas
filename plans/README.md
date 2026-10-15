@@ -2,7 +2,7 @@
 
 Living project planning for the ASCII Canvas editor (GOAP + ADRs).
 
-**Last refreshed**: 2026-10-15 against `origin/main` `2e739bf` (v0.1.5, #261, #265, #270, and #271 reconciliation)
+**Last refreshed**: 2026-10-15 against `origin/main` `6b1c646` (v0.1.5, #261, #265, #270, #271, and #272 reconciliation)
 
 ---
 
