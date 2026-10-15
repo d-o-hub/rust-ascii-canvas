@@ -72,11 +72,15 @@ export function resizeCanvas(): void {
 
     const dpr = window.devicePixelRatio || 1;
     const rect = state.canvasContainer.getBoundingClientRect();
+    const nextCssWidth = `${rect.width}px`;
+    const nextCssHeight = `${rect.height}px`;
+    const presentationChanged = state.canvas.style.width !== nextCssWidth ||
+        state.canvas.style.height !== nextCssHeight;
 
     state.canvas.width = rect.width * dpr;
     state.canvas.height = rect.height * dpr;
-    state.canvas.style.width = `${rect.width}px`;
-    state.canvas.style.height = `${rect.height}px`;
+    state.canvas.style.width = nextCssWidth;
+    state.canvas.style.height = nextCssHeight;
 
     state.ctx.scale(dpr, dpr);
 
@@ -85,6 +89,9 @@ export function resizeCanvas(): void {
     if (state.editor) {
         // Only main.ts sizes a newly created document from the viewport.
         // A viewport/layout/keyboard change is presentation, never a crop.
+        if (presentationChanged) {
+            state.onGridResize?.();
+        }
         requestRender();
     }
 }
