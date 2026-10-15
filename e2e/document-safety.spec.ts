@@ -15,6 +15,33 @@ test('viewport changes preserve dimensions, edge content and undo/redo history',
     expect(await requireAsciiContent(page)).toBe('edge');
 });
 
+test('viewport changes keep grid inputs aligned with the document', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await openEditor(page);
+    const before = await page.evaluate(() => {
+        const editor = window.editor;
+        if (!editor) throw new Error('Editor missing');
+        return {
+            width: editor.width,
+            height: editor.height,
+            document: editor.serializeDocument(),
+        };
+    });
+
+    // Simulate unsubmitted values becoming stale while the viewport changes.
+    await page.locator('#grid-width').fill('40');
+    await page.locator('#grid-height').fill('20');
+    await page.setViewportSize({ width: 900, height: 600 });
+
+    await expect(page.locator('#grid-width')).toHaveValue(String(before.width));
+    await expect(page.locator('#grid-height')).toHaveValue(String(before.height));
+    await expect(page.locator('#grid-size')).toHaveText(`${before.width} × ${before.height}`);
+
+    await page.locator('#apply-grid-btn').click();
+    expect(await page.evaluate(() => window.editor?.serializeDocument())).toBe(before.document);
+    await expect(page.locator('#grid-size')).toHaveText(`${before.width} × ${before.height}`);
+});
+
 test('manual shrink is confirmed and cancellation leaves the document and history unchanged', async ({ page }) => {
     await openEditor(page);
     await page.locator('[data-tool="text"]').click();
