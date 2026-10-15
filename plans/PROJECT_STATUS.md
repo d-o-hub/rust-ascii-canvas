@@ -7,7 +7,7 @@ drafts, palette a11y, merge-gate scope, R-09 web split); integrated fast/full
 verification and independent review follow-up are recorded in
 [the implementation evidence](recommendations-implementation-2026-09-30.md).
 The user accepted ADR-046/047 on 2026-09-30. The truthful-sensors + skills
-remainder is ported onto `refactor/fail-closed-sensors`; its PR gates remain open.
+remainder shipped as #241; immutable CI action pins shipped as #270.
 Use [the active backlog](FOLLOW_UPS.md#active-backlog) for next work, not the
 historical release/test counts below.
 
@@ -30,8 +30,8 @@ fix from #265 and the first versioned optimized WASM asset:
 F-13 (#213/#216), R-06 (#224) and npm-audit inventory (#225) already shipped.
 The [audit implementation](recommendations-implementation-2026-09-30.md)
 shipped as #228–#233; ADR-046/047 were accepted by the user
-on 2026-09-30. The sensors + skills remainder is an open PR candidate on
-`refactor/fail-closed-sensors`.
+on 2026-09-30. The sensors + skills remainder shipped as #241; immutable CI
+action pins shipped as #270. No open PR candidate remains.
 The historical test and remote-status snapshots below have not been re-verified
 by this documentation update. Codacy repository intake is local procedure;
 required PR analysis is distinct from a current repository-wide backlog read.
@@ -197,5 +197,5 @@ Reviewed all 3 open PRs with an agent swarm (a11y deep-review + local Codacy rul
 - **Hardening**: `change` handler guards against no-op renames so Escape-cancel can't re-commit restored names.
 - Learnings documented in ADR-040 (Follow-up 3).
 
-*Last updated: 2026-10-02 — audit shipped as #228–#233; sensors port open;
+*Historical snapshot last updated: 2026-10-02 — audit shipped as #228–#233;
 the older test snapshots remain historical.*
