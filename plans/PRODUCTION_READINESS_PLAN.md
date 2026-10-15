@@ -5,7 +5,9 @@
 This plan addresses production readiness gaps identified through comprehensive codebase analysis, incorporating 2026 best practices for Rust/WASM, TypeScript, and E2E testing.
 
 **Analysis Date:** 2026-03-01
-**Status:** Planning Complete - Ready for Implementation
+**Status:** Historical analysis snapshot from 2026-03-01; implementation claims
+and priorities below are not the current backlog. See [FOLLOW_UPS.md](FOLLOW_UPS.md)
+and [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
 ---
 

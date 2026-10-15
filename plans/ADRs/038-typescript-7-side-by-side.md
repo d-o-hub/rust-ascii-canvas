@@ -1,7 +1,7 @@
 # ADR-038: TypeScript 7 Side-by-Side Migration
 
 ## Status
-Proposed - 2026-07-27
+Implemented — 2026-07-27 in commit `2f0a382`; the side-by-side TypeScript 6/7 dependency arrangement is present on `origin/main`.
 
 ## Context
 

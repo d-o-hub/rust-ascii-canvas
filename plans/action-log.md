@@ -2,7 +2,8 @@
 
 **Date**: 2026-03-03
 **Repository**: d-o-hub/rust-ascii-canvas
-**Status**: ACTIVE
+**Status**: Historical chronological record; current active work is maintained in
+[FOLLOW_UPS.md](FOLLOW_UPS.md#active-backlog).
 
 ---
 
@@ -18,7 +19,7 @@
 
 ---
 
-## Initial Assessment
+## Initial Assessment (snapshot from 2026-03-03)
 
 ### Repository State
 - **Default Branch**: main
@@ -193,7 +194,8 @@
 **Repository**: d-o-hub/rust-ascii-canvas  
 **Plan**: `plans/full-recommendations-2026-07.md`  
 **ADR**: `plans/ADRs/036-clipboard-fidelity-and-product-features.md`  
-**Status**: Code complete; PR / issue close pending (F-01)
+**Status at 2026-07-16**: Code complete; PR/issue closure was pending in this
+historical record. F-01 subsequently closed through PR #107 and issue #21.
 
 ### Actions taken
 
@@ -209,7 +211,7 @@
 
 - clippy clean, cargo lib 98, vitest 14, eslint clean, chromium e2e 71
 
-### Open follow-ups logged
+### Historical follow-ups logged on 2026-07-16
 
-See `plans/FOLLOW_UPS.md` (F-01 ship PR, F-02 manual QA, F-03 Dependabot, F-10+ product/quality backlog).
-
+These were open items at the time of the bundle. Their current disposition is
+recorded in `plans/FOLLOW_UPS.md`; do not reopen them from this historical section.

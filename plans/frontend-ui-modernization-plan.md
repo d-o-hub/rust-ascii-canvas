@@ -1,16 +1,25 @@
 # Frontend UI/UX Modernization Plan
 
-## Goal
+## Status: Historical proposal; current state verified 2026-10-15
+
+- Border-style selection is implemented as a functioning native `<select>`; the
+  proposed custom dropdown and visual previews were not adopted.
+- Auto, Horizontal, and Vertical line-direction controls are present in the Line
+  tool.
+- Accessibility attributes and copy-format status feedback were further improved
+  in #264.
+
+## Goal (historical)
 Modernize the ASCII Canvas Editor frontend with 2026 UI/UX best practices, fixing broken dropdowns and adding missing customization options.
 
 ## Issues Identified
 
-### 1. Border Style Dropdown Not Functional
+### 1. Border Style Dropdown Not Functional (historical finding)
 - **Location**: `web/index.html:65-73`, `web/main.ts:206-212`
 - **Problem**: Native `<select>` dropdown with limited styling and poor UX
 - **Impact**: Users cannot effectively select border styles
 
-### 2. Line Tool Missing Direction Options
+### 2. Line Tool Missing Direction Options (historical finding)
 - **Problem**: No horizontal/vertical/ diagonal customization for Line tool
 - **Impact**: Limited drawing capabilities
 
@@ -54,9 +63,9 @@ Based on Interaction Design Foundation research (Feb 2026):
 - Improve keyboard accessibility
 - Add visual feedback for all selections
 
-## Success Criteria
-- [ ] Border style selector works with mouse and keyboard
-- [ ] Visual preview of border styles
-- [ ] Line tool has direction options
-- [ ] All controls match dark Figma-like theme
-- [ ] WCAG 2.1 AA accessibility compliance
+## Historical success criteria
+- [x] Border style selector works with mouse and keyboard
+- [ ] Custom visual preview of border styles — not adopted; native select retained
+- [x] Line tool has Auto/Horizontal/Vertical direction options
+- [x] Toolbar controls retain the project's dark/light UI treatment
+- [ ] A blanket WCAG 2.1 AA claim — not established by this plan

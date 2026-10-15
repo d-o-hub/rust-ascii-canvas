@@ -2,7 +2,9 @@
 
 **Repository**: d-o-hub/rust-ascii-canvas  
 **Date**: 2026-03-03  
-**Status**: ACTIVE MONITORING  
+**Status**: Historical monitoring snapshot from 2026-03-03; not a current
+GitHub status report. See [PROJECT_STATUS.md](PROJECT_STATUS.md) and
+[FOLLOW_UPS.md](FOLLOW_UPS.md) for current state.
 **Methodology**: GOAP (Goal-Oriented Action Planning) with ADR-based fixes
 
 ---

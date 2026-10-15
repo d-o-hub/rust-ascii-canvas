@@ -1,7 +1,8 @@
 # Recommendations implementation — 2026-09-30
 
-> 2026-10-02 status: this candidate shipped as #228–#233, except the
-> truthful-sensors + skills remainder, ported onto `refactor/fail-closed-sensors`.
+> Current disposition, verified against `origin/main` on 2026-10-15: this
+> candidate shipped as #228–#233, and the truthful-sensors + skills remainder
+> shipped as #241. The baseline and repro text below is the original dated record.
 > The baseline and repro text below is the original dated record.
 
 ## Goal
@@ -22,7 +23,7 @@ HEAD: `eb3ce8f`. Existing user changes: `.loc-allowlist`, `web/events.ts`, new `
 
 ## Decisions
 
-- **2026-09-30 approval:** the user explicitly accepted ADR-046 and ADR-047 after implementation and local verification. This approves the recorded design/control decisions, not a merge, release, or live ruleset mutation. Next delivery step: prepare narrowly scoped PRs, beginning with the security patch and editor safety.
+- **2026-09-30 approval:** the user explicitly accepted ADR-046 and ADR-047 after implementation and local verification. At that time, the next step was to prepare narrowly scoped PRs; those deliveries subsequently merged as #228–#233 and #241. This document preserves the candidate decisions and evidence, not a current delivery queue.
 - ADR-046 records editing/persistence boundaries and the bounded local-draft feature.
 - ADR-047 records stricter verification and retained sensor fixtures; the existing server-side ruleset is unchanged.
 - No collaboration/accounts, global undo timeline, format version bump, speculative rendering rewrite, or release automation expansion.
@@ -93,11 +94,10 @@ were inspected; the drawer settles inside the viewport with scrollable content.
   not cross-process CAS, collaboration, or a durable backup. Legacy autosave is
   retained as recovery bytes. Corrupt/denied initial storage fails closed.
 - Scalar-key text handling is not an IME/grapheme-layout implementation.
-- CI/ruleset/PR readiness are not remotely verified; no commit, push, merge or
-  release was performed. ADR-046/047 were accepted by the user on 2026-09-30;
-  PR review and remote merge gates remain outstanding.
-- Unchanged `release.yml` has pre-existing actionlint findings, including a
-  publish condition referencing `needs.guard-rails` without that dependency.
-  Release wiring/pins and RC support need a separate reviewed change; the edited
-  CI workflow passes actionlint. Do not describe repository-wide workflow lint as
-  green on the basis of the CI-only check.
+- CI/ruleset/PR readiness were not remotely verified during this isolated
+  candidate run. PRs #228–#233 and #241 subsequently merged after remote checks;
+  current status is maintained in PROJECT_STATUS.md and FOLLOW_UPS.md.
+- The release workflow actionlint finding described here was fixed by #243
+  (`768cea0`). Release wiring, immutable action pins (#270), and RC support still
+  have their own current status in RELEASING.md and FOLLOW_UPS.md; do not infer
+  current state from this candidate record.

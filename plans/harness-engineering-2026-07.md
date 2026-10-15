@@ -29,6 +29,7 @@ Increase confidence in coding-agent output by systematising **guides** (feedforw
 
 ## Non-goals
 
-- Splitting `helpers.rs` (tracked as allowlisted debt)
+- Splitting `helpers.rs` was a 2026-07 non-goal and historical debt item; it was
+  later reduced to 231 lines and removed from the LOC allowlist through #233/#241.
 - Mutation testing / full behaviour harness rewrite
 - Installing mandatory local git hooks for all contributors (script provided; optional)

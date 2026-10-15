@@ -19,8 +19,50 @@ and an audit's warning prose does not change its successful exit status. Retaine
 negative fixtures now guard these claims in both local runners and CI. See
 [harness L-022–L-025](../agents-docs/harness.md#l-022--warning-text-cannot-make-an-exit-zero-audit-unverified-2026-09-30)
 and ADR-046/047 (accepted by the user on 2026-09-30). 2026-10-02: the audit
-pieces shipped as #228–#233; the sensors + skills remainder is PR-gated, and no
-live ruleset mutation is claimed by either.
+pieces shipped as #228–#233; the sensors + skills remainder shipped as #241
+(`642d1d4`), and immutable action pins shipped as #270 (`7932bc8`). No live
+ruleset mutation is claimed by either.
+
+## 2026-10-15 — current CI/release security guidance
+
+This research was retrieved on 2026-10-15. It records current official GitHub
+guidance; a September 2026 origin is claimed only where GitHub Docs history
+provides a dated September revision.
+
+- [Secure use reference](https://docs.github.com/en/actions/reference/security/secure-use)
+  and [pre-written workflow building blocks](https://docs.github.com/actions/writing-workflows/choosing-what-your-workflow-does/using-pre-written-building-blocks-in-your-workflow)
+  support full-length commit-SHA action pins when no workflow lockfile is used.
+  Every new SHA must resolve through the intended upstream action repository; a
+  tag lookup alone can return an annotated tag object rather than a commit.
+- [Workflow dependency lockfiles](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles)
+  and [lock workflow dependencies](https://docs.github.com/en/actions/how-tos/secure-your-work/lock-workflow-dependencies)
+  describe a public-preview `.github/workflows/actions.lock` that also covers
+  transitive action dependencies. The feature was documented on 2026-10-12, so
+  it is a future evaluation item, not a September 2026 control in this repo.
+- [GITHUB_TOKEN permissions](https://docs.github.com/actions/reference/authentication-in-a-workflow)
+  recommends least privilege. `ci.yml` already defaults to `contents: read`,
+  while `release.yml` grants `contents: write` broadly and `issue-closer.yml`
+  does not declare its required issue-writing permission explicitly. Record a
+  separately scoped permissions audit; do not change release behavior here.
+- [Ruleset rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets)
+  and [required-check troubleshooting](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/troubleshooting-required-status-checks)
+  require current-head checks and exact check-name/event wiring. The committed
+  ruleset snapshot is not authoritative by itself; compare it with live state
+  when the merge contract is questioned.
+- [Automatic pull-request merging](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/automatically-merging-a-pull-request)
+  confirms that auto-merge waits for required checks/reviews; `--admin` is a
+  bypass, not normal delivery evidence.
+
+September date validation: GitHub Docs history has a required-check update on
+2026-09-14 and maintenance revisions for rulesets and secure-use on 2026-09-29.
+The GITHUB_TOKEN page has a 2026-09-04 link-only revision, not a new policy
+publication; auto-merge has no September page revision; workflow lockfiles were
+documented in October. Do not summarize all of this as “September 2026 best
+practice.” Evidence: [required-check history](https://github.com/github/docs/commit/60f9f347ec0855d3db3cbdf3084b82843df828d7),
+[ruleset September history](https://github.com/github/docs/commits/main/content/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets.md?since=2026-09-01&until=2026-09-30),
+[secure-use September history](https://github.com/github/docs/commits/main/content/actions/reference/security/secure-use.md?since=2026-09-01&until=2026-09-30),
+[GITHUB_TOKEN September revision](https://github.com/github/docs/commit/873d9df9ffe5fb066dec9b508eff83d3d475b4be),
+and [workflow-lockfile publication](https://github.com/github/docs/commit/ecafe7144a016cab7a88e3e77437f38ce1a4ee73).
 
 ## Harness engineering (2026-07-16)
 
@@ -1033,4 +1075,3 @@ Sparse cell encoding (visible only). Multi-layer round-trip covered by unit + E2
 | SVG export missing | F-10 |
 | wasm `missing_docs` allows | F-25 |
 | wasm-opt optional locally | F-24 |
-

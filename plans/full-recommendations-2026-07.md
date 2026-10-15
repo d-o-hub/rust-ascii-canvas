@@ -83,9 +83,10 @@
 
 ---
 
-## Follow-ups (backlog)
+## Historical follow-ups as of 2026-07-16 (superseded)
 
-See also [FOLLOW_UPS.md](FOLLOW_UPS.md) for the living backlog.
+This table preserves the backlog at the completion of the July bundle. Current
+shipped/candidate/blocked status is maintained in [FOLLOW_UPS.md](FOLLOW_UPS.md).
 
 ### P0 — Ship / close the loop
 

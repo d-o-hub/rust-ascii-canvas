@@ -1,5 +1,11 @@
 # Editor-safety delivery — 2026-09-30
 
+## Record status
+
+This is an isolated pre-merge delivery record. The safety implementation merged
+as #229; named drafts and accessible layer controls merged as #230/#231, and the
+remaining harness work merged as #241. The isolated evidence below is historical.
+
 ## Goal and boundaries
 
 Deliver the safety subset of [ADR-046](ADRs/046-editing-safety-and-local-drafts.md)

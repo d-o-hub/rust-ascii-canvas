@@ -4,7 +4,7 @@
 Partially Implemented - 2026-07-27
 
 ## Notes
-See ADR-039 for remediation scope — only Category 1 (WASM-generated types) is implemented. Categories 2-5 (dead variables, `@ts-ignore`, `(window as any)`, untyped `RenderCommand`) remain open.
+Categories 1–4 are resolved in the current tree: redundant editor casts and dead suppressions were removed, and E2E globals are typed through the shared declaration work in #219/#233. Category 5 remains partially open: `RenderCommand` is still represented by a broad type with field casts in `web/render.ts`. Any remaining cleanup is a narrow follow-up, not the original five-category backlog.
 
 
 ## Context

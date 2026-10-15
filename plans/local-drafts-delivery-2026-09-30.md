@@ -1,5 +1,12 @@
 # Named local drafts — isolated delivery
 
+## Record status
+
+This is a historical isolated-delivery record. The implementation described here
+merged as #230 (`b7a52bc`); the deferred harness/skills work referenced below
+subsequently merged as #241. Current repository status and remaining work are
+maintained in [FOLLOW_UPS.md](FOLLOW_UPS.md#active-backlog).
+
 ## Goal and baseline
 
 Deliver the accepted named-local-draft portion of [ADR-046](ADRs/046-editing-safety-and-local-drafts.md)
@@ -9,9 +16,10 @@ editor-safety PR [#229](https://github.com/d-o-hub/rust-ascii-canvas/pull/229) a
 merged (`3156725`, `cdd4c50`). Their startup-layout, atomic-history and PNG-test
 follow-ups must be preserved, not replaced by older source copies.
 
-The larger development workspace remains read-only. Extract in a separate
+The larger development workspace was read-only for this run. Extract in a separate
 worktree and branch from the merged base, not from its unrelated feature branch.
-This document records a delivery candidate, not a release or merge assertion.
+At the time of the isolated run this document recorded a delivery candidate, not
+a merge or release assertion; the candidate subsequently merged as #230.
 
 ## Scope
 
