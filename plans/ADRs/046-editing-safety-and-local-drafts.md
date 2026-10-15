@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — explicitly approved by the user on 2026-09-30. **Delivered in scoped candidates:** editor-safety in #229, named local drafts in #230, accessible layer panel in #231. The named-draft UI, storage, migration and conflict handling shipped there; the larger harness/skills overhaul ships separately with the fail-closed sensors port (PR-gated). Acceptance is not PR/remote-gate evidence.
+Accepted — explicitly approved by the user on 2026-09-30. Delivered through #229 (editor safety), #230 (named local drafts), #231 (accessible layer controls), and #241 (fail-closed sensors and skills). All scoped implementation is merged on `origin/main`; the isolated delivery evidence below is historical, not current merge-gate status. Acceptance is not PR/remote-gate evidence.
 
 ## Context
 

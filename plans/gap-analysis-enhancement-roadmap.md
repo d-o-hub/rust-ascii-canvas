@@ -24,7 +24,10 @@ This document analyzes the ASCII Canvas Editor for missing features, incomplete 
 | Grid | Responsive + manual size UI | ✅ Complete | Medium |
 | UI | Toolbar, Status bar, Zoom, Shortcuts, Save/Load/PNG | ✅ Complete | Medium |
 
-### Remaining gaps (see FOLLOW_UPS)
+### Remaining gaps in the 2026-07-16 snapshot (superseded; see FOLLOW_UPS)
+
+The rows below describe the state when this analysis was written. They are not a
+current backlog; use `FOLLOW_UPS.md` for live status.
 - SVG export (F-10)
 - Layer polish + composite render + history (F-11–F-13)
 - Blue-tinted preview (F-15 / ADR-011)

@@ -140,8 +140,9 @@ the failure mode" caution. Do not conflate "wired" with "enforced".
    with a SHA-verified tarball, same supply-chain discipline as actionlint
    in #244.
 3. **Ruleset — do not touch this in the same PR.** Adding a new required
-   check is a **merge contract change**, which needs (a) an ADR (ADR-048?)
-   and (b) an updated `.github/ruleset-main.json` in the same change. Wire
+    check is a **merge contract change**, which needs (a) a new ADR and (b) an
+    updated `.github/ruleset-main.json` in the same change. Do not call it
+    ADR-048, which already documents box-drawing geometry. Wire
    the job as a *non-blocking* check first, confirm it produces signal on
    real PRs for a week, then propose making it required via the ADR route.
    Never drop `Codacy Static Code Analysis` (the existing app check) to make
@@ -167,7 +168,8 @@ must appear in one place; anything else is drift. Prefer:
 
 ## ADR needed
 
-`ADR-048: Codacy coverage and repo-intake in CI`. Covers:
+`New ADR: Codacy coverage and repo-intake in CI`. Assign the next unused ADR
+number when this decision is authorized. It covers:
 
 - **Why the two surfaces are separate** — write vs read; blocking vs
   report-only.
@@ -205,8 +207,8 @@ Copy/paste when you are ready to unblock:
    to be opened once these exist:
    - PR-A: coverage sensors + partial uploads + SHA-pinned action.
    - PR-B: `scripts/codacy-issues-check.py` + fixtures + non-blocking CI job.
-5. After a week of green PR-B runs, propose PR-C: ADR-048 + ruleset snapshot
-   update to promote the check to required.
+5. After a week of green PR-B runs, propose PR-C: the new ADR plus a ruleset
+   snapshot update to promote the check to required.
 
 ## Related
 

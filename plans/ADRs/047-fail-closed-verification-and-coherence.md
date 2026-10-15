@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — explicitly approved by the user on 2026-09-30. **Implementation:** the editor-safety slice — register `tests/wasm`, execute library and public binding tests in Node, require nonzero passing tests per target, invoke that shared runner from the CI `rust` job and local full gate — shipped in #229. The remaining decisions (fail-closed audit/artifact sensors with retained fixtures, WASM binding freshness, pnpm pin parity, the offline skill-manifest checker, production-dist E2E and CI wiring) ship with the fail-closed sensors + skills change on `refactor/fail-closed-sensors` (2026-10-02); its PR and remote gates remain outstanding. No live ruleset change is authorized or performed.
+Accepted — explicitly approved by the user on 2026-09-30. The editor-safety WASM test slice shipped in #229; the remaining fail-closed audit/artifact sensors, WASM binding freshness, pnpm pin parity, offline skill-manifest checks, production-dist E2E, and CI wiring shipped in #241 (`642d1d4`). No live ruleset change was authorized or performed.
 
 ## Context
 

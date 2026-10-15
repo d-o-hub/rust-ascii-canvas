@@ -1,13 +1,13 @@
 # Goal State: Codebase Improvement & Feature Roadmap 2026
 
-## Status: ACHIEVED (2026-07 target met) — Codacy parity done (#222 + #223/L-017); next is R-06
-**Updated**: 2026-09-29
+## Status: ROADMAP ACHIEVED — active decisions and blocked work are tracked in FOLLOW_UPS.md
+**Updated**: 2026-10-15
 
 ---
 
 ## GOAP World State Model
 
-### Current State (Verified 2026-09-28)
+### Current repository/release state (remote status verified 2026-10-15; dated test metrics are labeled below)
 
 ```yaml
 code_quality:
@@ -16,7 +16,8 @@ code_quality:
   dead_code_allow: false          # wasm missing_docs allows removed (F-25)
   unused_deps: []
   duplicate_types: false
-  max_file_loc: 853               # web/events.ts (web/ not covered by LOC sensor — see FOLLOW_UPS)
+  max_file_loc: 477               # web/events.ts; web source is covered by the LOC sensor
+  loc_allowlist: empty             # no oversized source files remain
   stale_configs: []
 
 tests:
@@ -56,7 +57,7 @@ features:
   mobile_drawer_escape: true       # #195
 
 documentation:
-  adr_count: 44                     # 46 files, but 005 and 040 are each duplicated
+  adr_count: 49                     # 51 files; duplicate-number variants exist for ADR-005 and ADR-040
   plans_refreshed: 2026-10-15       # v0.1.5 + #265/#270 reconciliation
   release_runbook: true            # plans/RELEASING.md (rollback section added, ADR-044)
   open_issues: 0                    # #199 and #263 are closed
@@ -83,7 +84,7 @@ harness:                           # ADR-044
 ```yaml
 features:
   layer_history: true              # F-13 — shipped in #213, hardened in #216
-  collaborative_prototype: decided # F-30 spike -> ADR
+  collaborative_prototype: decision_deferred # F-30 spike complete; new scope/issue/ADR required
 
 process:
   release_0_1_5: published         # R-01
@@ -92,7 +93,7 @@ process:
   codacy_backlog_gated: done       # R-07 — #219 sensors + #220 L-016 CI wiring
 
 harness:
-  loc_sensor_covers_web: true      # candidate — see FOLLOW_UPS
+  loc_sensor_covers_web: true      # shipped via #227/#233/#241; no oversized source entries remain
   merge_contract: done             # ADR-044 (#213): ruleset + pr-merge-gate.sh
   ruleset_drift_sensor: done       # scripts/ruleset-check.sh + .github/ruleset-main.json
   gate_script_is_not_a_gate: done  # L-016 (#220): e2e sensors wired into ci.yml web job

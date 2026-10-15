@@ -34,7 +34,14 @@ This is not the active queue; any residual requires fresh code verification.
 
 ---
 
-## Historical world-state snapshot (2026-07–09; not re-verified today)
+## Current remote/release state (verified 2026-10-15)
+
+- `origin/main`: `2e739bf` (#271)
+- Latest release: v0.1.5, published 2026-10-15, with the versioned WASM asset
+- Open issues / PRs: 0 / 0
+- Open Dependabot alerts: 0
+
+## Historical world-state snapshot (2026-07–09; preserved for provenance)
 
 | Property | Value |
 |----------|-------|
@@ -56,9 +63,9 @@ This is not the active queue; any residual requires fresh code verification.
 | light_theme | ✅ (F-31) |
 | main.ts modules | ✅ split; `main.ts` 230 LOC (F-20) |
 | package_metadata | ✅ d-o-hub URLs |
-| release | **v0.1.5** released 2026-10-15 with versioned WASM asset; R-01/R-02/R-04 done; R-07 Codacy backlog done and gated in CI (#219 + #220/L-016) ([RELEASING.md](RELEASING.md)) |
-| open_issues / PRs | 0 / 0 |
-| open_dependabot | 0 (alert #11 closed by R-05 prune) |
+| release | Historical July snapshot; see the current remote/release state above and [RELEASING.md](RELEASING.md) |
+| open_issues / PRs | Historical July snapshot; current remote counts are above |
+| open_dependabot | Historical July snapshot; current remote count is above |
 
 ---
 

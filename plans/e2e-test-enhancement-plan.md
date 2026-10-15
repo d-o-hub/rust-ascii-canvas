@@ -41,6 +41,12 @@ Update e2e tests to use all buttons and functions in the ASCII Canvas applicatio
 
 ## Test Coverage Achieved
 
+### Historical result snapshot
+
+The 40/40 result below records the original plan's verification run; it is not
+the current E2E inventory. Current tests and outstanding verification gaps are
+tracked in `PROJECT_STATUS.md` and `FOLLOW_UPS.md`.
+
 ### Drawing Tools (8 tests)
 - ✅ Rectangle tool drawing
 - ✅ Line tool drawing
@@ -76,8 +82,11 @@ Update e2e tests to use all buttons and functions in the ASCII Canvas applicatio
 - **Total E2E Tests**: 40 tests ✅
 - **All passing**: 40/40
 
-## Missing / Future Enhancements
+## Missing / Future Enhancements in the original snapshot
 
-1. ASCII Output Verification - Verify export_ascii() returns correct content
-2. Pan with Space+Drag testing
-3. Shape resize handles testing
+1. ASCII output verification — covered by current clipboard and layer suites;
+   the original gap is closed.
+2. Pan with Space+Drag testing — remains unverified in the current E2E suite
+   unless a new test is added.
+3. Shape resize handles testing — not applicable to the current tool model unless
+   resize handles are introduced.

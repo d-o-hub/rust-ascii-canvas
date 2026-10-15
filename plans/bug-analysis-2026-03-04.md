@@ -44,7 +44,9 @@ The eraser tool IS working correctly. Possible sources of user confusion:
 **Conclusion**: No bug found. Eraser functionality works as designed. User may need guidance on:
 - How to select the eraser tool (E key or click eraser button)
 - Understanding that size=1 eraser only clears 1 cell
-- Future enhancement: Add UI for adjusting eraser size (currently hardcoded to 1)
+- At the time of this 2026-03-04 report, eraser size was hardcoded to 1. The
+  current implementation exposes radius 1/3/5 as F-16; retain this line only as
+  historical context.
 
 ## Issue 3: Drawing Boundary at x=80 ✅ NOT A BUG
 

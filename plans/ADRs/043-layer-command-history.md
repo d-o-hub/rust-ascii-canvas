@@ -1,7 +1,7 @@
 # ADR-043: Undoable Layer Operations
 
 ## Status
-Implemented — landed on `main` 2026-09-27 as part of **#213**; correctness fix landed in the follow-up PR. Adversarial pass (`pr-roast`) still outstanding.
+Implemented — landed on `main` 2026-09-27 as part of **#213**; correctness fix landed in follow-up PR #216. Issue #207 closed 2026-09-28. The original merge predates the current adversarial-review process; that historical exception is not an active follow-up.
 
 > **Attribution note (2026-09-27, harness L-011).** This ADR was tracked by #212
 > (`feat(f13-layer-undo)`, commit `8edf869`). The implementation reached `main`
@@ -85,7 +85,7 @@ Sizes before: `history.rs` 200, `commands/mod.rs` 245, `bindings.rs` 330, `rende
 
 ## Definition of done for #207
 
-`core/layer.rs`, `core/commands/layer.rs`, `wasm/layer_api.rs` landed; all seven ops with exact undo/redo; JS `.d.ts` unchanged; `helpers.rs` not grown; `gate:full` green including the new E2E spec; PR merged. **Only then** verify against `git log` and move this ADR Proposed → Accepted, close #207, and amend ADR-026 to "partial" (or "full" if web parity is proven).
+`core/layer.rs`, `core/commands/layer.rs`, `wasm/layer_api.rs` landed; all seven ops with exact undo/redo; JS `.d.ts` unchanged; `helpers.rs` not grown; `gate:full` green including the new E2E spec; PRs #213/#216 merged and issue #207 closed. The remaining text is the historical acceptance checklist, not a current action item.
 
 ## Definition of not done
 
