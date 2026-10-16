@@ -77,6 +77,7 @@ harness:                           # ADR-044
   codacy_backlog_readable: true      # L-017 — npm run codacy:check (agent procedure, not a gate)
   local_rule_family_parity: true     # L-017 — eslint-plugin-security in both ESLint configs
   workflow_token_permissions: least_privilege # #273 — job-scoped release/issues access
+  workflow_dependency_lockfile: deferred      # ADR-050 — preview tool conflicts with full-SHA policy
   codacy_backlog: 0                  # 11 High findings fixed in #222; verified repo-level
 ```
 

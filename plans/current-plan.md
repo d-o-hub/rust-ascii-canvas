@@ -10,7 +10,7 @@ permissions least-privilege hardening shipped as #273.
 F-13, R-06 and the R-08 npm audit inventory already shipped; do not re-plan them.
 
 **Created**: 2026-03-03  
-**Last updated**: 2026-10-15 (v0.1.5 released; grid-control resize fix shipped as #265; immutable CI action pins shipped as #270; workflow permissions hardened as #273; release-prep #267 merged)
+**Last updated**: 2026-10-16 (v0.1.5 released; grid-control resize fix shipped as #265; immutable CI action pins shipped as #270; workflow permissions hardened as #273; workflow lockfile deferred by ADR-050; release-prep #267 merged)
 **Supersedes (partially)**: Production-readiness-only focus; March 2026 world-state snapshot  
 **Methodology**: Goal-Oriented Action Planning (GOAP) with ADRs  
 **Latest execution**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
