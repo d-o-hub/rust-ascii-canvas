@@ -37,8 +37,10 @@ provides a dated September revision.
 - [Workflow dependency lockfiles](https://docs.github.com/en/actions/concepts/security/workflow-dependency-lockfiles)
   and [lock workflow dependencies](https://docs.github.com/en/actions/how-tos/secure-your-work/lock-workflow-dependencies)
   describe a public-preview `.github/workflows/actions.lock` that also covers
-  transitive action dependencies. The feature was documented on 2026-10-12, so
-  it is a future evaluation item, not a September 2026 control in this repo.
+  transitive action dependencies. A 2026-10-16 pilot with `gh-actions-lock`
+  v0.2.0 rewrote this repository's full SHA references to symbolic refs and
+  rejected the existing untagged `dtolnay/rust-toolchain` commit. ADR-050
+  therefore defers the lockfile and retains direct full-SHA pins.
 - [GITHUB_TOKEN permissions](https://docs.github.com/actions/reference/authentication-in-a-workflow)
   recommends least privilege. `ci.yml` already defaults to `contents: read`,
   while `release.yml` grants `contents: write` broadly and `issue-closer.yml`
