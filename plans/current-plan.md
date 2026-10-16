@@ -10,7 +10,7 @@ permissions least-privilege hardening shipped as #273.
 F-13, R-06 and the R-08 npm audit inventory already shipped; do not re-plan them.
 
 **Created**: 2026-03-03  
-**Last updated**: 2026-10-15 (v0.1.5 released; grid-control resize fix shipped as #265; immutable CI action pins shipped as #270; workflow permissions hardened as #273; release-prep #267 merged)
+**Last updated**: 2026-10-16 (v0.1.5 released; shared E2E render settling shipped as #281; grid-control resize fix shipped as #265; immutable CI action pins shipped as #270; workflow permissions hardened as #273; workflow lockfile deferred by ADR-050; release-prep #267 merged)
 **Supersedes (partially)**: Production-readiness-only focus; March 2026 world-state snapshot  
 **Methodology**: Goal-Oriented Action Planning (GOAP) with ADRs  
 **Latest execution**: [full-recommendations-2026-07.md](full-recommendations-2026-07.md)  
@@ -37,7 +37,7 @@ This is not the active queue; any residual requires fresh code verification.
 
 ## Current remote/release state (verified 2026-10-15)
 
-- `origin/main`: `0c2f0f3` (#273)
+- `origin/main`: `b41047f` (#281)
 - Latest release: v0.1.5, published 2026-10-15, with the versioned WASM asset
 - Open issues / PRs: 0 / 0
 - Open Dependabot alerts: 0

@@ -30,6 +30,29 @@ export async function openEditor(page: Page): Promise<void> {
 }
 
 /**
+ * Wait for the canvas to be initialized and for a scheduled render to present.
+ *
+ * The backing-store dimensions only prove that the canvas exists; input handlers
+ * schedule the visible render on a later animation frame. Two frames let the
+ * page-side wait run after the application's own render callback.
+ */
+export async function waitForRender(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const canvas = document.querySelector<HTMLCanvasElement>('#canvas');
+        return canvas !== null && canvas.width > 0 && canvas.height > 0;
+    }, { timeout: 5000 });
+
+    await page.evaluate(
+        () =>
+            new Promise<void>((resolve) => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => { resolve(); });
+                });
+            })
+    );
+}
+
+/**
  * Read the canvas as plain ASCII from inside the page.
  *
  * `window.editor` is typed `| null` (see `e2e/globals.d.ts`), so a direct

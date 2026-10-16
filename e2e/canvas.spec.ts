@@ -4,19 +4,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import { openEditor, requireAsciiContent, clickGridCell } from './helpers';
-
-
-async function waitForRender(page: Page): Promise<void> {
-    await page.waitForFunction(() => {
-        // Generic form: querySelector<HTMLCanvasElement> returns
-        // `HTMLCanvasElement | null`, so the null check below is a real guard
-        // rather than a redundant one. The old `as HTMLCanvasElement` cast
-        // asserted non-null on a nullable result, which silenced the check.
-        const canvas = document.querySelector<HTMLCanvasElement>('#canvas');
-        return canvas !== null && canvas.width > 0 && canvas.height > 0;
-    }, { timeout: 5000 });
-}
+import { openEditor, requireAsciiContent, clickGridCell, waitForRender } from './helpers';
 
 async function waitForCursorUpdate(page: Page): Promise<void> {
     await page.waitForFunction(
