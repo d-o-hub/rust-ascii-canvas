@@ -19,6 +19,7 @@
  */
 
 import { expect, type Page } from '@playwright/test';
+import { waitForRender } from './helpers';
 
 /** Corner cells of the rectangle every test in this file draws. */
 export const RECT = { left: 3, top: 2, right: 22, bottom: 16 } as const;
@@ -263,10 +264,5 @@ export async function cellCentre(page: Page, cellX: number, cellY: number): Prom
  * evaluate callback queued before the app's own still samples the old composite.
  */
 export async function waitForPaint(page: Page): Promise<void> {
-    await page.evaluate(
-        () =>
-            new Promise<void>((resolve) => {
-                requestAnimationFrame(() => requestAnimationFrame(() => { resolve(); }));
-            })
-    );
+    await waitForRender(page);
 }
