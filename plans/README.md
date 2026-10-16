@@ -34,6 +34,7 @@ Living project planning for the ASCII Canvas editor (GOAP + ADRs).
 - [046-editing-safety-and-local-drafts.md](ADRs/046-editing-safety-and-local-drafts.md) — accepted; shipped via #229/#230/#231, with verification completion in #241
 - [047-fail-closed-verification-and-coherence.md](ADRs/047-fail-closed-verification-and-coherence.md) — accepted; editor-safety slice in #229 and remaining sensors/skills implementation in #241
 - [048-box-drawing-glyphs-as-geometry.md](ADRs/048-box-drawing-glyphs-as-geometry.md) — accepted; shipped via #250 (SVG box runs become `<rect>`)
+- [050-defer-workflow-dependency-lockfile.md](ADRs/050-defer-workflow-dependency-lockfile.md) — accepted; public-preview lockfile deferred in favor of full-SHA action pins
 
 - [042-wasm-bindgen-pin-parity.md](ADRs/042-wasm-bindgen-pin-parity.md) — coordinated 0.2.128 pins + parity sensor
 - [041-clipboard-export-modes.md](ADRs/041-clipboard-export-modes.md) — export fidelity / pure-ASCII fallback

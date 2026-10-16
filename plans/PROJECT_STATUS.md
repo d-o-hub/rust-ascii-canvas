@@ -26,17 +26,18 @@ fix from #265 and the first versioned optimized WASM asset:
 
 **Reality check (2026-09-23)**: every roadmap issue **#110–#127 is closed** and its feature verified in code (see [FOLLOW_UPS.md](FOLLOW_UPS.md)).  
 **Released**: **v0.1.5** on 2026-10-15 — dry run and real run green; release notes target the generated changelog branch and the versioned WASM asset uploaded successfully.
-**Next**: see the sole [active backlog](FOLLOW_UPS.md#active-backlog); recorded P2 items require an explicit scope decision before implementation.
+**Next**: see the sole [active backlog](FOLLOW_UPS.md#active-backlog); remaining recorded P2 items require an explicit scope decision before implementation.
 F-13 (#213/#216), R-06 (#224) and npm-audit inventory (#225) already shipped.
 The [audit implementation](recommendations-implementation-2026-09-30.md)
 shipped as #228–#233; ADR-046/047 were accepted by the user
 on 2026-09-30. The sensors + skills remainder shipped as #241; immutable CI
 action pins shipped as #270. No open PR candidate remains.
 The dated test snapshots below are historical, not a fresh test inventory. The
-2026-10-15 remote snapshot is current: origin/main is `0c2f0f3`, open issues and
+2026-10-16 remote snapshot is current: origin/main is `b41047f`, open issues and
 PRs are `0 / 0`, open Dependabot alerts are `0`, and the current main CI/CodeQL/
 Codacy analyses are green. Workflow token permissions were least-privilege
-hardened by #273 without changing release behavior. Codacy repository intake remains an agent procedure;
+hardened by #273 without changing release behavior; shared E2E render settling
+shipped as #281. Codacy repository intake remains an agent procedure;
 coverage is still `None` and project-scoped CI credentials are absent.
 
 **Harness (2026-09-27, ADR-044 / #213)**: green CI is now a real merge precondition. The `main` ruleset previously required only `Codacy Static Code Analysis` — every product sensor was advisory and a PR could merge with red E2E. It now requires `CI Success` + `PR Readiness (merge gate)` and requires review-thread resolution, with `required_approving_review_count: 0` (gates decide, not a human click). Backed by `scripts/pr-merge-gate.sh` (local mirror, read-only), `scripts/ruleset-check.sh` (the ruleset is repo state, so its drift is now a required check against a committed snapshot), and a documented delivery loop in `agents-docs/delivery.md`. See harness L-008/L-009.
