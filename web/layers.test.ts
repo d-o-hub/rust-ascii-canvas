@@ -3,7 +3,7 @@ import { state } from './state.js';
 import { refreshLayerList } from './ui.js';
 
 beforeEach(() => {
-    document.body.innerHTML = '<div id="layer-list"></div><canvas tabindex="0" id="canvas"></canvas>';
+    document.body.innerHTML = '<div id="layer-list"></div><button id="add-layer-btn" title="Add layer" aria-label="Add layer">+ Add Layer</button><canvas tabindex="0" id="canvas"></canvas>';
     let active = 0;
     let visible = true;
     state.editor = {
@@ -37,5 +37,21 @@ describe('accessible layer navigation', () => {
         button?.focus();
         button?.click();
         expect(document.activeElement?.getAttribute('aria-label')).toBe('Show layer');
+    });
+
+    it('updates add layer button disabled state and accessibility labels at layer limit', () => {
+        const addBtn = document.querySelector<HTMLButtonElement>('#add-layer-btn');
+        expect(addBtn?.disabled).toBe(false);
+        expect(addBtn?.title).toBe('Add layer');
+        expect(addBtn?.getAttribute('aria-label')).toBe('Add layer');
+
+        if (state.editor) {
+            (state.editor as { layerCount: number }).layerCount = 32;
+        }
+        refreshLayerList();
+
+        expect(addBtn?.disabled).toBe(true);
+        expect(addBtn?.title).toBe('Maximum limit of 32 layers reached');
+        expect(addBtn?.getAttribute('aria-label')).toBe('Add layer (disabled: maximum limit of 32 layers reached)');
     });
 });
