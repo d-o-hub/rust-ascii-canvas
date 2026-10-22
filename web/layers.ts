@@ -12,6 +12,13 @@ export function refreshLayers(updateUI: () => void, showToast: (message: string)
     const list = document.querySelector('#layer-list');
     if (!editor || typeof editor.layerCount !== 'number' || !(list instanceof HTMLElement)) return;
     const count = editor.layerCount;
+    const addBtn = document.querySelector<HTMLButtonElement>('#add-layer-btn');
+    if (addBtn) {
+        const atLimit = count >= 32;
+        addBtn.disabled = atLimit;
+        addBtn.title = atLimit ? 'Maximum limit of 32 layers reached' : 'Add layer';
+        addBtn.setAttribute('aria-label', atLimit ? 'Add layer (disabled: maximum limit of 32 layers reached)' : 'Add layer');
+    }
     const active = editor.activeLayer;
     const layers = Array.from({ length: count }, (_, index) => ({
         name: editor.layerName(index), visible: editor.layerVisible(index), locked: editor.layerLocked(index),
