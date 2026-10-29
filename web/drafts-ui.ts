@@ -106,12 +106,31 @@ export function initializeDrafts(): void {
         if (event.target instanceof HTMLSelectElement) session?.switchTo(event.target.value);
         refresh(); // restore selection after a failed switch
     });
-    document.getElementById('draft-name')?.addEventListener('change', event => {
-        if (event.target instanceof HTMLInputElement) {
-            session?.rename(event.target.value);
-            event.target.value = session?.list().find(draft => draft.id === session?.selectedId)?.name ?? '';
-        }
-    });
+    const draftNameInput = document.querySelector<HTMLInputElement>('#draft-name');
+    if (draftNameInput) {
+        draftNameInput.addEventListener('change', () => {
+            const activeDraft = session?.list().find(d => d.id === session?.selectedId);
+            const oldName = activeDraft?.name ?? '';
+            const newName = draftNameInput.value.trim();
+            if (newName && newName !== oldName) {
+                if (session?.rename(newName)) {
+                    showToast('Draft renamed');
+                }
+            }
+            draftNameInput.value = session?.list().find(d => d.id === session?.selectedId)?.name ?? '';
+        });
+        draftNameInput.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                const activeDraft = session?.list().find(d => d.id === session?.selectedId);
+                draftNameInput.value = activeDraft?.name ?? '';
+                draftNameInput.blur();
+                if (state.canvas) state.canvas.focus();
+            } else if (event.key === 'Enter') {
+                draftNameInput.blur();
+                if (state.canvas) state.canvas.focus();
+            }
+        });
+    }
     document.getElementById('draft-new')?.addEventListener('click', () => {
         if (!state.editor) return;
         const name = prompt('Name the new local draft', 'Untitled');

@@ -514,6 +514,52 @@ describe('UX Improvements', () => {
         formatSelect.remove();
         boxCheckbox.remove();
     });
+
+    it('should handle Enter, Escape and toast notification when editing draft name', () => {
+        localStorage.clear();
+        const canvasNode = document.querySelector('canvas');
+        if (!canvasNode) throw new Error('canvas must exist');
+        state.canvas = canvasNode;
+        state.statusToast = document.getElementById('status-toast');
+
+        const draftNameInput = document.createElement('input');
+        draftNameInput.id = 'draft-name';
+        document.body.appendChild(draftNameInput);
+
+        state.editor = {
+            width: 80,
+            height: 40,
+            serializeDocument: vi.fn().mockReturnValue('{}'),
+        } as unknown as typeof state.editor;
+
+        initializeDrafts();
+
+        const blurSpy = vi.spyOn(draftNameInput, 'blur');
+        const focusSpy = vi.spyOn(canvasNode, 'focus');
+
+        draftNameInput.value = 'Renamed Draft';
+        const enterEvent = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true });
+        draftNameInput.dispatchEvent(enterEvent);
+
+        expect(blurSpy).toHaveBeenCalled();
+        expect(focusSpy).toHaveBeenCalled();
+
+        draftNameInput.dispatchEvent(new Event('change'));
+        expect(state.statusToast?.textContent).toBe('Draft renamed');
+
+        blurSpy.mockClear();
+        focusSpy.mockClear();
+
+        draftNameInput.value = 'Cancelled Draft';
+        const escapeEvent = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+        draftNameInput.dispatchEvent(escapeEvent);
+
+        expect(blurSpy).toHaveBeenCalled();
+        expect(focusSpy).toHaveBeenCalled();
+        expect(draftNameInput.value).toBe('Renamed Draft');
+
+        draftNameInput.remove();
+    });
 });
 
 /**
