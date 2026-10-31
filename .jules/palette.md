@@ -1,3 +1,7 @@
+## 2026-08-26 - [Draft Name Input Keyboard Navigation and Status Toast]
+**Learning:** Text input fields in side-panel forms (such as draft naming controls) feel disconnected from the canvas if keyboard submissions or cancellations don't restore main focus. Handling `Enter` (blur input and focus canvas) and `Escape` (revert input value and focus canvas) along with explicit status notifications (`showToast('Draft renamed')`) creates a predictable, keyboard-centric editing workflow.
+**Action:** Always pair form inputs with `Enter` (submit & focus canvas) and `Escape` (revert & focus canvas) handlers, and emit visual status toasts on input changes.
+
 ## 2026-08-25 - [Local Draft Actions Accessibility and Visual Feedback]
 **Learning:** Local draft management actions (save, create, delete) often lack immediate feedback or clear reasons when disabled (e.g. attempting to delete when only 1 draft remains or create when the 20-draft limit is hit). Combining dynamic `aria-label` / `title` state descriptions with contextual toast notifications (`showToast`) creates an intuitive, accessible feedback loop for local session state.
 **Action:** Always explain why draft/session actions are disabled via dynamic `aria-label` and `title` attributes, and emit visual toast notifications when actions complete.
