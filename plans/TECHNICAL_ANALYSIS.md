@@ -1,5 +1,21 @@
 # ASCII Canvas Editor - Technical Analysis
 
+## 2026-11-03 — open issue implementation research
+
+Issue #303 cannot serialize the Rust command trait objects directly without
+making the `.asc` v1 format depend on internal command implementations. The
+browser therefore keeps a bounded snapshot timeline beside each named draft and
+uses the existing validated `loadDocument` WASM boundary for restore. This is
+consistent with MDN's `localStorage` persistence model and the `storage` event's
+cross-document semantics. `BroadcastChannel` provides the same-origin low-latency
+notification path; revision tokens make the channel and storage fallback
+idempotent.
+
+Issue #301 remains superseded by ADR-040: the current crate and WASM bindings are
+app-coupled, and `cargo publish`/`npm publish` would require registry credentials
+and a supported public API. The PR records the decision rather than claiming an
+external publication that was not performed.
+
 ## 2026-09-30 — editing boundaries and truthful verification (working tree)
 
 Current implementation/test evidence and measured render baseline live in
