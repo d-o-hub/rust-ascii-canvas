@@ -11,6 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RESOLVER = ROOT / "scripts/do-harness.sh"
 CHECK = ROOT / "scripts/check-do-harness.sh"
 INSTALL = ROOT / "scripts/install-do-harness.sh"
+QUALITY_GATES = ROOT / "scripts/quality-gates.sh"
 
 
 class DoHarnessResolution(unittest.TestCase):
@@ -92,6 +93,14 @@ class DoHarnessResolution(unittest.TestCase):
         text = INSTALL.read_text(encoding="utf-8")
         self.assertIn('do-harness/v$VERSION/scripts/install.sh', text)
         self.assertNotIn('do-harness/main/scripts/install.sh', text)
+
+    def test_quality_gate_can_fail_closed_without_fallback(self):
+        env = {**os.environ, "DO_HARNESS_BIN": str(self.tmp.name + "/missing"),
+               "DO_HARNESS_NO_FALLBACK": "1"}
+        result = subprocess.run(["bash", str(QUALITY_GATES), "--fast"], cwd=ROOT,
+                                env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 127)
+        self.assertIn("fallback is disabled", result.stderr)
 
 
 if __name__ == "__main__":
