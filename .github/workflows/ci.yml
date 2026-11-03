@@ -529,7 +529,7 @@ jobs:
         run: bash scripts/check-do-harness.sh
 
       - name: Run resolver fixtures
-        run: python3 scripts/test-do-harness.py
+        run: bash scripts/test-do-harness.sh
 
   pr-readiness:
     name: PR Readiness (merge gate)

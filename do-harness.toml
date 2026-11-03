@@ -260,5 +260,5 @@ when-changed = [".do-harness-version", "do-harness.toml", "scripts/do-harness.sh
 
 [[sensors]]
 name = "harness-fixtures"
-argv = ["python3", "scripts/test-do-harness.py"]
-when-changed = [".do-harness-version", "scripts/do-harness.sh", "scripts/check-do-harness.sh", "scripts/install-do-harness.sh", "scripts/test-do-harness.py"]
+argv = ["bash", "scripts/test-do-harness.sh"]
+when-changed = [".do-harness-version", "scripts/do-harness.sh", "scripts/check-do-harness.sh", "scripts/install-do-harness.sh", "scripts/test-do-harness.sh"]
