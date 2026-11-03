@@ -29,14 +29,10 @@ impl AsciiEditor {
         let result = self.active_tool.on_pointer_down(x, y, &ctx);
 
         if self.tool_id == ToolId::Select {
-            if let Some(ref sel) = self.current_selection {
-                if sel.contains(x, y) {
-                    self.is_moving_selection = true;
-                    self.start_selection_move();
-                } else {
-                    self.is_moving_selection = false;
-                }
-            }
+            // The tool owns the gesture decision. Asking a second, stale copy of
+            // the selection here is what made "click inside to move" race the
+            // in-progress drag (#296).
+            self.begin_select_gesture();
         }
 
         if self.is_incremental_tool() {
@@ -128,6 +124,9 @@ impl AsciiEditor {
 
         if self.tool_id == ToolId::Select {
             if self.is_moving_selection {
+                // Take the release position from the tool before committing, so
+                // a final move event without a matching pointer-up still lands.
+                self.update_select_tool_selection();
                 self.commit_selection_move();
                 self.is_moving_selection = false;
             }
