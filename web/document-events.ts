@@ -3,6 +3,7 @@ import { MIN_COLS, MIN_ROWS } from './constants.js';
 import { requestRender } from './render.js';
 import { state } from './state.js';
 import { showToast, syncGridInputs, updateUI } from './ui.js';
+import { resetDocumentHistory } from './drafts-ui.js';
 
 export function applyCustomGridSize(): void {
     if (!state.editor) return;
@@ -23,6 +24,7 @@ export function applyCustomGridSize(): void {
     state.gridSizeLocked = true;
     if (state.editor.width !== w || state.editor.height !== h) {
         state.editor.resize(w, h);
+        resetDocumentHistory();
         state.offscreenCanvas = null;
         state.offscreenCtx = null;
         requestRender();

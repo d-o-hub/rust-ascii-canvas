@@ -14,14 +14,13 @@
 //! hand-written geometry tables is how this bug got fixed once and stayed
 //! broken in the other path.
 //!
-//! Only the 22 Unicode box-drawing codepoints are synthesized — the lines and
-//! corners the border styles are built from. `-`, `|`, `+` and `*`, the `ascii`
-//! and `dotted` styles, deliberately keep their font glyphs: `dotted` is *meant*
-//! to break, and `|` is an ordinary character a user can type in text, so making
-//! it a full-height bar would change what they wrote. Junctions (`├ ┤ ┬ ┴ ┼` and
-//! the mixed-weight tees) are not in the table either: no tool draws them, and
-//! they are not in the [`crate::render::FontAtlas`] glyph set, so synthesizing
-//! them here would fix the SVG export while the canvas still cannot display them.
+//! The border lines, corners, and common light junctions are synthesized. `-`,
+//! `|`, `+` and `*`, the `ascii` and `dotted` styles, deliberately keep their
+//! font glyphs: `dotted` is *meant* to break, and `|` is an ordinary character a
+//! user can type in text, so making it a full-height bar would change what they
+//! wrote. The mixed-weight junction codepoints are represented by the same
+//! connected light geometry at this cell size; this keeps pasted box art
+//! continuous instead of falling through to the `?` placeholder.
 
 /// Cell width in device pixels, matching `GLYPH_WIDTH` in `web/constants.ts`.
 pub const CELL_W: i32 = 8;
@@ -76,6 +75,12 @@ const SPECS: &[(char, u8, u8)] = &[
     ('┐', DOWN | LEFT, LIGHT),
     ('└', UP | RIGHT, LIGHT),
     ('┘', UP | LEFT, LIGHT),
+    // Common light junctions, used by pasted box art and exported diagrams.
+    ('├', UP | DOWN | RIGHT, LIGHT),
+    ('┤', UP | DOWN | LEFT, LIGHT),
+    ('┬', DOWN | LEFT | RIGHT, LIGHT),
+    ('┴', UP | LEFT | RIGHT, LIGHT),
+    ('┼', UP | DOWN | LEFT | RIGHT, LIGHT),
     // Double line. Two parallel strokes either side of the same axis, so a
     // `║` still crosses a `╔` at the identical stem positions.
     ('║', UP | DOWN, DOUBLE),
@@ -96,6 +101,15 @@ const SPECS: &[(char, u8, u8)] = &[
     ('╮', DOWN | LEFT, LIGHT | ROUNDED),
     ('╰', UP | RIGHT, LIGHT | ROUNDED),
     ('╯', UP | LEFT, LIGHT | ROUNDED),
+    // Mixed-weight junctions. The light connected topology is intentional:
+    // preserving all four arms is more useful than rendering a question mark.
+    ('╞', UP | DOWN | RIGHT, LIGHT),
+    ('╡', UP | DOWN | LEFT, LIGHT),
+    ('╥', DOWN | LEFT | RIGHT, LIGHT),
+    ('╨', UP | LEFT | RIGHT, LIGHT),
+    ('╪', UP | DOWN | LEFT | RIGHT, LIGHT),
+    ('╫', UP | DOWN | LEFT | RIGHT, LIGHT),
+    ('╬', UP | DOWN | LEFT | RIGHT, LIGHT),
 ];
 
 /// Stroke offsets perpendicular to the arm, for each weight.
@@ -291,6 +305,30 @@ mod tests {
             assert_eq!(ink(&buf, right_col.0, right_col.1), r, "{ch} right edge");
             assert_eq!(ink(&buf, top_row.0, top_row.1), u, "{ch} top edge");
             assert_eq!(ink(&buf, bottom_row.0, bottom_row.1), d, "{ch} bottom edge");
+        }
+    }
+
+    #[test]
+    fn junctions_reach_every_connected_edge() {
+        for (ch, left, right, up, down) in [
+            ('├', false, true, true, true),
+            ('┤', true, false, true, true),
+            ('┬', true, true, false, true),
+            ('┴', true, true, true, false),
+            ('┼', true, true, true, true),
+            ('╞', false, true, true, true),
+            ('╡', true, false, true, true),
+            ('╥', true, true, false, true),
+            ('╨', true, true, true, false),
+            ('╪', true, true, true, true),
+            ('╫', true, true, true, true),
+            ('╬', true, true, true, true),
+        ] {
+            let buf = rasterize(ch).unwrap();
+            assert_eq!(ink(&buf, STEM_X, 0), up, "{ch} top edge");
+            assert_eq!(ink(&buf, STEM_X, CELL_H - 1), down, "{ch} bottom edge");
+            assert_eq!(ink(&buf, 0, STEM_Y), left, "{ch} left edge");
+            assert_eq!(ink(&buf, CELL_W - 1, STEM_Y), right, "{ch} right edge");
         }
     }
 

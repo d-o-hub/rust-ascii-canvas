@@ -308,7 +308,7 @@ export function uploadFontAtlas(): void {
     for (let i = 32; i < 127; i++) {
         charsToRasterize.push(String.fromCharCode(i));
     }
-    charsToRasterize.push('┌', '┐', '└', '┘', '─', '│', '╔', '╗', '╚', '╝', '═', '║', '┏', '┓', '┗', '┛', '━', '┃', '╭', '╮', '╰', '╯', '+', '-', '|', '*', '·', '•', '●', '▲', '▼', '◄', '►', '╱', '╲', '◆');
+    charsToRasterize.push('┌', '┐', '└', '┘', '─', '│', '├', '┤', '┬', '┴', '┼', '╔', '╗', '╚', '╝', '═', '║', '┏', '┓', '┗', '┛', '━', '┃', '╭', '╮', '╰', '╯', '╞', '╡', '╥', '╨', '╪', '╫', '╬', '+', '-', '|', '*', '·', '•', '●', '▲', '▼', '◄', '►', '╱', '╲', '◆');
 
     for (const char of charsToRasterize) {
         ctx.clearRect(0, 0, GLYPH_WIDTH, GLYPH_HEIGHT);

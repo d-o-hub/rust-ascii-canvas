@@ -71,7 +71,7 @@ export class DocumentHistory {
     /** Return the next persisted document without moving the cursor. */
     target(action: 'undo' | 'redo'): string | null {
         const next = action === 'undo' ? this.cursor - 1 : this.cursor + 1;
-        return this.entries[next] ?? null;
+        return this.entries.at(next) ?? null;
     }
 
     /** Move to a target after the caller has loaded it successfully. */
