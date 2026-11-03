@@ -28,6 +28,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
+- Select tool drags show a dashed selection marquee in real time, and "click
+  inside the selection to move" no longer races the editor's cached copy of the
+  selection (ADR-051): the tool now owns the move decision, delete/cut clear both
+  copies, and a release without a final move event still commits. (#296)
 - Text Space/Unicode and unknown browser keys no longer become panning/Delete.
   Tool buffers and unfinished gestures cannot leak across documents or layers.
 - Freehand/eraser strokes are atomic undo steps, including long, overlapping,

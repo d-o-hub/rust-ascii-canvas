@@ -152,6 +152,61 @@ fn added_layer_redo_cannot_exceed_limit_after_other_timeline_fills_slot() {
     assert_eq!(editor.layer_count(), 32);
 }
 
+/// Issue #296: a select drag must preview before pointer-up, and the tool must
+/// own the "new selection or move" decision the editor acts on.
+#[test]
+fn select_drag_previews_a_marquee_and_moves_committed_content() {
+    let mut editor = AsciiEditor::new(10, 4);
+    editor.commit_ops(&[DrawOp::new(1, 0, 'A')]);
+    editor.set_tool("select".into());
+    let ctx = editor.create_tool_context();
+
+    let pressed = editor.active_tool.on_pointer_down(1, 0, &ctx);
+    assert_eq!(pressed.ops.len(), 1, "no feedback on press");
+    let dragged = editor.active_tool.on_pointer_move(2, 1, &ctx);
+    assert!(!dragged.ops.is_empty(), "no marquee while dragging");
+    editor.active_tool.on_pointer_up(2, 1, &ctx);
+    editor.update_select_tool_selection();
+    assert_eq!(
+        editor.current_selection.as_ref().map(|s| s.bounds()),
+        Some((1, 0, 2, 1))
+    );
+
+    editor.active_tool.on_pointer_down(1, 0, &ctx);
+    editor.begin_select_gesture();
+    assert!(
+        editor.is_moving_selection,
+        "click inside did not arm a move"
+    );
+    editor.active_tool.on_pointer_move(3, 0, &ctx);
+    editor.update_select_tool_selection();
+    assert!(!editor.generate_move_preview_ops().is_empty());
+    editor.commit_selection_move();
+    assert_eq!(editor.state.grid.get(3, 0).map(|c| c.ch), Some('A'));
+    assert!(editor.state.grid.get(1, 0).unwrap().is_empty());
+}
+
+/// Issue #296: delete used to clear only the editor's selection, so the next
+/// press inside the tool's invisible copy armed a move with nothing to move.
+#[test]
+fn delete_clears_the_tool_selection_so_the_next_press_is_not_a_ghost_move() {
+    let mut editor = AsciiEditor::new(10, 4);
+    editor.commit_ops(&[DrawOp::new(1, 0, 'A')]);
+    editor.set_tool("select".into());
+    let ctx = editor.create_tool_context();
+    editor.active_tool.on_pointer_down(1, 0, &ctx);
+    editor.active_tool.on_pointer_up(2, 1, &ctx);
+    editor.update_select_tool_selection();
+
+    assert!(editor.delete_selection_impl());
+    assert!(editor.current_selection.is_none());
+
+    let pressed = editor.active_tool.on_pointer_down(1, 0, &ctx);
+    editor.begin_select_gesture();
+    assert!(!editor.is_moving_selection, "ghost move after delete");
+    assert!(!pressed.ops.is_empty(), "a new drag must still preview");
+}
+
 #[test]
 fn invalid_load_does_not_reset_the_current_session() {
     let mut editor = AsciiEditor::new(10, 4);

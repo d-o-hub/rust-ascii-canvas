@@ -75,27 +75,27 @@ impl AsciiEditor {
             return false;
         }
 
-        if let Some(ref sel) = self.current_selection {
-            let (min_x, min_y, max_x, max_y) = sel.bounds();
-            let mut ops = Vec::new();
+        let bounds = self.current_selection.as_ref().map(|sel| sel.bounds());
+        let Some((min_x, min_y, max_x, max_y)) = bounds else {
+            return false;
+        };
 
-            for y in min_y..=max_y {
-                for x in min_x..=max_x {
-                    ops.push(DrawOp::new(x, y, ' '));
-                }
+        let mut ops = Vec::new();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                ops.push(DrawOp::new(x, y, ' '));
             }
-
-            if !ops.is_empty() {
-                let mut cmd = DrawCommand::new(ops);
-                cmd.apply(&mut self.state.grid);
-                self.layer_stack.push_grid(Box::new(cmd));
-                self.dirty_tracker.request_full_redraw();
-            }
-
-            self.current_selection = None;
-            return true;
         }
-        false
+
+        if !ops.is_empty() {
+            let mut cmd = DrawCommand::new(ops);
+            cmd.apply(&mut self.state.grid);
+            self.layer_stack.push_grid(Box::new(cmd));
+            self.dirty_tracker.request_full_redraw();
+        }
+
+        self.clear_selection_state();
+        true
     }
 
     pub(crate) fn paste_text_impl(&mut self, text: &str) -> bool {
@@ -179,26 +179,26 @@ impl AsciiEditor {
             return false;
         }
 
-        if let Some(ref sel) = self.current_selection {
-            let (min_x, min_y, max_x, max_y) = sel.bounds();
-            let mut ops = Vec::new();
+        let bounds = self.current_selection.as_ref().map(|sel| sel.bounds());
+        let Some((min_x, min_y, max_x, max_y)) = bounds else {
+            return false;
+        };
 
-            for y in min_y..=max_y {
-                for x in min_x..=max_x {
-                    ops.push(DrawOp::new(x, y, ' '));
-                }
+        let mut ops = Vec::new();
+        for y in min_y..=max_y {
+            for x in min_x..=max_x {
+                ops.push(DrawOp::new(x, y, ' '));
             }
-
-            if !ops.is_empty() {
-                let mut cmd = DrawCommand::new(ops);
-                cmd.apply(&mut self.state.grid);
-                self.layer_stack.push_grid(Box::new(cmd));
-                self.dirty_tracker.request_full_redraw();
-            }
-
-            self.current_selection = None;
-            return true;
         }
-        false
+
+        if !ops.is_empty() {
+            let mut cmd = DrawCommand::new(ops);
+            cmd.apply(&mut self.state.grid);
+            self.layer_stack.push_grid(Box::new(cmd));
+            self.dirty_tracker.request_full_redraw();
+        }
+
+        self.clear_selection_state();
+        true
     }
 }

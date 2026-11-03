@@ -91,6 +91,41 @@ impl AsciiEditor {
         self.current_selection = self.active_tool.get_selection();
     }
 
+    /// Enter a select gesture from the tool's own decision.
+    ///
+    /// The editor must not re-derive "was this click inside the selection?" from
+    /// its cached `current_selection`: when the two copies disagree the move is
+    /// silently dropped (or armed for a selection the user already deleted).
+    pub(crate) fn begin_select_gesture(&mut self) {
+        self.is_moving_selection = false;
+        self.move_clipboard = None;
+        self.move_original_selection = None;
+
+        let moving = self
+            .active_tool
+            .as_any_mut()
+            .downcast_mut::<SelectTool>()
+            .is_some_and(|tool| tool.is_moving());
+
+        self.current_selection = self.active_tool.get_selection();
+
+        if moving {
+            self.is_moving_selection = true;
+            self.start_selection_move();
+        }
+    }
+
+    /// Drop the committed selection and the tool's copy of it together.
+    ///
+    /// Delete/cut used to clear only `current_selection`, leaving the tool
+    /// holding a selection the user could no longer see or act on (#296).
+    pub(crate) fn clear_selection_state(&mut self) {
+        self.current_selection = None;
+        if let Some(tool) = self.active_tool.as_any_mut().downcast_mut::<SelectTool>() {
+            tool.clear_selection();
+        }
+    }
+
     pub(crate) fn start_selection_move(&mut self) {
         if let Some(ref sel) = self.current_selection {
             let (min_x, min_y, max_x, max_y) = sel.bounds();
