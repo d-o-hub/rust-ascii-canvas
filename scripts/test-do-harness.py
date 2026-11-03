@@ -10,6 +10,7 @@ import unittest
 ROOT = Path(__file__).resolve().parent.parent
 RESOLVER = ROOT / "scripts/do-harness.sh"
 CHECK = ROOT / "scripts/check-do-harness.sh"
+INSTALL = ROOT / "scripts/install-do-harness.sh"
 
 
 class DoHarnessResolution(unittest.TestCase):
@@ -86,6 +87,11 @@ class DoHarnessResolution(unittest.TestCase):
                                 capture_output=True, text=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("signal-set mismatch", result.stderr)
+
+    def test_installer_uses_the_pinned_release_tag(self):
+        text = INSTALL.read_text(encoding="utf-8")
+        self.assertIn('do-harness/v$VERSION/scripts/install.sh', text)
+        self.assertNotIn('do-harness/main/scripts/install.sh', text)
 
 
 if __name__ == "__main__":

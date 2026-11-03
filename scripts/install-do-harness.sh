@@ -19,8 +19,8 @@ if [[ -x "$INSTALL_DIR/do-harness" ]] &&
   exit 0
 fi
 
-curl -fsSL https://raw.githubusercontent.com/d-o-hub/do-harness/main/scripts/install.sh \
+curl -fsSL "https://raw.githubusercontent.com/d-o-hub/do-harness/v$VERSION/scripts/install.sh" \
   | sh -s -- --version "v$VERSION" --bin-dir "$INSTALL_DIR"
 
-DO_HARNESS_BIN="$INSTALL_DIR/do-harness" DO_HARNESS_VERSION="$VERSION" \
+DO_HARNESS_BIN="$INSTALL_DIR/do-harness" \
   bash "$ROOT/scripts/check-do-harness.sh"

@@ -9,7 +9,7 @@ The repository's sensor contract is `do-harness.toml`; the pinned CLI version is
 `.do-harness-version`. Use the repository resolver so setup failures are explicit:
 
 ```bash
-npm run harness:check
+bash scripts/check-do-harness.sh
 ```
 
 Do not substitute `npx` in the normal edit loop. It adds package-manager notices,
@@ -33,9 +33,9 @@ Read the one or two returned skills that match the task. Do not load every
 Use the smallest useful command and retain JSON for agent-facing output:
 
 ```bash
-npm run harness:explain   # selected/skipped sensors and reasons
-npm run harness:feedback  # changed sensors; fail fast; JSON only
-npm run harness:status    # freshness only; executes no sensors
+bash scripts/do-harness.sh -q explain --set feedback --changed --format json
+bash scripts/do-harness.sh -q verify --set feedback --changed --fail-fast --format json
+bash scripts/do-harness.sh -q status --set feedback --format json
 ```
 
 If the change is already committed, `--changed` sees no working-tree paths.
@@ -47,8 +47,8 @@ independence.
 ## Completion loop
 
 Before handoff, run `npm run gate:full` for product changes. For harness-only
-changes, run `npm run harness:check`, the affected offline fixtures, and
-`npm run gate:fast`. Run `npm run gate:pr` only for an existing pull request.
+changes, run `bash scripts/check-do-harness.sh`, the affected offline fixtures,
+and `npm run gate:fast`. Run `npm run gate:pr` only for an existing pull request.
 
 Treat these states as distinct:
 
