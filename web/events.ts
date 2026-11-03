@@ -43,6 +43,7 @@ import {
     wireFileEvents,
 } from './events-file.js';
 import { cancelPointerGesture, handleEventResult } from './eventResult.js';
+import { resetDocumentHistory } from './drafts-ui.js';
 import {
     closeDrawer,
     handleMobileInput,
@@ -151,6 +152,15 @@ export function handleKeyDown(e: KeyboardEvent): void {
     }
     if (ctrl && ['z', 'y', 'c', 'a', 'x'].includes(key.toLowerCase())) {
         e.preventDefault();
+    }
+
+    if (ctrl && key.toLowerCase() === 'z') {
+        applyHistory(shift ? 'redo' : 'undo');
+        return;
+    }
+    if (ctrl && key.toLowerCase() === 'y') {
+        applyHistory('redo');
+        return;
     }
 
     if (ctrl && key.toLowerCase() === 'v') {
@@ -404,6 +414,7 @@ export function setupEventListeners(): void {
             if (!state.editor) return;
             if (confirm('Clear the canvas? This cannot be undone.')) {
                 state.editor.clear();
+                resetDocumentHistory();
                 requestRender();
                 updateUI();
                 scheduleAutoSave();

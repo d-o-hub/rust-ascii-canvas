@@ -21,6 +21,8 @@ export interface AppState {
     lastTouchDistance: number | null;
     pointerGestureActive: boolean;
     lastFocusedHtmlElement: HTMLElement | null;
+    persistedCanUndo: boolean;
+    persistedCanRedo: boolean;
 
     // Callbacks to avoid circular dependency
     requestRender: (() => void) | null;
@@ -76,6 +78,8 @@ export const state: AppState = {
     lastTouchDistance: null,
     pointerGestureActive: false,
     lastFocusedHtmlElement: null,
+    persistedCanUndo: false,
+    persistedCanRedo: false,
 
     // Callbacks
     requestRender: null,

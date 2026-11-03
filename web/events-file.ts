@@ -22,6 +22,7 @@ import { applyCustomGridSize } from './document-events.js';
 import { exportPng } from './exportPng.js';
 import { exportSvg } from './exportSvg.js';
 import { downloadDocument, openDocumentPicker } from './persistence.js';
+import { applyPersistedHistory, observeDocumentHistory } from './drafts-ui.js';
 import { requestRender } from './render.js';
 import { state } from './state.js';
 import { showToast, syncGridInputs, updateUI } from './ui.js';
@@ -43,14 +44,20 @@ export function wireOptionalButton(id: string, onClick: () => void): void {
  */
 export function applyHistory(action: 'undo' | 'redo'): void {
     if (!state.editor) return;
-    const done = action === 'undo' ? state.editor.undo() : state.editor.redo();
+    const nativeAvailable = action === 'undo' ? state.editor.can_undo : state.editor.can_redo;
+    const done = nativeAvailable
+        ? (action === 'undo' ? state.editor.undo() : state.editor.redo())
+        : applyPersistedHistory(action);
     if (!done) {
-        const pending = action === 'undo' ? state.editor.can_undo : state.editor.can_redo;
+        const pending = action === 'undo'
+            ? state.editor.can_undo || state.persistedCanUndo
+            : state.editor.can_redo || state.persistedCanRedo;
         if (pending) {
             showToast(`Cannot ${action} on a locked layer - unlock it first`, true);
         }
     }
     requestRender();
+    if (done) observeDocumentHistory();
     updateUI();
     if (done) scheduleAutoSave();
     if (state.canvas) state.canvas.focus();

@@ -30,6 +30,7 @@ import { scheduleAutoSave } from './autosave.js';
 
 import { cancelPointerGesture, handleEventResult } from './eventResult.js';
 import { applyHistory, copyToClipboard, exportCurrentPng, importDocument, wireOptionalButton } from './events-file.js';
+import { resetDocumentHistory } from './drafts-ui.js';
 
 export function handleTouchStart(e: TouchEvent): void {
     if (!state.editor || !state.canvas) return;
@@ -240,6 +241,7 @@ export function wireMobileEvents(): void {
         if (!state.editor) return;
         if (confirm('Clear the canvas? This cannot be undone.')) {
             state.editor.clear();
+            resetDocumentHistory();
             requestRender();
             updateUI();
             scheduleAutoSave();

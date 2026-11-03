@@ -101,11 +101,15 @@ draft instead of replacing an existing one.
   leaves it open and displays **Save failed**; download a backup before reloading.
 - The previous single-document autosave is migrated without deleting its original
   recovery copy. Draft metadata does not change the `.asc` v1 format.
-- Another tab changing the shelf pauses local saving to prevent a known stale
-  overwrite. Download your work, then reload to resolve the conflict. This is
-  optimistic conflict detection, not collaborative editing or cross-process CAS.
-- Switching drafts starts fresh undo history and viewport state. Undo history is
-  not persisted across reloads. Browser storage is not an archival backup.
+- A clean tab receiving a saved shelf revision updates its document and snapshot
+  history through `BroadcastChannel` (with the browser `storage` event as a
+  fallback). A tab with unsaved work keeps that work and enters a conflict state
+  instead of overwriting it. This is whole-document synchronization, not
+  collaborative merging or a CRDT.
+- Undo/redo snapshots survive page reloads within the bounded local history
+  budget. Switching drafts starts a fresh in-session timeline; the selected
+  draft's saved timeline is restored on a later reload. Browser storage is not
+  an archival backup.
 - Window resizing does not crop diagrams. Manual grid shrinking asks for
   confirmation because it crops outside cells and clears coordinate-based history.
 

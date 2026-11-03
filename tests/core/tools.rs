@@ -95,6 +95,10 @@ fn test_arrow_tool() {
     // Last op should be the arrowhead
     let last = result.ops.last().unwrap();
     assert_eq!(last.x, 5);
+    assert_eq!(last.cell.ch, '►');
+    assert!(result.ops[..result.ops.len() - 1]
+        .iter()
+        .all(|op| (op.x, op.y) != (5, 0)));
 }
 
 #[test]

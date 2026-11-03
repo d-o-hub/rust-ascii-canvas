@@ -264,10 +264,14 @@ test.describe('Named local drafts', () => {
         await ready(stale);
         await text(page, 'NEWER');
         await page.locator('#draft-save').click();
-        await expect(stale.locator('#save-status')).toContainText('Save conflict');
+        await expect.poll(() => requireAsciiContent(stale)).toBe('NEWER');
+        await expect(stale.locator('#save-status')).toContainText('Updated from another tab');
 
-        const newerShelf = await page.evaluate(key => localStorage.getItem(key), DRAFTS_KEY);
         await text(stale, 'STALE');
+        await text(page, 'LATEST');
+        await page.locator('#draft-save').click();
+        const newerShelf = await page.evaluate(key => localStorage.getItem(key), DRAFTS_KEY);
+        await expect(stale.locator('#save-status')).toContainText('Save conflict');
         await stale.locator('#draft-save').click();
         expect(await stale.evaluate(key => localStorage.getItem(key), DRAFTS_KEY)).toBe(newerShelf);
         await expect(stale.locator('#save-status')).toContainText('Save conflict');
@@ -279,7 +283,7 @@ test.describe('Named local drafts', () => {
 
         await stale.reload();
         await expect(stale.locator('#save-status')).toHaveText('Saved locally');
-        expect(await requireAsciiContent(stale)).toBe('NEWER');
+        expect(await requireAsciiContent(stale)).toBe('LATEST');
         await text(stale, 'RECOVERED');
         await stale.locator('#draft-save').click();
         await expect(stale.locator('#save-status')).toHaveText('Saved locally');
@@ -332,5 +336,40 @@ test.describe('Named local drafts', () => {
         expect(await requireAsciiContent(page)).toBe('ORIGINAL');
         await expect(page.locator('#undo-btn')).toBeDisabled();
         expect(temporary).not.toBe(original);
+    });
+
+    test('undo and redo history survive a reload', async ({ page }) => {
+        await ready(page);
+        await text(page, 'RELOAD');
+        await page.locator('#draft-save').click();
+        await expect(page.locator('#save-status')).toHaveText('Saved locally');
+
+        await page.reload();
+        await ready(page);
+        expect(await requireAsciiContent(page)).toBe('RELOAD');
+        await expect(page.locator('#undo-btn')).toBeEnabled();
+
+        await page.locator('#undo-btn').click();
+        await expect.poll(() => requireAsciiContent(page)).toBe('RELOA');
+        await expect(page.locator('#redo-btn')).toBeEnabled();
+        await page.locator('#redo-btn').click();
+        await expect.poll(() => requireAsciiContent(page)).toBe('RELOAD');
+    });
+
+    test('clean tabs receive saved documents, while dirty tabs keep local work', async ({ page, context }) => {
+        await ready(page);
+        const other = await context.newPage();
+        await ready(other);
+
+        await text(page, 'REMOTE');
+        await page.locator('#draft-save').click();
+        await expect.poll(() => requireAsciiContent(other)).toBe('REMOTE');
+
+        await text(other, 'LOCAL');
+        await text(page, 'NEXT');
+        await page.locator('#draft-save').click();
+        await expect(other.locator('#save-status')).toContainText('Save conflict');
+        expect(await requireAsciiContent(other)).toMatch(/^LOCAL/);
+        await other.close();
     });
 });
