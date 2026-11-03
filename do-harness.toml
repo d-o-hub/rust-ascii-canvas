@@ -18,7 +18,9 @@ feedback = [
   "web-tsc",
   "e2e-tsc",
   "eslint-root",
-  "vitest"
+  "vitest",
+  "harness-cli",
+  "harness-fixtures"
 ]
 verification = [
   "fmt",
@@ -52,7 +54,9 @@ verification = [
   "codacy-check",
   "wasm-test",
   "wasm-size",
-  "e2e-chromium"
+  "e2e-chromium",
+  "harness-cli",
+  "harness-fixtures"
 ]
 release = [
   "fmt",
@@ -86,7 +90,9 @@ release = [
   "codacy-check",
   "wasm-test",
   "wasm-size",
-  "e2e-chromium"
+  "e2e-chromium",
+  "harness-cli",
+  "harness-fixtures"
 ]
 
 [[sensors]]
@@ -246,3 +252,13 @@ when-changed = ["web/pkg/**"]
 name = "e2e-chromium"
 argv = ["bash", "-c", "env RUSTUP_TOOLCHAIN=1.94.0 pnpm run build:web && env PRODUCTION_E2E=1 pnpm exec playwright test --project=chromium --timeout=120000"]
 when-changed = ["web/**/*.ts", "e2e/**/*.ts", "src/**/*.rs", "playwright.config.ts"]
+
+[[sensors]]
+name = "harness-cli"
+argv = ["bash", "scripts/check-do-harness.sh"]
+when-changed = [".do-harness-version", "do-harness.toml", "scripts/do-harness.sh", "scripts/check-do-harness.sh", "scripts/install-do-harness.sh", ".devcontainer/**", ".github/workflows/**"]
+
+[[sensors]]
+name = "harness-fixtures"
+argv = ["python3", "scripts/test-do-harness.py"]
+when-changed = [".do-harness-version", "scripts/do-harness.sh", "scripts/check-do-harness.sh", "scripts/install-do-harness.sh", "scripts/test-do-harness.py"]

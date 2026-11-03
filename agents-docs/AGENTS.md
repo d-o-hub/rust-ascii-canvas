@@ -9,6 +9,11 @@ Reference docs for agent skills. Operational harness: [harness.md](harness.md), 
 - **Role**: Computational feedback — run `gate:fast` / `gate:full` / `gate:pr`, self-correct
 - **Use when**: After code changes, before PR, CI failures
 
+### harness
+- **Location**: `.agents/skills/harness/SKILL.md`
+- **Role**: Select minimal sensors and keep agent-facing output concise
+- **Use when**: Harness setup, sensor selection, output/token reduction
+
 ### code-review
 - **Location**: `.agents/skills/code-review/SKILL.md`
 - **Role**: Inferential feedback — architecture, failure modes, harness coherence

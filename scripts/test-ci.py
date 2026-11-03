@@ -45,6 +45,12 @@ class Coherence(unittest.TestCase):
     def test_missing_config_path(self):
         self.assert_rejected(self.workflow.replace("              - '.cargo/**'\n", ''))
 
+    def test_do_harness_contract_has_a_path_filtered_job(self):
+        self.assert_rejected(self.workflow.replace("              - 'do-harness.toml'\n", ''))
+
+    def test_harness_job_must_run_both_contract_checks(self):
+        self.assert_rejected(self.workflow.replace('bash scripts/check-do-harness.sh', 'echo skipped'))
+
     def test_rust_api_must_typecheck_web(self):
         before, web = self.workflow.split('  web:\n', 1)
         web, after = web.split('  e2e:\n', 1)
