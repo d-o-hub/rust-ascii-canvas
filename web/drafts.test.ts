@@ -17,6 +17,40 @@ function fixture(storage = new Map<string, string>()) {
 }
 
 describe('local drafts: atomic replacement and fault recovery', () => {
+    it('persists the selected snapshot timeline and restores it on reload', () => {
+        const f = fixture();
+        f.session.initialize();
+        f.edit('first');
+        f.session.setHistory({ version: 1, entries: ['blank', 'first'], cursor: 1 }, 'first');
+        expect(f.session.save()).toBe(true);
+
+        const restored = fixture(f.storage);
+        expect(restored.session.initialize()).toBe(true);
+        expect(restored.content()).toBe('first');
+        expect(restored.session.selectedHistory?.entries).toEqual(['blank', 'first']);
+        expect(restored.session.selectedHistory?.cursor).toBe(1);
+    });
+
+    it('applies a clean remote revision and protects dirty work', () => {
+        const a = fixture();
+        a.session.initialize();
+        const b = fixture(a.storage);
+        b.session.initialize();
+
+        a.edit('remote');
+        a.session.setHistory({ version: 1, entries: ['blank', 'remote'], cursor: 1 }, 'remote');
+        expect(a.session.save()).toBe(true);
+        expect(b.session.applyExternal(a.storage.get(DRAFTS_KEY) ?? null)).toBe(true);
+        expect(b.content()).toBe('remote');
+
+        b.edit('local work');
+        a.edit('second remote');
+        expect(a.session.save()).toBe(true);
+        expect(b.session.applyExternal(a.storage.get(DRAFTS_KEY) ?? null)).toBe(false);
+        expect(b.content()).toBe('local work');
+        expect(b.session.status.kind).toBe('conflict');
+    });
+
     it('isolates A and B across switches and reload, restoring the selected draft', () => {
         const f = fixture();
         expect(f.session.initialize()).toBe(true);

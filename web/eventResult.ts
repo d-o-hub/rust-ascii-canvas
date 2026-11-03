@@ -18,6 +18,7 @@ import { state } from './state.js';
 import type { EventResult } from './types.js';
 import { showToast, updateToolButtons, updateUI } from './ui.js';
 import { scheduleAutoSave } from './autosave.js';
+import { observeDocumentHistory } from './drafts-ui.js';
 
 /** Cancel only an unfinished pointer gesture; normal capture release must not
  * dismiss a text cursor established by the just-completed click. */
@@ -62,6 +63,7 @@ export function handleEventResult(result: EventResult | null, options: { persist
         void copyAsciiToClipboard(result.ascii, showToast, getClipboardOptions());
     }
 
+    if (persist) observeDocumentHistory();
     updateUI();
     if (persist) {
         scheduleAutoSave();

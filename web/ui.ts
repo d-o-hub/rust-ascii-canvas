@@ -237,8 +237,8 @@ export function refreshLayerList(): void {
 export function updateUI(): void {
     if (!state.editor) return;
     try {
-        const canUndo = state.editor.can_undo;
-        const canRedo = state.editor.can_redo;
+        const canUndo = state.editor.can_undo || state.persistedCanUndo;
+        const canRedo = state.editor.can_redo || state.persistedCanRedo;
         // Name the step being undone, so a layer change reads as "Undo Hide
         // layer" rather than a mystery (ADR-043 decision 4).
         const undoLabel = state.editor.undoLabel;

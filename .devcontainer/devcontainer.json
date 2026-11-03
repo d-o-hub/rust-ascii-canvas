@@ -3,14 +3,20 @@
   // Use a standard Ubuntu base image
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
 
-  // Install Rust, Node.js, and common tools
+  // Install Rust, Node.js, GitHub CLI, and common tools
   "features": {
     "ghcr.io/devcontainers/features/rust:1": {
       "version": "latest"
     },
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts"
-    }
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+
+  // Forward the host's GITHUB_TOKEN so `gh` is authenticated automatically
+  "containerEnv": {
+    "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
   },
 
   // Configure tool-specific settings (optional but recommended)

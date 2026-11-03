@@ -3,6 +3,7 @@
  * are prepared off-screen before writing, and only committed after success.
  */
 import { AUTOSAVE_KEY } from './constants.js';
+import { DocumentHistory, type PersistedHistory } from './history.js';
 
 export const DRAFTS_KEY = 'ascii-canvas-drafts-v1';
 export const MAX_DRAFTS = 20;
@@ -12,6 +13,7 @@ interface Draft {
     id: string;
     name: string;
     document: string;
+    history: PersistedHistory;
 }
 interface Shelf {
     version: 1;
@@ -48,7 +50,12 @@ function parseShelf(raw: string): Shelf {
             throw new Error('Invalid local draft');
         }
         ids.add(draft.id);
-        return { id: draft.id, name: draft.name, document: draft.document };
+        return {
+            id: draft.id,
+            name: draft.name,
+            document: draft.document,
+            history: new DocumentHistory(draft.document, 'history' in draft ? draft.history : undefined).snapshot(),
+        };
     });
     if (!ids.has(value.selected)) throw new Error('Selected draft is missing');
     return { version: 1, revision: value.revision, selected: value.selected, drafts };
@@ -58,6 +65,7 @@ export class DraftSession {
     private shelf: Shelf | null = null;
     private revision: string | null = null;
     private blocked = false;
+    private historyDirty = false;
     status: SaveStatus = { kind: 'dirty', message: 'Not saved yet' };
 
     constructor(
@@ -68,6 +76,9 @@ export class DraftSession {
     ) {}
 
     get selectedId(): string { return this.shelf?.selected ?? ''; }
+    get selectedHistory(): PersistedHistory | undefined {
+        return this.shelf?.drafts.find(draft => draft.id === this.shelf?.selected)?.history;
+    }
     list(): ReadonlyArray<{ id: string; name: string }> {
         return this.shelf?.drafts.map(({ id, name }) => ({ id, name })) ?? [];
     }
@@ -95,7 +106,8 @@ export class DraftSession {
             }
             const id = crypto.randomUUID();
             this.shelf = { version: 1, revision: '', selected: id,
-                drafts: [{ id, name: legacy ? 'Recovered diagram' : 'Untitled', document: json }] };
+                drafts: [{ id, name: legacy ? 'Recovered diagram' : 'Untitled', document: json,
+                    history: new DocumentHistory(json).snapshot() }] };
             return this.save();
         } catch (error) {
             // Unknown storage must not be overwritten by an empty editor on the
@@ -112,6 +124,16 @@ export class DraftSession {
 
     save(): boolean { return this.change(() => {}); }
 
+    /** Replace the selected draft's persisted snapshot timeline in memory. */
+    setHistory(history: PersistedHistory, document = this.serialize()): void {
+        const current = this.shelf?.drafts.find(draft => draft.id === this.selectedId);
+        if (!current) return;
+        current.document = document;
+        current.history = new DocumentHistory(document, history).snapshot();
+        this.historyDirty = true;
+        this.report('dirty', 'Unsaved changes');
+    }
+
     rename(name: string): boolean {
         return this.change(shelf => {
             const current = shelf.drafts.find(draft => draft.id === shelf.selected);
@@ -123,7 +145,8 @@ export class DraftSession {
         return this.change(shelf => {
             if (shelf.drafts.length >= MAX_DRAFTS) throw new Error(`Limit of ${MAX_DRAFTS} local drafts reached`);
             const id = crypto.randomUUID();
-            shelf.drafts.push({ id, name: this.name(name), document: json });
+            shelf.drafts.push({ id, name: this.name(name), document: json,
+                history: new DocumentHistory(json).snapshot() });
             shelf.selected = id;
         }, true);
     }
@@ -145,13 +168,50 @@ export class DraftSession {
         }, true);
     }
 
-    /** A conservative shelf-wide conflict, not collaborative merging. Editing
-     * and downloading remain available; all storage mutations stop until reload.
+    /**
+     * Apply a complete shelf revision received from another same-origin tab.
+     * Clean tabs converge; dirty tabs keep their work and enter conflict state.
      */
+    applyExternal(raw: string | null): boolean {
+        try {
+            if (raw === null) throw new Error('Remote shelf was removed');
+            const shelf = parseShelf(raw);
+            if (shelf.revision === this.revision) return true;
+            const selected = this.shelf?.drafts.find(draft => draft.id === this.selectedId);
+            const localDocumentChanged = selected !== undefined && this.serialize() !== selected.document;
+            if (this.blocked || localDocumentChanged || this.status.kind === 'dirty' ||
+                this.status.kind === 'error' || this.status.kind === 'conflict') {
+                this.conflict();
+                return false;
+            }
+            const remoteSelected = shelf.drafts.find(draft => draft.id === shelf.selected);
+            if (!remoteSelected) throw new Error('Remote selected draft is missing');
+            const prepared = this.prepare(remoteSelected.document);
+            try {
+                prepared.commit();
+                this.shelf = shelf;
+                this.revision = shelf.revision;
+                this.historyDirty = false;
+                this.report('saved', 'Updated from another tab');
+                return true;
+            } finally {
+                prepared.dispose();
+            }
+        } catch {
+            this.conflict();
+            return false;
+        }
+    }
+
+    /** A conservative fallback for browsers without BroadcastChannel. */
     onStorageChange(raw: string | null): void {
         try {
-            if ((raw === null ? null : parseShelf(raw).revision) !== this.revision) this.conflict();
-        } catch { this.conflict(); }
+            if ((raw === null ? null : parseShelf(raw).revision) === this.revision) return;
+        } catch {
+            this.conflict();
+            return;
+        }
+        this.applyExternal(raw);
     }
 
     private change(update: (shelf: Shelf) => void, replace = false): boolean {
@@ -187,7 +247,7 @@ export class DraftSession {
             }
             // Blur/pagehide can flush an already-saved document. Do not create
             // a spurious revision that would unnecessarily conflict other tabs.
-            if (this.revision !== null && JSON.stringify(shelf) === JSON.stringify(this.shelf)) {
+            if (this.revision !== null && !this.historyDirty && JSON.stringify(shelf) === JSON.stringify(this.shelf)) {
                 this.report('saved', 'Saved locally');
                 return true;
             }
@@ -197,6 +257,7 @@ export class DraftSession {
             this.storage.setItem(DRAFTS_KEY, raw);
             this.shelf = shelf;
             this.revision = shelf.revision;
+            this.historyDirty = false;
             prepared?.commit(); // commit is a prevalidated, non-throwing editor swap
             this.report('saved', 'Saved locally');
             return true;

@@ -78,9 +78,9 @@ impl FontAtlas {
 
         // Box drawing characters and symbols
         let box_chars = [
-            '┌', '┐', '└', '┘', '─', '│', '╔', '╗', '╚', '╝', '═', '║', '┏', '┓', '┗', '┛', '━',
-            '┃', '╭', '╮', '╰', '╯', '+', '-', '|', '*', '·', '•', '●', '▲', '▼', '◄', '►', '╱',
-            '╲', '◆',
+            '┌', '┐', '└', '┘', '─', '│', '├', '┤', '┬', '┴', '┼', '╔', '╗', '╚', '╝', '═', '║',
+            '┏', '┓', '┗', '┛', '━', '┃', '╭', '╮', '╰', '╯', '╞', '╡', '╥', '╨', '╪', '╫', '╬',
+            '+', '-', '|', '*', '·', '•', '●', '▲', '▼', '◄', '►', '╱', '╲', '◆',
         ];
         for &ch in &box_chars {
             if !glyph_indices.contains_key(&ch) {
@@ -288,6 +288,13 @@ mod tests {
         assert_eq!(atlas.glyph_height, 20);
         assert!(atlas.glyph_indices.contains_key(&'A'));
         assert!(atlas.glyph_indices.contains_key(&'┌'));
+        for ch in ['┼', '╬', '▲', '▼', '◄', '►'] {
+            assert!(atlas.glyph_indices.contains_key(&ch), "{ch} is missing");
+            assert!(
+                glyph(&atlas, ch).iter().any(|&alpha| alpha > 0),
+                "{ch} is blank"
+            );
+        }
     }
 
     /// `new()` blits the synthesized buffer with `copy_from_slice`, which panics
