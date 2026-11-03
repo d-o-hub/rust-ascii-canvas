@@ -22,15 +22,22 @@ if $FIX; then
   env RUSTUP_TOOLCHAIN=1.94.0 cargo clippy --locked --fix --allow-dirty --allow-staged --all-targets --all-features
 fi
 
-if command -v do-harness &>/dev/null; then
-  if $FAST; then
-    exec do-harness verify --set feedback
-  else
-    exec do-harness verify --set verification
-  fi
+set +e
+if $FAST; then
+  bash "$REPO_ROOT/scripts/do-harness.sh" verify --set feedback
+else
+  bash "$REPO_ROOT/scripts/do-harness.sh" verify --set verification
 fi
-
-echo "Warning: do-harness CLI not found on PATH. Falling back to direct sensor execution." >&2
+HARNESS_STATUS=$?
+set -e
+if [[ "$HARNESS_STATUS" -ne 127 ]]; then
+  exit "$HARNESS_STATUS"
+fi
+if [[ "${DO_HARNESS_NO_FALLBACK:-0}" == "1" ]]; then
+  echo "[FAIL] do-harness is unavailable and fallback is disabled." >&2
+  exit 127
+fi
+echo "[WARN] do-harness unavailable; using the legacy direct sensor fallback." >&2
 
 # Fallback direct execution loop for rollback / environment compatibility
 TIER=full

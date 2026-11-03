@@ -72,6 +72,8 @@ jobs:
               - '.loc-allowlist'
               - '.github/**'
               - 'plans/**'
+              - 'do-harness.toml'
+              - '.do-harness-version'
             product:
               - 'src/**'
               - 'tests/**'
@@ -505,6 +507,30 @@ jobs:
           CI: true
           PRODUCTION_E2E: 1
 
+  harness:
+    name: Harness Contract
+    needs: [changes]
+    if: >
+      github.event_name != 'pull_request' ||
+      needs.changes.outputs.harness == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # This job validates the declarative contract without duplicating the
+      # product matrix. Product sensors remain authoritative in their jobs.
+      - name: Install pinned do-harness
+        run: bash scripts/install-do-harness.sh
+
+      - name: Validate do-harness contract
+        env:
+          DO_HARNESS_NO_FALLBACK: '1'
+        run: bash scripts/check-do-harness.sh
+
+      - name: Run resolver fixtures
+        run: python3 scripts/test-do-harness.py
+
   pr-readiness:
     name: PR Readiness (merge gate)
     runs-on: ubuntu-latest
@@ -559,7 +585,7 @@ jobs:
     # skips every dependant — and this job would then see nine `skipped`
     # results and report green. That is the L-002/L-003 trap reproduced inside
     # the very check that gates merges, so the upstream job is verified too.
-    needs: [changes, fmt, clippy, architecture, rust, security, security-npm, deny, loc, web, wasm, e2e]
+    needs: [changes, fmt, clippy, architecture, rust, security, security-npm, deny, loc, web, wasm, e2e, harness]
     runs-on: ubuntu-latest
     if: always()
     steps:
@@ -577,13 +603,14 @@ jobs:
           WEB: ${{ needs.web.result }}
           WASM: ${{ needs.wasm.result }}
           E2E: ${{ needs.e2e.result }}
+          HARNESS: ${{ needs.harness.result }}
         run: |
           set -uo pipefail
           declare -A results=(
             [changes]="$CHANGES" [fmt]="$FMT" [clippy]="$CLIPPY"
             [architecture]="$ARCHITECTURE" [rust]="$RUST" [security]="$SECURITY"
             [security-npm]="$SECURITY_NPM" [loc]="$LOC"
-            [deny]="$DENY" [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E"
+            [deny]="$DENY" [web]="$WEB" [wasm]="$WASM" [e2e]="$E2E" [harness]="$HARNESS"
           )
           blocked=0
           for job in "${!results[@]}"; do

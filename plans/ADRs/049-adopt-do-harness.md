@@ -67,6 +67,19 @@ Aligning with `do-harness` provides a single unified verify entry point locally 
 - `npm run gate:fast` and `npm run gate:full` remain as entrypoints for developers and CI/hooks.
 - Rollback plan: If `do-harness` fails or causes environment issues, uninstalling or overriding `do-harness` seamlessly falls back to direct script execution in `scripts/quality-gates.sh`.
 
+## Phase 3 follow-up — CLI and agent workflow hardening
+
+The consumer workflow now pins the CLI in `.do-harness-version`, provisions it
+through `scripts/install-do-harness.sh`, validates it with the `harness-cli`
+sensor, and exposes concise JSON commands through `package.json`. The local
+`harness` skill uses progressive disclosure and `explain`/`status` to reduce
+agent context. CI validates `do-harness.toml` changes through the path-filtered
+Harness Contract job. Follow-up issues: rust-ascii-canvas #306 and #307.
+
+Upstream committed-range selection remains tracked by do-harness #441; until it
+is available in the pinned release, a clean committed branch must not treat
+`verify --changed` selecting zero paths as evidence.
+
 ## Consequences
 
 - Unified verification runner with declarative config in `do-harness.toml`.

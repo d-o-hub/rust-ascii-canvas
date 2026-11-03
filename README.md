@@ -29,6 +29,7 @@ An **ASCII diagram editor** built with Rust and WebAssembly, with a dark/light U
 - `wasm32-unknown-unknown` Rust target and wasm-bindgen-cli **0.2.128** (see `mise.toml`)
 - [Node.js](https://nodejs.org/) (22+) and pnpm **10.34.5** (pinned in both manifests)
 - Python 3.10+ for the quality harness
+- `do-harness` **0.4.1**; install with `bash scripts/install-do-harness.sh`
 
 ### Build
 
@@ -55,9 +56,12 @@ a phone or another device on the LAN, use `npm run dev:lan` — see
 ```shell
 npm run gate:fast   # Rust/web + retained harness/skill fixtures, fresh bindings
 npm run gate:full   # + audits, Node WASM tests, valid/size-bounded WASM, production E2E
+npm run harness:explain   # concise JSON sensor selection
+npm run harness:feedback  # changed-sensor feedback, fail-fast JSON
+npm run harness:status    # evidence freshness without executing sensors
 ```
 
-Coding-agent harness: [`AGENTS.md`](AGENTS.md), [`agents-docs/harness.md`](agents-docs/harness.md). Architecture layers: [`agents-docs/architecture.md`](agents-docs/architecture.md).
+Coding-agent harness: [`AGENTS.md`](AGENTS.md), [`agents-docs/harness.md`](agents-docs/harness.md), and the [`harness` skill](.agents/skills/harness/SKILL.md). Architecture layers: [`agents-docs/architecture.md`](agents-docs/architecture.md).
 
 ## Project Structure
 

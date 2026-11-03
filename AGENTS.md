@@ -156,6 +156,7 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Need | Skill |
 |------|--------|
 | Plan / ADR | `goap-adr-planner` |
+| Coding workflow / concise CLI output | `harness` |
 | Run sensors / self-correct | `verify` |
 | Semantic review | `code-review` |
 | Adversarial review ("roast") | `pr-roast` |
@@ -167,6 +168,21 @@ roast, comment tracking, shadow E2E, and clicking merge.
 | Tool QA | `tool-validation` |
 | Exploratory UX | `dogfood` |
 | Maintain this doc | `agents-md` |
+
+## Agent-facing output
+
+Use the `harness` skill and prefer the short JSON commands:
+
+```bash
+npm run harness:explain
+npm run harness:feedback
+npm run harness:status
+```
+
+Do not paste passing logs into the conversation. Report failed sensor names,
+exit code, changed files, and the next fix command. Use `explain` for planning;
+do not use v0.4.1 `verify --dry-run` as a safety preview because upstream tracks
+a sensor-spawning bug in that release.
 
 ## Codacy
 

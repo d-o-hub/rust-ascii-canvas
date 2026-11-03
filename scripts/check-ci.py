@@ -28,8 +28,9 @@ DIRECT = {'architecture': ['bash scripts/check-architecture.sh', 'python3 script
           'wasm': ['pnpm run build:wasm', 'pnpm run check-size'],
           'web': ['python3 scripts/wasm-freshness.py --check', 'pnpm exec tsc --noEmit',
                   'node --test scripts/test-playwright-config.mjs'],
-          'e2e': ['python3 scripts/wasm-freshness.py --check', 'pnpm run build:web',
-                  'PRODUCTION_E2E: 1']}
+           'e2e': ['python3 scripts/wasm-freshness.py --check', 'pnpm run build:web',
+                   'PRODUCTION_E2E: 1'],
+           'harness': ['bash scripts/check-do-harness.sh', 'python3 scripts/test-do-harness.py']}
 
 
 def require(condition, message):
