@@ -30,7 +30,7 @@ DIRECT = {'architecture': ['bash scripts/check-architecture.sh', 'python3 script
                   'node --test scripts/test-playwright-config.mjs'],
            'e2e': ['python3 scripts/wasm-freshness.py --check', 'pnpm run build:web',
                    'PRODUCTION_E2E: 1'],
-           'harness': ['bash scripts/check-do-harness.sh', 'python3 scripts/test-do-harness.py']}
+           'harness': ['bash scripts/check-do-harness.sh', 'bash scripts/test-do-harness.sh']}
 
 
 def require(condition, message):
