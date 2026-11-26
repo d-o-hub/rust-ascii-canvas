@@ -29,7 +29,7 @@ An **ASCII diagram editor** built with Rust and WebAssembly, with a dark/light U
 - `wasm32-unknown-unknown` Rust target and wasm-bindgen-cli **0.2.128** (see `mise.toml`)
 - [Node.js](https://nodejs.org/) (22+) and pnpm **10.34.5** (pinned in both manifests)
 - Python 3.10+ for the quality harness
-- `do-harness` **0.4.1**; install with `bash scripts/install-do-harness.sh`
+- `do-harness` **0.5.0**; install with `bash scripts/install-do-harness.sh`
 
 ### Build
 
