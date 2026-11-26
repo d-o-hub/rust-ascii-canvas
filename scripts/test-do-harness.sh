@@ -22,7 +22,7 @@ cat > "$FAKE" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" > "$DO_HARNESS_TEST_LOG"
 case "$1" in
-  version) printf '{"version":"%s"}\n' "${FAKE_VERSION:-0.4.1}" ;;
+  version) printf '{"version":"%s"}\n' "${FAKE_VERSION:-0.5.0}" ;;
   list) printf '%s\n' "${FAKE_SETS:-[\"feedback\",\"verification\",\"release\"]}" ;;
   *) exit 2 ;;
 esac

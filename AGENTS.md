@@ -181,8 +181,8 @@ npm run harness:status
 
 Do not paste passing logs into the conversation. Report failed sensor names,
 exit code, changed files, and the next fix command. Use `explain` for planning;
-do not use v0.4.1 `verify --dry-run` as a safety preview because upstream tracks
-a sensor-spawning bug in that release.
+prefer `verify --simulate` (v0.5.0) as the safety preview — it resolves the same
+selection and prints what would execute without spawning sensors.
 
 ## Codacy
 
